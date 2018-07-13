@@ -1,0 +1,111 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# .1.3.6.1.4.1.14988.1.1.15.1.1.1.9 = INTEGER: 9
+# .1.3.6.1.4.1.14988.1.1.15.1.1.2.9 = STRING: "ether09"
+# .1.3.6.1.4.1.14988.1.1.15.1.1.3.9 = INTEGER: 3
+# .1.3.6.1.4.1.14988.1.1.15.1.1.4.9 = INTEGER: 259
+# .1.3.6.1.4.1.14988.1.1.15.1.1.5.9 = INTEGER: 118
+# .1.3.6.1.4.1.14988.1.1.15.1.1.6.9 = INTEGER: 31
+#
+#              name: ether10/ubnt-ap
+#           poe-out: auto-on
+#       poe-voltage: auto
+#    poe-out-status: powered-on
+#   poe-out-voltage: 25.9V
+#   poe-out-current: 123mA
+#     poe-out-power: 3.1W
+
+mikrotik_poe_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.14988.1") and \
+                                oid(".1.3.6.1.4.1.14988.1.1.15.1.1.1.1") != None
+
+mikrotik_poe_info = [ (".1.3.6.1.4.1.14988.1.1.15.1", [ #  MIKROTIK.MIB::mtxrPOETable
+                                "1.1", # MIKROTIK.MIB::mtxrPOEInterfaceIndex
+                                "1.2", # MIKROTIK.MIB::mtxrPOEName
+                                "1.3", # MIKROTIK.MIB::mtxrPOEStatus
+                                "1.4", # MIKROTIK.MIB::mtxrPOEVoltage
+                                "1.5", # MIKROTIK.MIB::mtxrPOECurrent
+                                "1.6", # MIKROTIK.MIB::mtxrPOEPower
+                         ]),
+                       ]
+
+factory_settings["mikrotik_poe_default_levels"] = {
+    "levels" : (15.0, 25.0),
+}
+
+def inventory_mikrotik_poe(info):
+    for idx, name, status, voltage_raw, current_raw, power_raw in info[0]:
+        if int(status) >= 3:
+            yield "%02d" % int(idx), {}
+
+def check_mikrotik_poe(item, params, info):
+    map_status = {
+        "1": ("disabled"),
+        "2": ("waiting for load"),
+        "3": ("powered on"),
+        "4": ("overload"),
+        "5": ("short circuit"),
+    }
+    for idx, name, status, voltage_raw, current_raw, power_raw in info[0]:
+        if item == "%02d" % int(idx):
+            warn, crit = params["levels"]
+            voltage = float(voltage_raw) / 10
+            watt = float(power_raw) / 10
+
+            if watt >= crit:
+                state = 2
+            elif watt >= warn:
+                state = 1
+            else:
+                state = 0
+
+            infotext = "[%s], (%s)" % (name, map_status.get(status))
+            if status == "5":
+                state = 3
+                infotext += "(!!)"
+            elif status == "4":
+                state = 2
+                infotext += "(!)"
+
+            infotext += " Voltage: %.1fV, Power: %.1f W" % (voltage, watt)
+            return state, infotext, [('power', watt )]
+
+check_info["mikrotik_poe"] = {
+    "inventory_function"        : inventory_mikrotik_poe,
+    "check_function"            : check_mikrotik_poe,
+    "service_description"       : 'PoE Power %s',
+    'has_perfdata'              : True,
+    "snmp_info"                 : mikrotik_poe_info,
+    "snmp_scan_function"        : mikrotik_poe_scan,
+    'default_levels_variable'   : 'mikrotik_poe_default_levels',
+}
+
+# Fin.
+

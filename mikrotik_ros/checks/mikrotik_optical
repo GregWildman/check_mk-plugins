@@ -1,0 +1,115 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# TODO: Add checks for the loss and faults.
+
+# Example Output
+#
+# MIKROTIK.MIB::mtxrOpticalTable
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.2.25 = STRING: "sfp-sfpplus1"
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.3.25 = INTEGER: 0
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.4.25 = INTEGER: 0
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.5.25 = Gauge32: 85000
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.6.25 = Gauge32: 21
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.7.25 = Gauge32: 3302
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.8.25 = Gauge32: 6
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.9.25 = INTEGER: -5905
+# SNMPv2-SMI::enterprises.14988.1.1.19.1.1.10.25 = INTEGER: -10678
+
+mikrotik_optical_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.14988.1") and \
+                                oid(".1.3.6.1.4.1.14988.1.1.19.1.1.2.*") != None
+
+mikrotik_optical_info = (".1.3.6.1.4.1.14988.1.1.19.1", [ #  MIKROTIK.MIB::mtxrOpticalTable
+                                OID_END, # mtxrOpticalIndex
+                                "1.2", # mtxrOpticalName
+                                "1.3", # mtxrOpticalRxLoss
+                                "1.4", # mtxrOpticalTxFault
+                                "1.5", # mtxrOpticalWavelength
+                                "1.6", # mtxrOpticalTemperature
+                                "1.7", # mtxrOpticalSupplyVoltage
+                                "1.8", # mtxrOpticalTxBiasCurrent
+                                "1.9", # mtxrOpticalTxPower
+                               "1.10", # mtxrOpticalRxPower
+                        ])
+
+factory_settings["mikrotik_optical_temp_default_levels"] = {
+    "levels" : (50, 60),
+}
+
+def inventory_mikrotik_optical(info):
+    for idx, name, rx_loss, tx_fault, wavelength, temp, voltage, tx_bias, tx_pwr, rx_pwr in info:
+        if name != "":
+            rxdbm = float(rx_pwr) / 1000.0
+            txdbm = float(tx_pwr) / 1000.0
+
+            rxlow_warn  = float(rxdbm) - 1.5
+            rxlow_crit  = float(rxdbm) - 2.0
+            rxhigh_warn = float(rxdbm) + 1.5
+            rxhigh_crit = float(rxdbm) + 2.0
+
+            txlow_warn  = float(txdbm) - 1.5
+            txlow_crit  = float(txdbm) - 2.0
+            txhigh_warn = float(txdbm) + 1.5
+            txhigh_crit = float(txdbm) + 2.0
+
+            yield "SFP %s" % idx, {"rx_levels": (rxlow_warn, rxlow_crit, rxhigh_warn, rxhigh_crit),
+                                   "tx_levels": (txlow_warn, txlow_crit, txhigh_warn, txhigh_crit),
+                                   "rx_initial_scan": rxdbm,
+                                   "tx_initial_scan": txdbm}
+
+        if temp != "":
+            yield "Temperature SFP %s" % idx, {}
+
+def check_mikrotik_optical(item, params, info):
+    for idx, name, rx_loss, tx_fault, wavelength, temp, voltage, tx_bias, tx_pwr, rx_pwr in info:
+        if item == "SFP %s" % idx:
+            rxdbm = float(rx_pwr) / 1000.0
+            txdbm = float(tx_pwr) / 1000.0
+            infotext = "[%s], Wavelength: %dnm, Input Power: %.1f, Output Power: %.1f" % \
+                       (name, int(wavelength)/100, rxdbm, txdbm)
+            perfdata = [("input_power", "%.1fdBm" % rxdbm), ("output_power", "%.1fdBm" % txdbm)]
+
+            return 0, infotext, perfdata
+
+        elif item == "Temperature SFP %s" % idx:
+            return check_temperature(float(temp), params, "mikrotik_optical_temp_%s" % item)
+
+
+check_info["mikrotik_optical"] = {
+    "inventory_function"        : inventory_mikrotik_optical,
+    "check_function"            : check_mikrotik_optical,
+    "service_description"       : '%s',
+    'has_perfdata'              : True,
+    "snmp_info"                 : mikrotik_optical_info,
+    "snmp_scan_function"        : mikrotik_optical_scan,
+    'includes'                  : [ "temperature.include" ],
+    'default_levels_variable'   : 'mikrotik_optical_temp_default_levels',
+}
+
+# Fin.
+

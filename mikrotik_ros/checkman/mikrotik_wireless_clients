@@ -1,0 +1,16 @@
+title: Mikrotik ROS: Wireless Clients
+catalog: hw/network/mikrotik
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check monitors the wireless clients connected.
+ It uses SNMP to scan the {mtxrWlRtabTable} in the MIKROTIK.MIB.
+
+item:
+ Each client's MAC address.
+
+inventory:
+ The inventory creates a service for each cleint MAC address found connected.
+
+ 

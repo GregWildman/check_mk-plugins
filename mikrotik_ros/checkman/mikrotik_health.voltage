@@ -1,0 +1,19 @@
+title: Mikrotik ROS: Power supply Voltage
+catalog: hw/network/mikrotik
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check monitors the "/system health" values provides by Mikrotik's Router OS.
+ It uses SNMP to scan the {mtxrHealth} in the MIKROTIK.MIB for {mtxrHlVoltage}
+
+ Upper and lower warning and critical levels to the voltage can be configured.
+
+item:
+{PSU_IN} for the voltage.
+
+inventory:
+ The inventory creates a service for the PSU_IN voltage if it is provided by the
+ device.
+
+ 

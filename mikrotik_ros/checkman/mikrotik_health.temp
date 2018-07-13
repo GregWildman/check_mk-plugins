@@ -1,0 +1,19 @@
+title: Mikrotik ROS: Temperature
+catalog: hw/network/mikrotik
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check monitors the "/system health" values provides by Mikrotik's Router OS.
+ It uses SNMP to scan the {mtxrHealth} in the MIKROTIK.MIB for {mtxrHlTemperature}.
+
+ Warning and critical levels for the temperature can be configured.
+
+item:
+ {Chassis} for the temperature
+
+inventory:
+ The inventory creates a service for the Chassis temperature if the device provides
+ a sensor.
+
+ 
