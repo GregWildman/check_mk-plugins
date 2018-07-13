@@ -1,0 +1,18 @@
+title: Ciena LEOS/SAOS: CPU load average
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check measures the CPU load average via SNMP.
+
+ The device sends a 1, 5 and 15 minute average of the CPU load.
+ The 15 minute value is checked against a warning and a critical level.
+ Since the SNMP MIB does not contain information about the number
+ of CPUs this check assumes only one CPU to be present. Thatfore
+ the warn/crit levels are interpreted as {absolute} values - not
+ as values {per cpu}.
+
+inventory:
+ One service will be created for each device.
+

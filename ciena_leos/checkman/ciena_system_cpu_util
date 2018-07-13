@@ -1,0 +1,11 @@
+title: Ciena LEOS/SAOS: CPU utilization of the last 60 seconds
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ Check CPU utilization of the last 60 seconds in percent on Ciena LEOS devices.
+
+inventory:
+ One service will be created for each CPU
+

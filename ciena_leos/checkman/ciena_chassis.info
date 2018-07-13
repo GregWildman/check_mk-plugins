@@ -1,0 +1,16 @@
+title: Ciena LEOS/SAOS: Chassis info
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check collects chassis device information from Ciena Aggregation
+ switches running LEOS via SNMP mib WWP-LEOS-CHASSIS-MIB.
+
+item:
+ Hardcoded to {Chassis Info}
+
+inventory:
+ The inventory creates a service for the chassis that contains the
+ device MAC address, device type and serial number.
+ 

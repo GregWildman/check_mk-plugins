@@ -1,0 +1,16 @@
+title: Ciena LEOS/SAOS: Chassis power supplies
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check collects chassis power supply information from Ciena Aggregation
+ switches running LEOS via SNMP mib WWP-LEOS-CHASSIS-MIB.
+
+item:
+ Each power supply shown as numbered on the device. E.g.
+ {Power Supply 1}
+
+inventory:
+ The inventory creates a service for each power supply that the chassis has. 
+

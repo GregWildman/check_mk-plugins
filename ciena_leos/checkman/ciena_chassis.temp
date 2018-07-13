@@ -1,0 +1,19 @@
+title: Ciena LEOS/SAOS: Chassis temperature
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check collects chassis temperature(s) from Ciena Aggregation
+ switches running LEOS via SNMP mib WWP-LEOS-CHASSIS-MIB.
+
+ Warning and critical levels for the temperature can be configured.
+
+item:
+ Each temperature sensor is shown as numbered on the device. E.g.
+ {Temperature 1}
+
+inventory:
+ The inventory creates a service for each temperature sensor that the chassis
+ has. 
+

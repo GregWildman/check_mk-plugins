@@ -1,0 +1,162 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.1.19 = INTEGER: 19
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.2.19 = INTEGER: 2
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.9.19 = STRING: "SFP-LX-SMTD"
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.11.19 = STRING: "SP1602269091"
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.13.19 = STRING: "02/29/16"
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.15.19 = INTEGER: 1310
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.16.19 = INTEGER: 29
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.105.19 = INTEGER: -8512
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.106.19 = INTEGER: -9528
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.107.19 = INTEGER: 49996
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.108.19 = INTEGER: -130102
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.109.19 = INTEGER: -10017
+# .1.3.6.1.4.1.6141.2.60.4.1.1.1.1.110.19 = INTEGER: -269897
+
+ciena_port_xcvr_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1")
+
+ciena_port_xcvr_info = ( ".1.3.6.1.4.1.6141.2.60.4.1.1.1", [ # WWP-LEOS-PORT-XCVR-MIB::wwpLeosPortXcvr
+                                        "1.1",        # index / interface            0
+                                        "1.2",        # OperState                    1
+                                        "1.9",        # VendorPN                     2
+                                        "1.11",       # SerialNum                    3
+                                        "1.13",       # MfgDate                      4
+                                        "1.15",       # Wavelength (nm)              5
+                                        "1.16",       # Temperature                  6
+                                        "1.105",      # RxDbmPower                   7
+                                        "1.106",      # TxDbmPower                   8
+                                        "1.107",      # HighTxDbmPwAlarmThreshold    9
+                                        "1.108",      # LowTxDbmPwAlarmThreshold    10
+                                        "1.109",      # HighRxDbmPwAlarmThreshold   11
+                                        "1.110",      # LowRxDbmPwAlarmThreshold    12
+                       ])
+
+
+def inventory_ciena_port_xcvr(info):
+    inventory = []
+    for cxvr_idx, operstate, vendor_pn, serial_no, mfg_date, wavelength, \
+        temp, rx_power, tx_power, tx_high, tx_low, rx_high, rx_low in info:
+        if operstate == "2":  # enabled
+
+            # Due to lazy admins who feel no shame we have to cater for the enabled
+            # but not used scenario. Only add to inventory if dBm levels are not 0 - Greg.
+            if (saveint(rx_power) != 0 and saveint(tx_power) != 0):
+
+                # As the cheap SFP's do not provide valid thresholds we will be ignorning them.
+                # The warn/crit values are decided from the RX dBm level at inventory time, as per NOC
+                # they want to be notified if more that 2dB change. We will warn after 1.5dB - Greg.
+                rxdbm = float(saveint(rx_power)) / 10000.0
+                txdbm = float(saveint(tx_power)) / 10000.0
+
+                rxlow_warn  = float(rxdbm) - 1.5
+                rxlow_crit  = float(rxdbm) - 2.0
+                rxhigh_warn = float(rxdbm) + 1.5
+                rxhigh_crit = float(rxdbm) + 2.0
+
+                txlow_warn  = float(txdbm) - 1.5
+                txlow_crit  = float(txdbm) - 2.0
+                txhigh_warn = float(txdbm) + 1.5
+                txhigh_crit = float(txdbm) + 2.0
+
+                inventory.append(('%02d' % saveint(cxvr_idx),
+                                 {"rx_levels": (rxlow_warn, rxlow_crit, rxhigh_warn, rxhigh_crit),
+                                  "tx_levels": (txlow_warn, txlow_crit, txhigh_warn, txhigh_crit),
+                                  "rx_initial_scan": rxdbm,
+                                  "tx_initial_scan": txdbm} ))
+
+    return inventory
+
+def check_ciena_port_xcvr(item, params, info):
+    state = 0
+    infotext = ""
+    perfdata = ""
+    ciena_port_xcvr_if_state = {
+        '1': ('disabled', 2),
+        '2': ('enabled', 0),
+        '3': ('loopback', 0),
+        '4': ('notPresent', 2),
+        '5': ('faulted', 2),
+    }
+
+    for cxvr_idx, operstate, vendor_pn, serial_no, mfg_date, wavelength, \
+        temp, rx_power, tx_power, tx_high, tx_low, rx_high, rx_low in info:
+        if item == "%02d" % saveint(cxvr_idx): 
+            
+            # divide by 10,000 to convert back to dBm
+            rxdbm  = float(saveint(rx_power))  / 10000.0
+            txdbm  = float(saveint(tx_power))  / 10000.0
+
+            #rx_inv_dbm = params.get("rx_initial_scan")
+            #tx_inv_dbm = params.get("tx_initial_scan")
+            rxlow_warn, rxlow_crit, rxhigh_warn, rxhigh_crit = params.get("rx_levels")
+            txlow_warn, txlow_crit, txhigh_warn, txhigh_crit = params.get("tx_levels")
+            iftext, ifstate = ciena_port_xcvr_if_state[operstate]
+
+            sfp_vendor = vendor_pn.rstrip(' -')
+            infotext = '%s (%s), MfgDate: %s, %s nm, Input Power: %.1f, Output Power: %.1f' % \
+                             (sfp_vendor, iftext, mfg_date, wavelength, rxdbm, txdbm )
+            perfdata = [ ("input_power", "%.1fdBm" % rxdbm,
+                              "%.1f:%.1f" % (rxlow_warn, rxhigh_warn),
+                              "%.1f:%.1f" % (rxlow_crit, rxhigh_crit) ),
+                         ("output_power", "%.1fdBm" % txdbm,
+                              "%.1f:%.1f" % (txlow_warn, txhigh_warn),
+                              "%.1f:%.1f" % (txlow_crit, txhigh_crit) ) ]
+
+            if ifstate != 0:
+                state = 2
+
+            if rxdbm <= rxlow_crit:
+                infotext += ', (Low threshold: %.1f dBm)' % rxlow_crit
+                state = 2
+            elif rxdbm <= rxlow_warn:
+                infotext += ', (Low threshold: %.1f dBm)' % rxlow_warn
+                state = 1
+            elif rxdbm >= rxhigh_crit:
+                infotext += ', (High threshold: %.1f dBm)' % rxhigh_crit
+                state = 2
+            elif rxdbm >= rxhigh_warn:
+                infotext += ', (High threshold: %.1f dBm)' % rxhigh_warn
+                state = 1
+
+            return (state, infotext, perfdata)
+
+check_info["ciena_port_xcvr"] = {
+    "inventory_function"        : inventory_ciena_port_xcvr,
+    "check_function"            : check_ciena_port_xcvr,
+    "service_description"       : 'SFP-GBIC %s',
+    'has_perfdata'              : True,
+    "snmp_info"                 : ciena_port_xcvr_info,
+    "snmp_scan_function"        : ciena_port_xcvr_scan,
+}
+
+# Fin.
+
