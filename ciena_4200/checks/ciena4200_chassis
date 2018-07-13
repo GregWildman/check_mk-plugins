@@ -1,0 +1,255 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# IPI-GSLAMAG-MIB::ipiGslamAGSystemObjs
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.1.0 = STRING: "WBS_DC"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.2.0 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.3.0 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.5.0 = STRING: "Ciena 4200"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.6.0 = STRING: "8.1.1"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.13.0 = Gauge32: 1314
+# .1.3.6.1.4.1.7737.7.2.9.2.1.1.17.0 = STRING: "00:03:18:4F:9E:1C"
+#
+# IPI-GSLAMAG-MIB::gslamAGPwrModuleTable
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.2.1.1 = INTEGER: 136
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.4.1.1 = STRING: "WMP1200NAA"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.5.1.1 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.6.1.1 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.7.1.1 = STRING: "CIENA CORP"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.8.1.1 = STRING: "M5575454"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.9.1.1 = STRING: "A"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.10.1.1 = STRING: "CN-PSM-AC450T"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.5.1.1.11.1.1 = STRING: "166-0011-900"
+#
+# IPI-GSLAMAG-MIB::gslamAGFanModuleEntry
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.2.1.1 = INTEGER: 20
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.4.1.1 = STRING: "WMPQAUNMAA"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.5.1.1 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.6.1.1 = INTEGER: 2
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.8.1.1 = STRING: "M5544505"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.9.1.1 = STRING: "A"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.10.1.1 = STRING: "CN-FAN-TRAY"
+# .1.3.6.1.4.1.7737.7.2.9.2.1.6.1.1.11.1.1 = STRING: "720-0010-002"
+
+ciena4200_chassis_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.7737.5")
+
+ciena4200_chassis_info = [(".1.3.6.1.4.1.7737.7.2.9.2.1.1", [ # IPI-GSLAMAG-MIB::ipiGslamAGSystemObjs
+                               "1",   # gslamAGSystemName
+                               "2",   # gslamAGSystemPrimaryState
+                               "3",   # gslamAGSystemSecondaryState
+                               "5",   # gslamAGSystemModelName
+                               "6",   # gslamAGSystemSoftwareIssue
+                              "13",   # gslamAGSystemConfigChangeSeqNum
+                              "17",   # gslamAGSystemMACAddress
+                          ]),
+
+                      (".1.3.6.1.4.1.7737.7.2.9.2.1.5.1", [ # IPI-GSLAMAG-MIB::gslamAGPwrModuleTable
+                             "1.2",   # gslamAGPwrModuleType
+                             "1.4",   # gslamAGPwrModuleCLEI
+                             "1.5",   # gslamAGPwrModulePrimaryState
+                             "1.6",   # gslamAGPwrModuleSecondaryState
+                             "1.7",   # gslamAGPwrModuleHWManufactureName
+                             "1.8",   # gslamAGPwrModuleHWManufactureSerial
+                             "1.9",   # gslamAGPwrModuleHWRevision
+                            "1.10",   # gslamAGPwrModuleHWManufacturePartName
+                            "1.11",   # gslamAGPwrModuleHWManufacturePartNumber
+                         ]),
+
+                      (".1.3.6.1.4.1.7737.7.2.9.2.1.6.1", [ # IPI-GSLAMAG-MIB::gslamAGFanModuleEntry
+                             "1.2",   # gslamAGFanModuleType
+                             "1.4",   # gslamAGFanModuleCLEI
+                             "1.5",   # gslamAGFanModulePrimaryState
+                             "1.6",   # gslamAGFanModuleSecondaryState
+                             "1.8",   # gslamAGFanModuleHWManufactureSerial
+                             "1.9",   # gslamAGFanModuleHWRevision
+                            "1.10",   # gslamAGFanModuleHWManufacturePartName
+                            "1.11",   # gslamAGFanModuleHWManufacturePartNumber
+                         ]),
+                     ]
+
+
+#.
+#   .--info----------------------------------------------------------------.
+#   |                           _        __                                |
+#   |                          (_)_ __  / _| ___                           |
+#   |                          | | '_ \| |_ / _ \                          |
+#   |                          | | | | |  _| (_) |                         |
+#   |                          |_|_| |_|_|  \___/                          |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+def inventory_ciena4200_chassis_info(info):
+    chassis_info = info[0]  # ipiGslamAGSystemObjs
+    for name, primary_state, secondary_state, model, sw_ver, seq_num, mac in chassis_info:
+        if mac != "":
+            yield None, {"config_seq_num": seq_num}
+
+def check_ciena4200_chassis_info(item, params, info):
+    map_state = {
+       "1": ("unknown"),
+       "2": ("In-Service and Normal"),
+       "3": ("Out-of-Service and Autonomous"),
+       "4": ("Out-of-Service and Management"),
+       "5": ("Out-of-Service and Autonomous Management"),
+    }
+
+    chassis_info = info[0]  # ipiGslamAGSystemObjs
+    for name, primary_state, secondary_state, model, sw_ver, seq_num, mac in chassis_info:
+        state = 0
+        infotext = "%s, MAC: %s, Model: %s, SW: %s, State: %s" % \
+                   (name, mac, model, sw_ver, map_state.get(primary_state))
+
+        inv_seq_num = params.get("config_seq_num", 0)
+        if inv_seq_num > 0 and inv_seq_num < seq_num:
+            state = 1
+            infotext += ", (!) Config has been changed."
+
+        return state, infotext
+
+
+check_info["ciena4200_chassis.info"] = {
+    "inventory_function"        : inventory_ciena4200_chassis_info,
+    "check_function"            : check_ciena4200_chassis_info,
+    "service_description"       : "Chassis Info",
+    "snmp_info"                 : ciena4200_chassis_info,
+    "snmp_scan_function"        : ciena4200_chassis_scan,
+
+}
+
+#.
+#   .--psu-----------------------------------------------------------------.
+#   |                                                                      |
+#   |                           _ __  ___ _   _                            |
+#   |                          | '_ \/ __| | | |                           |
+#   |                          | |_) \__ \ |_| |                           |
+#   |                          | .__/|___/\__,_|                           |
+#   |                          |_|                                         |
+#   +----------------------------------------------------------------------+
+
+
+def inventory_ciena4200_chassis_psu(info):
+    chassis_psu = info[1]  # gslamAGPwrModuleTable
+    psu_id = 1
+    for psu_type, clei, primary_state, secondary_state, man_name, man_serial, rev, part_name, part_number in chassis_psu:
+        if psu_type != "":
+            yield psu_id, {}
+            psu_id += 1
+
+def check_ciena4200_chassis_psu(item, _no_params, info):
+    map_state = {
+       "1": ("unknown"),
+       "2": ("In-Service and Normal"),
+       "3": ("Out-of-Service and Autonomous"),
+       "4": ("Out-of-Service and Management"),
+       "5": ("Out-of-Service and Autonomous Management"),
+    }
+
+    chassis_psu = info[1]  # gslamAGPwrModuleTable
+    psu_id = 1
+    for psu_type, clei, primary_state, secondary_state, man_name, man_serial, rev, part_name, part_number in chassis_psu:
+        if psu_id == item:
+            psu_state = map_state.get(primary_state)
+
+            if primary_state == "2":
+                status = 0
+                infotext = "State: %s" % psu_state
+            else:
+                infotext = "PSU has failed. State: %s" % psu_state
+                status = 2
+
+            infotext += ", Part: %s (%s)" % (part_name, part_number)
+            yield status, infotext
+
+        psu_id += 1
+
+check_info["ciena4200_chassis.psu"] = {
+    "check_function"        : check_ciena4200_chassis_psu,
+    "inventory_function"    : inventory_ciena4200_chassis_psu,
+    "service_description"   : "Power Supply %s",
+    "snmp_info"             : ciena4200_chassis_info,
+    "snmp_scan_function"    : ciena4200_chassis_scan,
+}
+
+#.
+#   .--fan-----------------------------------------------------------------.
+#   |                            __                                        |
+#   |                           / _| __ _ _ __                             |
+#   |                          | |_ / _` | '_ \                            |
+#   |                          |  _| (_| | | | |                           |
+#   |                          |_|  \__,_|_| |_|                           |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+def inventory_ciena4200_chassis_fan(info):
+    chassis_fan = info[2]  # gslamAGFanModuleEntry
+    fan_id = 1
+    for fan_type, clei, primary_state, secondary_state, serial, rev, part_name, part_number in chassis_fan:
+        if fan_type != "":
+            yield fan_id, {}
+            fan_id += 1
+
+def check_ciena4200_chassis_fan(item, params, info):
+    map_state = {
+       "1": ("unknown"),
+       "2": ("In-Service and Normal"),
+       "3": ("Out-of-Service and Autonomous"),
+       "4": ("Out-of-Service and Management"),
+       "5": ("Out-of-Service and Autonomous Management"),
+    }
+
+    chassis_fan = info[2]  # gslamAGFanModuleEntry
+    fan_id = 1
+    for fan_type, clei, primary_state, secondary_state, serial, rev, part_name, part_number in chassis_fan:
+        if fan_id == item:
+            fan_state = map_state.get(primary_state)
+
+            if primary_state == "2":
+                status = 0
+                infotext = "State: %s" % fan_state
+            else:
+                infotext = "Fan has failed. State: %s" % fan_state
+                status = 2
+
+            infotext += ", Part: %s (%s)" % (part_name, part_number)
+            yield status, infotext
+
+        fan_id += 1
+
+check_info["ciena4200_chassis.fan"] = {
+    "inventory_function"      : inventory_ciena4200_chassis_fan,
+    "check_function"          : check_ciena4200_chassis_fan,
+    "service_description"     : "Fan %s",
+    "snmp_info"               : ciena4200_chassis_info,
+    "snmp_scan_function"      : ciena4200_chassis_scan,
+    "group"                   : "hw_fans",
+}
+
+# Fin.
+

@@ -1,0 +1,16 @@
+title: Ciena 4200: Chassis power supplies
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check collects chassis device information from Ciena 4200 chassis
+ via SNMP mib IPI-GSLAMAG-MIB.
+
+item:
+ Each power supply shown as numbered on the device. E.g.
+ {Power Supply 1}
+
+inventory:
+ The inventory creates a service for each power supply slot that the chassis has. 
+

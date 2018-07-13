@@ -1,0 +1,16 @@
+title: Ciena 4200: Chassis info
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check collects chassis device information from Ciena 4200 chassis
+ via SNMP mib IPI-GSLAMAG-MIB.
+
+item:
+ Hardcoded to {Chassis Info}
+
+inventory:
+ The inventory creates a service for the chassis that contains the
+ device MAC address, device type and firmware version.
+ 
