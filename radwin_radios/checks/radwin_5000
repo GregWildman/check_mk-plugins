@@ -1,0 +1,225 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# RADWIN-MIB-WINLINK1000::winlink1000Odu
+# .1.3.6.1.4.1.4458.1000.1.1.1.0 = ""
+# .1.3.6.1.4.1.4458.1000.1.1.2.0 = STRING: "6"
+# .1.3.6.1.4.1.4458.1000.1.1.3.0 = STRING: "4.1.60_b4172_Jul 26 2015"
+# .1.3.6.1.4.1.4458.1000.1.1.14.0 = STRING: "5K/F35/BS/100/FCC/EXT"
+# .1.3.6.1.4.1.4458.1000.1.1.29.0 = STRING: "P04030E000A000EB"
+# .1.3.6.1.4.1.4458.1000.1.1.30.0 = STRING: "RW5000/HBS/5100/F36/FCC/EXT - RW-5100-0230"
+# .1.3.6.1.4.1.4458.1000.1.1.35.0 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.1.1.36.0 = INTEGER: 3
+# .1.3.6.1.4.1.4458.1000.1.5.1.0 = INTEGER: 3750000
+# .1.3.6.1.4.1.4458.1000.1.5.3.0 = STRING: "MP11035-0-1"
+# .1.3.6.1.4.1.4458.1000.1.5.24.0 = INTEGER: 20000
+#
+# RADWIN-MIB-WINLINK1000: winlink1000HbsAirConfTable
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.1.1 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.2.1 = INTEGER: 0
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.3.1 = INTEGER: 0
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.4.1 = STRING: "GP2077"
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.5.1 = STRING: "Rehau Polymer"
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.6.1 = INTEGER: 3
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.7.1 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.8.1 = STRING: "51.63528,0.99829"
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.9.1 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.10.1 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.11.1 = INTEGER: 0
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.12.1 = STRING: "0:15:67:df:e:8c"
+# .1.3.6.1.4.1.4458.1000.3.1.6.2.1.13.1 = INTEGER: 1
+#
+# RADWIN-MIB-WINLINK1000: winlink1000HbsAirLinkTable
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.1.1 = INTEGER: 1
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.2.1 = INTEGER: 26
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.3.1 = INTEGER: 4
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.6.1 = INTEGER: 2436600
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.7.1 = INTEGER: 2417088
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.8.1 = INTEGER: 900
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.9.1 = INTEGER: -64
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.11.1 = INTEGER: -63
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.20.1 = INTEGER: 25000000
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.21.1 = INTEGER: 25000000
+# .1.3.6.1.4.1.4458.1000.3.1.7.2.1.23.1 = STRING: "1,0A0A8120,GP4059 & GP4062, ..... "
+
+import socket, struct
+
+radwin_5000_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.4458.20.5.1")
+                               
+radwin_5000_info = [ (".1.3.6.1.4.1.4458.1000.1", [  # RADWIN-MIB-WINLINK1000::winlink1000Odu
+                               "1.2.0",    # OduAdmHwRev                       0
+                               "1.3.0",    # OduAdmSwRev                       1
+                               "1.14.0",   # OduProductId                      2
+                               "1.29.0",   # OduAdmSN                          3
+                               "1.30.0",   # OduAdmProductName                 4
+                               "1.35.0",   # OduAdmLinkMode                    5
+                               "1.36.0",   # OduAdmActualConnectMode           6
+                               "5.1.0",    # OduAirAirFreq                     7
+                               "5.3.0",    # OduAirSSID                        8
+                               "5.24.0",   # OduAirChannelBandwidth            9
+                         ]),
+                         (".1.3.6.1.4.1.4458.1000.3.1.6.2", [   # RADWIN-MIB-WINLINK1000: winlink1000HbsAirConfTable
+                               "1.1",      # winlink1000HbsAirConfIndex        0
+                               "1.2",      # winlink1000HbsAirConfUpMir        1
+                               "1.3",      # winlink1000HbsAirConfDownMir      2
+                               "1.4",      # winlink1000HbsAirConfHsuName      3
+                               "1.5",      # winlink1000HbsAirConfHsuLocation  4
+                               "1.7",      # winlink1000HbsAirConfNumOfTs      5
+                               "1.12",     # winlink1000HbsAirConfMacAddress   6
+                               "1.13",     # winlink1000HbsAirConfNumOfTsUp    7
+                         ]),
+                         (".1.3.6.1.4.1.4458.1000.3.1.7.2", [   # RADWIN-MIB-WINLINK1000: winlink1000HbsAirLinkTable
+                               "1.1",      # winlink1000HbsAirLinkIndex              0
+                               "1.2",      # winlink1000HbsAirLinkHsuId              1
+                               "1.3",      # winlink1000HbsAirLinkState              2
+                               "1.6",      # winlink1000HbsAirLinkHbsEstTput         3
+                               "1.7",      # winlink1000HbsAirLinkHsuEstTput         4
+                               "1.8",      # winlink1000HbsAirLinkRange              5
+                               "1.9",      # winlink1000HbsAirLinkHbsRss             6
+                               "1.11",     # winlink1000HbsAirLinkHsuRss             7
+                               "1.20",     # winlink1000HbsAirMaxTputDown            8
+                               "1.21",     # winlink1000HbsAirMaxTputUp              9
+                               "1.23",     # winlink1000HbsAirLinkCompressedStatic  10
+                         ]),
+                       ]
+
+
+def r5k_render_mac_address(ifPhysAddress):
+    mac_bytes = ifPhysAddress.split(":")
+    return (":".join(["%02s" % m for m in mac_bytes]).replace(" ", "0")).upper()
+
+def parse_radwin_5000(info):
+    parsed = []
+    odu_mib, air_conf_mib, air_link_mib = info
+
+    for line in odu_mib:
+        link_mode = line[5] 
+        mode = "HSU"
+        if link_mode == "1" or link_mode == "4":
+            mode = "HBS"
+        parsed.append( [ "%s Info" % mode ] + line )
+
+    for air_conf_line in air_conf_mib:
+        # We need to stich in the link info
+        filler = [0, 0, 0, 0, 0, 0, 0, 0, ""]
+        for air_link_line in air_link_mib:
+            if air_link_line[1] == air_conf_line[0]:
+                filler = air_link_line[2:]
+
+        parsed.append( [ "HSU %02d" % saveint(air_conf_line[0]) ] + air_conf_line[1:] + filler[0:] )
+
+    return parsed
+
+def inventory_radwin_5000(info):
+    parsed = parse_radwin_5000(info)
+
+    for line in parsed:
+        if "Info" in line[0]:
+            yield line[0], {}
+        elif saveint(line[5]) > 0: # We have at least 1 timeslot configured, HSU.
+            # skip offline/backup links
+            ip_addr = "0.0.0.0"
+            if len(line[16]) > 0:
+                hsu_info = line[16]
+                ip_raw = int(hsu_info.split(',')[1], 16)
+                ip_addr = socket.inet_ntoa(struct.pack('>L',ip_raw))
+            yield line[0], {"ip_address": ip_addr}
+
+def check_radwin_5000(item, params, info):
+    parsed = parse_radwin_5000(info)
+    perfdata = [ ]
+    state = 0
+    map_connect_mode = {
+        "1": ("NONE"),
+        "2": ("PTP"),
+        "3": ("PTMP"),
+    }
+    map_state = {
+        "1": ("noSync"),
+        "2": ("violated"),
+        "3": ("syncUnregistered"),
+        "4": ("syncRegistered"),
+        "5": ("authenticationError"),
+        "6": ("swUpgradeRequired"),
+        "7": ("syncRegisteredPassive"),
+        "8": ("syncRegisteredALP"),
+    }
+
+    for line in parsed:
+        if item == line[0]:
+            if item == "HBS Info":
+                infotext = "%s, HW Ver: %s, SW Ver: %s, Serial: %s, %s, Freq: %s MHz (BW: %s MHz), Sector: %s" % \
+                        ( line[5], line[1], line[2], line[4], map_connect_mode.get(line[7]), \
+                        int(line[8])/1000, int(line[10]) / 1000, line[9] )
+            elif item == "HSU Info":
+                infotext = "check not yet implemented."
+            else:
+                hsu_name = line[3]
+                if len(hsu_name) > 0:
+                    infotext = "[%s - %s] " % (hsu_name, line[4])
+                    # Some of these links are for backup purposes and as such the customers turn them off
+                    # until needed. NOC procedure is to mark the description with "BACKUP". These links
+                    # are not monitored.
+                    if "BACKUP" in hsu_name:
+                        infotext += "(backup) Link is not being monitored"
+                    else:
+                        if saveint(line[8]) > 0: # link state
+                            status = "(%s)" % map_state.get(line[8])
+                        else:
+                            status = "(down)(!!)"
+                            state = 2
+
+                        infotext += "%s MAC: %s" % (status, r5k_render_mac_address(line[6]))
+
+                        if saveint(line[8]) > 0: # link state
+                            hsu_info = line[16]
+                            ip_raw = int(hsu_info.split(',')[1], 16)
+                            ip_addr = socket.inet_ntoa(struct.pack('>L',ip_raw))
+                            infotext += ", IP: %s, Timeslots: %s/%s, Range: %sm" % (ip_addr, line[5], line[7], line[11])
+
+                    perfdata = [("hbs_rss", "%.1fdBm" % float(line[12])), ("hsu_rss", "%.1fdBm" % float(line[13]))]
+                else:
+                    infotext = "Decomissioned link?"
+                    state = 3
+
+            return (state, infotext, perfdata)
+
+check_info["radwin_5000"] = {
+    "inventory_function"        : inventory_radwin_5000,
+    "check_function"            : check_radwin_5000,
+    "service_description"       : "%s",
+    "has_perfdata"              : True,
+    "snmp_info"                 : radwin_5000_info,
+    "snmp_scan_function"        : radwin_5000_scan,
+}
+
+# Fin.
+
+
