@@ -1,0 +1,145 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# ICOM-ETHER-MIB::icomEthPerfCurrentTable
+# .1.3.6.1.4.1.1807.65.2.2.1.3.2 = Counter64: 2778
+# .1.3.6.1.4.1.1807.65.2.2.1.4.2 = Counter64: 2753
+# .1.3.6.1.4.1.1807.65.2.2.1.5.2 = Counter64: 2326412
+# .1.3.6.1.4.1.1807.65.2.2.1.6.2 = Counter64: 502761
+
+intracom_eth_info = [(".1.3.6.1", [
+                                     "2.1.2.2.1.1",                 # ifIndex                   0
+                                     "2.1.2.2.1.2",                 # ifDescr                   1
+                                     "2.1.2.2.1.3",                 # ifType                    2
+                                     "2.1.2.2.1.5",                 # ifSpeed                   3
+                                     "2.1.2.2.1.8",                 # ifOperStatus              4
+                                     "2.1.31.1.1.1.6",              # ifHCInOctets              5
+                                     "2.1.31.1.1.1.7",              # ifHCInUcastPkts           6
+                                     "2.1.31.1.1.1.8",              # ifHCInMulticastPkts       7
+                                     "2.1.31.1.1.1.9",              # ifHCInBroadcastPkts       8
+                                     "2.1.2.2.1.13",                # ifInDiscards              9
+                                     "2.1.2.2.1.14",                # ifInErrors               10
+                                     "2.1.31.1.1.1.10",             # ifHCOutOctets            11
+                                     "2.1.31.1.1.1.11",             # ifHCOutUcastPkts         12
+                                     "2.1.31.1.1.1.12",             # ifHCOutMulticastPkts     13
+                                     "2.1.31.1.1.1.13",             # ifHCOutBroadcastPkts     14
+                                     "2.1.2.2.1.19",                # ifOutDiscards            15
+                                     "2.1.2.2.1.20",                # ifOutErrors              16
+                                     "2.1.2.2.1.21",                # ifOutQLen                17
+                                     "2.1.31.1.1.1.18",             # ifAlias                  18
+                                     BINARY("2.1.2.2.1.6"),         # ifPhysAddress            19
+                              ]),
+ 
+                              ( ".1.3.6.1.4.1.1807.65.2.2.1", [   # ICOM-ETHER-MIB::icomEthPerfCurrentTable
+                                  3, # icomEthPerfCurrentTxPkts
+                                  4, # icomEthPerfCurrentRxPkts
+                                  5, # icomEthPerfCurrentTxOctets
+                                  6, # icomEthPerfCurrentRxOctets
+                              ]),
+                    ]
+
+intracom_eth_scan = lambda oid: "OSDR-HUB WiBAS IP card running Linux" in oid(".1.3.6.1.2.1.1.1.0")
+
+
+def parse_intracom_eth(info):
+    map_index = {
+       1: ("1"),
+       2: ("2"),
+       3: ("20"),
+       4: ("21"),
+       5: ("22"),
+       6: ("24"),
+       7: ("50"),
+    }
+    map_ifalias = {
+       1: ("gbe1"),
+       2: ("gbe2"),
+       3: ("outbound1"),
+       4: ("outbound2"),
+       5: ("inband"),
+       6: ("protection-gbe"),
+       7: ("wireless"),
+    }
+
+    parsed = []
+    counter = 1
+    icom_ether_index = 0
+
+    rfc1213_mib = info[0]
+    icom_ether_mib = info[1]
+
+    for line in rfc1213_mib:
+        # We have to stich in the actual ethernet stats from the Intracom oids, otherwise
+        # just pass through what we have
+        if saveint(line[2]) == 6: # ethernet
+
+            # Get the Intracom stats
+            TxPkts, RxPkts, TxOctets, RxOctets = icom_ether_mib[icom_ether_index]
+            icom_ether_index += 1    
+
+            parsed.append( 
+                       [ map_index.get(counter) ] +
+                       line[1:5] +
+                       [ RxOctets ] +    # ifHCInOctets              5
+                       [ RxPkts ] +      # ifHCInUcastPkts           6
+                       line[7:11] +
+                       [ TxOctets ] +    # ifHCOutOctets            11
+                       [ TxPkts ] +      # ifHCOutUcastPkts         12
+                       line[13:18] +
+                       [ map_ifalias.get(counter) ] +
+                       line[19:]
+                         )
+        else:
+            parsed.append( [ map_index.get(counter) ] + line[1:18] + [ map_ifalias.get(counter) ] + line[19:] )
+
+
+        counter += 1
+
+    return parsed
+    
+
+def inventory_intracom_eth(parsed):
+    return inventory_if_common(parsed)
+
+check_info["intracom_eth"] = {
+    "parse_function"         : parse_intracom_eth,
+    "check_function"         : check_if_common,
+    "inventory_function"     : inventory_intracom_eth,
+    "service_description"    : "Interface %s",
+    "has_perfdata"           : True,
+    "includes"               : [ "if.include" ],
+    "snmp_info"              : intracom_eth_info,
+    "snmp_scan_function"     : intracom_eth_scan,
+    "group"                  : "if",
+    "default_levels_variable": "if_default_levels",
+}
+
+# Fin.
+
