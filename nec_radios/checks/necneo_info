@@ -1,0 +1,196 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# MIB-PM-NEO-STD::pnSystemInfo
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.1.0 = STRING: "Proton-Northcliff"
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.2.0 = STRING: "GP WEST"
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.4.0 = IpAddress: 10.9.70.42
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.7.0 = INTEGER: 100
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.1 = INTEGER: 1
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.2 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.3 = INTEGER: 3
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.4 = INTEGER: 4
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.1 = IpAddress: 10.9.70.41
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.2 = IpAddress: 0.0.0.0
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.3 = IpAddress: 0.0.0.0
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.4 = IpAddress: 0.0.0.0
+# .1.3.6.1.4.1.119.2.3.69.3.1.1.12.0 = Hex-STRING: 00 30 13 33 1D 79 
+
+#
+# MIB-PM-NEO-STD::esCommonItem
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.1.0 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.2.0 = INTEGER: 1
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.4.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.5.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.6.0 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.7.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.8.0 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.9.0 = INTEGER: 4
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.10.0 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.12.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.13.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.14.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.15.0 = INTEGER: 40
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.16.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.17.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.18.0 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.4.1.19.0 = INTEGER: 0
+
+necneo_info_scan = lambda oid: ".1.3.6.1.4.1.119.2.3.69" in oid(".1.3.6.1.2.1.1.2.0")
+
+necneo_info_info = [(".1.3.6.1.4.1.119.2.3.69.3.1.1", [  #  MIB-PM-NEO-STD::pnSystemInfo
+                         "1.0",     # pnSysNEName
+                         "4.0",     # pnSysPrimaryIpAddress
+                         "7.0",     # pnSysEquipmentType
+                    "11.1.2.1",     # pnSysOppositeIpAddrTable
+                        "12.0",     # pnSysMacAddress
+                    ]),
+                    (".1.3.6.1.4.1.119.2.3.69.401.4.1", [  #  MIB-PM-NEO-STD::esCommonItem
+                         "1.0",     # esSystemArchitecture
+                         "8.0",     # esModulationScheme
+                         "9.0",     # esTransmissionCapacity
+                    ]),
+                    (".1.3.6.1.4.1.119.2.3.69.401.4.2", [  #  MIB-PM-NEO-STD::esSysTable
+                         "1.2",     # esSysTxFreq
+                         "1.3",     # esSysRxFreq
+                         "1.4",     # esSysTxPowerCont
+                         "1.5",     # esSysFrameID
+                    ]),
+                    (".1.3.6.1.4.1.119.2.3.69.401.8.1", [  #  MIB-PM-NEO-STD::meteringSysTable
+                         "1.2",     # metSysTxPowerStatus
+                         "1.3",     # metSysTxPowerValue
+                         "1.4",     # metSysRxLevelStatus
+                         "1.5",     # metSysRxLevelValue
+                         "1.6",     # metSysPSVoltageStasus
+                         "1.7",     # metSysPSVoltageValue
+                    ]),
+                   ]
+
+
+def inventory_necneo_info(info):
+    sys_info, es_common_item, es_sys, metering_sys = info
+    equip_type = ""
+    opposite_ip = ""
+    odu_pwr_status = ""
+    if len(sys_info) > 0:
+        equip_type = sys_info[0][2]
+        opposite_ip = sys_info[0][3]
+        odu_pwr_status = metering_sys[0][1]
+
+    if equip_type != "":
+        yield "Device Info", {}
+    if opposite_ip != "":
+        yield "Link Summary", {}
+    if odu_pwr_status != "":
+        yield "Link Metering", {}
+
+def check_necneo_info(item, params, info):
+    map_arch = {
+        '1': ('PDH E1'),
+        '2': ('PDH E1 with LAN'),
+        '3': ('4PORT LAN with E1'),
+        '4': ('PDH E3'),
+        '5': ('PDH E3 with LAN'),
+        '6': ('SDH STM-1'),
+        '7': ('2PORT LAN over STM-1'),
+        '8': ('GbE over STM-1'),
+    }
+    map_modulation = {
+        '1': ('QPSK'),
+        '2': ('16QAM'),
+        '3': ('32QAM'),
+        '4': ('64QAM'),
+        '5': ('128QAM'),
+        '6': ('256QAM'),
+    }
+    map_capacity = {
+        '0': ('0'),
+        '1': ('5'),
+        '2': ('10'),
+        '3': ('20'),
+        '4': ('40'),
+        '5': ('80'),
+        '6': ('100'),
+        '7': ('156'),
+        '8': ('311'),
+    }
+    map_equip = {
+       '20': ('PASOLINK+(STM-1)'),
+       '30': ('PASOLINK+(STM-0)'),
+       '40': ('PASOLINK+(PDH)'),
+       '50': ('PASOLINK+(Nlite-L)'),
+       '60': ('PASOLINK+(Mx)'),
+       '70': ('PASOLINK+(NLite-Lx)'),
+      '100': ('PASOLINK NEO(STD)'),
+      '120': ('PASOLINK NEO(HIGH-END)'),
+      '130': ('PASOLINK NEO(Compact)'),
+      '140': ('PASOLINK NEO(Nodal)'),
+    }
+    map_power = {
+       "1" : ("MTPC"),
+       "2" : ("ATPC"),
+    }
+
+    sys_info, es_common_item, es_sys, metering_sys = info
+    arch, modulation, capacity = es_common_item[0]
+    perfdata = []
+    infotext = ""
+    if item == "Device Info":
+        infotext = '%s, %s, %s, Capacity: %s Mbps' %  (map_equip.get(sys_info[0][2]), map_arch.get(arch),
+                map_modulation.get(modulation), map_capacity.get(capacity) )
+
+    elif item == "Link Summary":
+        ne_name, ip_a, equip_type, ip_b, mac_raw = sys_info[0]
+        tx_freq, rx_freq, tx_power, frame_id = es_sys[0]
+        infotext = "A:%s <-> B:%s, TX: %.0f MHz, RX: %.0f MHz, TX Power: %s, Frame ID: %d" % \
+                   (ip_a, ip_b, float(tx_freq), float(rx_freq), map_power.get(tx_power), int(frame_id))
+
+    elif item == "Link Metering":
+        tx_pwr_status, tx_pwr_raw, rx_level_status, rx_level_raw, voltage_status, voltage_raw = metering_sys[0]
+        tx_pwr = float(tx_pwr_raw)
+        rx_level = float(rx_level_raw)
+        voltage = int(voltage_raw)
+        infotext = "TX Power: %.1fdBm, RX Level: %.1fdBm, ODU Power: %d V" % (tx_pwr, rx_level, voltage)
+        perfdata = [("output_power", "%.1fdBm" % tx_pwr), ("input_power", "%.1fdBm" % rx_level),
+                    ("voltage", "%d" % voltage)]
+
+    return (0, infotext, perfdata)
+
+check_info["necneo_info"] = {
+    "inventory_function"        : inventory_necneo_info,
+    "check_function"            : check_necneo_info,
+    "service_description"       : '%s',
+    "has_perfdata"              : True,
+    "snmp_info"                 : necneo_info_info,
+    "snmp_scan_function"        : necneo_info_scan,
+}
+
+# Fin.
+
