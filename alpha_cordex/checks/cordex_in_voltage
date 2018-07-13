@@ -1,0 +1,63 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+
+
+ups_in_voltage_default_levels = (210, 180) # warning / critical
+
+def parse_cordex_in_voltage(info):
+    for line in info:
+        if line[1] == 'AC Mains':
+            return [ line[1], line[0] ] 
+
+def inventory_cordex_in_voltage(info):
+    parsed = parse_cordex_in_voltage(info)
+    if saveint(parsed[1]) > 0:
+        yield parsed[0], ups_in_voltage_default_levels
+
+def check_cordex_in_voltage( item, params, info):
+    parsed = parse_cordex_in_voltage(info)
+    conv_info = []
+    for line in parsed:
+        conv_info.append([ parsed[0], saveint(parsed[1]) / 100 ])
+    return check_ups_in_voltage( item, params, conv_info)
+
+check_info['cordex_in_voltage'] = {
+  "inventory_function"  : inventory_cordex_in_voltage,
+  "check_function"      : check_cordex_in_voltage,
+  "service_description" : "%s",
+  "has_perfdata"        : True,
+  "includes"            : [ 'ups_in_voltage.include' ],
+  "snmp_info"           : (".1.3.6.1.4.1.7309.4.1.6.2.2" , [ '1.3', '1.4' ] ) ,
+  "snmp_scan_function"  : lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.7309.4",
+}
+
+# Fin.
+
