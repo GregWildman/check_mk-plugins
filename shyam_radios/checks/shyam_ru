@@ -1,0 +1,148 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# RU_73_2.88.MIB::ruConfTable
+# .1.3.6.1.4.1.26149.2.2.1.1.5.1 = INTEGER: 3
+# .1.3.6.1.4.1.26149.2.2.1.1.7.1 = INTEGER: 1
+# .1.3.6.1.4.1.26149.2.2.1.1.19.1 = STRING: "Sebokeng Sisulu Clinic_0-1"
+#
+# RU_73_2.88.MIB::swStatusTable
+# .1.3.6.1.4.1.26149.2.2.6.1.2.1 = STRING: "7.3.31"
+# .1.3.6.1.4.1.26149.2.2.6.1.3.1 = STRING: "7.3.30"
+# .1.3.6.1.4.1.26149.2.2.6.1.4.1 = STRING: "u-boot-ar7100-1.1.14"
+#
+# RU_73_2.88.MIB::hwDescTable
+# .1.3.6.1.4.1.26149.2.2.10.1.2.1 = STRING: "Rev1.0"
+# .1.3.6.1.4.1.26149.2.2.10.1.3.1 = STRING: "ROP10AS15110023"
+#
+# RU_73_2.88.MIB::raConfTable
+# .1.3.6.1.4.1.26149.2.2.13.1.1.5.1 = STRING: "MP11096-0-1"
+# .1.3.6.1.4.1.26149.2.2.13.1.1.6.1 = INTEGER: 300
+# .1.3.6.1.4.1.26149.2.2.13.1.1.11.1 = INTEGER: 5
+# 
+# RU_73_2.88.MIB::raStatusTable
+# .1.3.6.1.4.1.26149.2.2.13.2.1.2.1 = STRING: "F8:52:DF:1F:00:12"
+# .1.3.6.1.4.1.26149.2.2.13.2.1.3.1 = INTEGER: 1
+# .1.3.6.1.4.1.26149.2.2.13.2.1.8.1 = Gauge32: 16
+#
+# RU_73_2.88.MIB::raTddMacStatusTable
+# .1.3.6.1.4.1.26149.2.2.13.7.2.1.1.1 = Gauge32: 3705
+# .1.3.6.1.4.1.26149.2.2.13.7.2.1.2.1 = Gauge32: 20
+
+
+#  [[u'MP11100-15-1', u'300', u'6']],
+#  [[u'F8:52:DF:1F:00:1D', u'1', u'16']],
+#  [[u'3735', u'20']]]
+
+shyam_ru_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1" and \
+                            oid(".1.3.6.1.4.1.26149.2.2.1.1.2.1") != None
+
+shyam_ru_info = [ (".1.3.6.1.4.1.26149.2.2.1", [   # RU_73_2.88.MIB::ruConfTable
+                            "1.5",    # defaultNodeType
+                            "1.7",    # channelBandwidth
+                           "1.19",    # siteName
+                            ]),
+                  (".1.3.6.1.4.1.26149.2.2.6", [   # RU_73_2.88.MIB::swStatusTable
+                            "1.2",    # activeVersion
+                            "1.3",    # passiveVersion
+                            "1.4",    # bootloaderVersion
+                            ]),
+                  (".1.3.6.1.4.1.26149.2.2.10", [   # RU_73_2.88.MIB::hwDescTable
+                            "1.2",    # hwVersion
+                            "1.3",    # hwSerialNo
+                            ]),
+                  (".1.3.6.1.4.1.26149.2.2.13.1", [   # RU_73_2.88.MIB::raConfTable
+                            "1.5",    # ssID
+                            "1.6",    # guaranteedBroadcastBW
+                           "1.11",    # numSlaves
+                            ]),
+                  (".1.3.6.1.4.1.26149.2.2.13.2", [   # RU_73_2.88.MIB::raStatusTable
+                            "1.2",    # raMacAddress
+                            "1.3",    # raoperationalState
+                            "1.8",    # maxNumSlaves
+                            ]),
+                  (".1.3.6.1.4.1.26149.2.2.13.7.2", [   # RU_73_2.88.MIB::raTddMacStatusTable
+                            "1.1",    # rfChanFreq
+                            "1.2",    # systemTxPower
+                            ]),
+                ]
+
+def inventory_shyam_ru(info):
+    if len(info[0][0]) > 0:
+        yield "Info", {}
+    if len(info[3][0]) > 0:
+        yield "Radio", {}
+
+def check_shyam_ru(item, params, info):
+    state = 0
+    infotext = ""
+
+    if item == "Info":
+        map_type = {
+            "0": ("Root-RU"),
+            "1": ("T1-TDN"),
+            "2": ("T2-TDN"),
+            "3": ("T2-TEN"),
+        }
+        node_type, channel_bw, site_name = info[0][0]
+        active_ver, passive_ver, boot_ver = info[1][0]
+        hw_ver, hw_serial = info[2][0]
+        infotext = "Type: %s, HW Ver: %s, Serial: %s, Boot Loader: %s, SW Active: %s, SW Passive:: %s" % \
+                   (map_type.get(node_type), hw_ver, hw_serial, boot_ver, active_ver, passive_ver)
+  
+    if item == "Radio":
+        map_state = {
+            "0": ("down"),
+            "1": ("up"),
+        }
+        node_type, channel_bw, site_name = info[0][0]
+        ssid, guaranteed_bbw, num_slaves = info[3][0]
+        mac, oper_state, max_slaves = info[4][0]
+        chan_freq, tx_pwr = info[5][0]
+        infotext = "Sector: %s, Site: %s (%s)" % (ssid, site_name, map_state.get(oper_state))
+        if oper_state == "0":
+            state = 2
+            infotext += "(!!)"
+
+        infotext += " MAC: %s, Freq: %sMHz, Output Power: %sdBm, Peers: %s/%s" % \
+                   (mac, chan_freq, tx_pwr, num_slaves, max_slaves)
+
+    return (state, infotext)
+
+check_info["shyam_ru"] = {
+    "inventory_function"        : inventory_shyam_ru,
+    "check_function"            : check_shyam_ru,
+    "service_description"       : 'Device %s',
+    "snmp_info"                 : shyam_ru_info,
+    "snmp_scan_function"        : shyam_ru_scan,
+}
+
+# Fin.
+
