@@ -1,0 +1,434 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# ALCOMA-MIB::alMPMUX
+# .1.3.6.1.4.1.12140.2.7.2.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.7.3.0 = INTEGER: 0
+#
+# ALCOMA_MIB::alMPLine
+# .1.3.6.1.4.1.12140.2.10.1.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.10.2.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.10.3.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.10.4.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.10.5.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.10.6.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.10.7.0 = Counter32: 2736217639
+# .1.3.6.1.4.1.12140.2.10.8.0 = Counter32: 3007387747
+# .1.3.6.1.4.1.12140.2.10.9.0 = Counter32: 2291873848
+# .1.3.6.1.4.1.12140.2.10.10.0 = Counter32: 4011302019
+# .1.3.6.1.4.1.12140.2.10.11.0 = Counter32: 0
+# .1.3.6.1.4.1.12140.2.10.12.0 = Counter32: 0
+# .1.3.6.1.4.1.12140.2.10.13.0 = Counter32: 0
+# .1.3.6.1.4.1.12140.2.10.14.0 = Counter32: 0
+# .1.3.6.1.4.1.12140.2.10.15.0 = Counter32: 33944746
+#
+# ALCOMA_MIB::alMPODU
+# .1.3.6.1.4.1.12140.2.3.1.0 = STRING: "17112.50"
+# .1.3.6.1.4.1.12140.2.3.2.0 = STRING: "17252.50"
+# .1.3.6.1.4.1.12140.2.3.3.0 = INTEGER: 12
+# .1.3.6.1.4.1.12140.2.3.4.0 = INTEGER: -46
+# .1.3.6.1.4.1.12140.2.3.7.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.3.9.0 = INTEGER: 32
+# .1.3.6.1.4.1.12140.2.3.12.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.3.13.0 = INTEGER: 12
+#
+# ALCOMA_MIB::alMPModem
+# .1.3.6.1.4.1.12140.2.4.1.0 = INTEGER: 100
+# .1.3.6.1.4.1.12140.2.4.2.0 = STRING: "36.5"
+# .1.3.6.1.4.1.12140.2.4.5.0 = INTEGER: 8
+# .1.3.6.1.4.1.12140.2.4.6.0 = INTEGER: 7
+# .1.3.6.1.4.1.12140.2.4.7.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.4.8.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.4.9.0 = INTEGER: 3
+# .1.3.6.1.4.1.12140.2.4.10.0 = INTEGER: 27
+# 
+# ALCOMA_MIB::alMPStatusLED / alMPGeneral
+# .1.3.6.1.4.1.12140.2.1.1.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.1.2.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.1.3.0 = INTEGER: 0
+# .1.3.6.1.4.1.12140.2.2.3.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.2.3.0 = INTEGER: 1
+# .1.3.6.1.4.1.12140.2.2.8.0 = STRING: "AL_MINI - MP3M5R EGMII"
+# .1.3.6.1.4.1.12140.2.2.9.0 = STRING: "MP300"
+# .1.3.6.1.4.1.12140.2.2.10.0 = STRING: "5.2"
+
+
+alcoma_almp_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.12140.")
+
+alcoma_almp_info = [
+                    (".1.3.6.1.4.1.12140.2", [ # ALCOMA-MIB::alMPMUX
+                               "7.2.0",      # alMPBER-10E6
+                               "7.3.0",      # alMPBER-10E4
+                          ]),
+                    (".1.3.6.1.4.1.12140.2",
+                              ["9", "10", "11"], # ALCOMA_MIB::alMPLine2, 3 and 4
+                              [OID_END,
+                               "1.0",        # alMPLOSS2
+                               "3.0",        # alMPLink2
+                               "4.0",        # alMPSpeed2
+                               "7.0",        # alMPPktRX2
+                               "8.0",        # alMPByteRX2
+                               "9.0",        # alMPPktTX2
+                              "10.0",        # alMPByteTX2
+                              "11.0",        # alMPError2
+                          ]),
+                    (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPODU
+                               "3.1.0",      # alMPTuneTX
+                               "3.2.0",      # alMPTuneRX
+                               "3.3.0",      # alMPRX-PWR
+                               "3.4.0",      # alMPRX-Level
+                               "3.7.0",      # alMPMode-TX
+                               "3.9.0",      # alMPTemperature
+                              "3.12.0",      # alMPTypeODU
+                              "3.13.0",      # alMPPTX
+                          ]),
+                    (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPModem 
+                               "4.1.0",      # alMPQuality
+                               "4.2.0",      # alMPSNR
+                               "4.5.0",      # alMPRate
+                               "4.6.0",      # alMPQAM
+                               "4.7.0",      # alMPActiveACM
+                               "4.8.0",      # alMPStatusACM
+                               "4.9.0",      # alMPBW
+                              "4.10.0",      # alMPMaxRate
+                          ]),
+                    (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPStatusLED / alMPGeneral
+                               "1.1.0",      # alMPEHW, hardware error
+                               "1.2.0",      # alMPESR, signal error in radio
+                               "1.3.0",      # alMPESL, signal error on lines
+                               "2.3.0",      # alMPStatus, station alarm status
+                               "2.8.0",      # alMPDevType
+                               "2.9.0",      # alMPModel
+                              "2.10.0",      # alMPVersionSW
+                          ]),
+                  ]
+
+#.
+#   .--BER-----------------------------------------------------------------.
+#   |                           ____  _____ ____                           |
+#   |                          | __ )| ____|  _ \                          |
+#   |                          |  _ \|  _| | |_) |                         |
+#   |                          | |_) | |___|  _ <                          |
+#   |                          |____/|_____|_| \_\                         |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+def inventory_alcoma_almp_ber(info):
+    almp_mux = info[0]
+    for ber_10e6, ber_10e4 in almp_mux:
+        yield None, None
+
+def check_alcoma_almp_ber(_no_item, _no_params, info):
+    almp_mux = info[0]
+    for ber_10e6, ber_10e4 in almp_mux:
+        state = 0
+
+        infotext = "BER > 10E-04: "  
+        if ber_10e4 != "":
+            if ber_10e4 == "0":
+                infotext += "no" 
+            else:
+                infotext += "yes"
+                state = 2
+        else:
+            infotext += "unknown"
+            state = 1
+        yield state, infotext
+     
+        infotext = "BER > 10E-06: "
+        if ber_10e6 != "":
+            if ber_10e6 == "0":
+                infotext += "no" 
+            else:
+                infotext += "yes"
+                state = 2
+        else:
+            infotext += "unknown"
+            state = 1
+        yield state, infotext
+
+check_info["alcoma_almp.ber"] = {
+    "inventory_function"    : inventory_alcoma_almp_ber,
+    "check_function"        : check_alcoma_almp_ber,
+    "service_description"   : "Device BER",
+    "snmp_info"             : alcoma_almp_info,
+    "snmp_scan_function"    : alcoma_almp_scan,
+}
+
+#.
+#   .--alMPLine------------------------------------------------------------.
+#   |                      _ __  __ ____  _     _                          |
+#   |                 __ _| |  \/  |  _ \| |   (_)_ __   ___               |
+#   |                / _` | | |\/| | |_) | |   | | '_ \ / _ \              |
+#   |               | (_| | | |  | |  __/| |___| | | | |  __/              |
+#   |                \__,_|_|_|  |_|_|   |_____|_|_| |_|\___|              |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+# [[[u'0', u'0']],
+#  [[u'9.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0'],
+#   [u'10.', u'0', u'1', u'1', u'2736428080', u'3031196801', u'2292004179', u'4027285144', u'0'],
+#   [u'11.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0']],
+#  [[u'17112.50', u'17252.50', u'12', u'-45', u'1', u'30', u'0', u'12']],
+#  [[u'100', u'36.0', u'8', u'7', u'0', u'0', u'3', u'27']],
+#  [[u'0', u'0', u'0', u'1', u'AL_MINI - MP3M5R EGMII', u'MP300', u'5.2']]]
+
+
+def parse_alcoma_almp_line(info):
+    map_speed = {
+       "-1": ("0"), "0": ("10000000"), "1": ("100000000"), "2": ("1000000000"),
+    }
+    map_state = {
+       "-1": ("2"), "0": ("2"), "1": ("1"),
+    }
+
+    almp_line = info[1]
+    parsed = []
+    almpline_idx = 2  # create our own index, we start with alMPLine2
+    for line in almp_line:
+        line_idx, loss, link, speed, pktrx, byterx, pkttx, bytetx, errors = line
+        interface_idx = line_idx.split(".")[0]
+        parsed.append((interface_idx,                # ifIndex                   0
+                       "alMPLine%d" % almpline_idx,  # ifDescr                   1
+                       "6",                          # ifType                    2
+                       map_speed.get(speed),         # ifSpeed                   3
+                       map_state.get(link),          # ifOperStatus              4
+                       byterx,                       # ifHCInOctets              5
+                       pktrx,                        # ifHCInUcastPkts           6
+                       "0",                          # ifHCInMulticastPkts       7
+                       "0",                          # ifHCInBroadcastPkts       8
+                       "0",                          # ifInDiscards              9
+                       errors,                       # ifInErrors               10
+                       bytetx,                       # ifHCOutOctets            11
+                       pkttx,                        # ifHCOutUcastPkts         12
+                       "0",                          # ifHCOutMulticastPkts     13
+                       "0",                          # ifHCOutBroadcastPkts     14
+                       "0",                          # ifOutDiscards            15
+                       "0",                          # ifOutErrors              16
+                       "0",                          # ifOutQLen                17
+                       "alMPLine%d" % almpline_idx,  # ifAlias                  18
+                       "",                           # ifPhysAddress            19
+                     ))
+        almpline_idx += 1
+
+    return parsed
+
+def inventory_alcoma_almp_line(info):
+    parsed = parse_alcoma_almp_line(info)
+    return inventory_if_common(parsed)
+
+def check_alcoma_almp_line(item, params, info):
+    parsed = parse_alcoma_almp_line(info)
+    return check_if_common(item, params, parsed)
+
+check_info["alcoma_almp.line"] = {
+    "check_function"          : check_alcoma_almp_line,
+    "inventory_function"      : inventory_alcoma_almp_line,
+    "service_description"     : "Interface %s",
+    "has_perfdata"            : True,
+    "includes"                : [ "if.include" ],
+    "snmp_info"               : alcoma_almp_info,
+    "snmp_scan_function"      : alcoma_almp_scan,
+    "group"                   : "if",
+    "default_levels_variable" : "if_default_levels",
+}
+
+#.
+#   .--ODU-----------------------------------------------------------------.
+#   |                            ___  ____  _   _                          |
+#   |                           / _ \|  _ \| | | |                         |
+#   |                          | | | | | | | | | |                         |
+#   |                          | |_| | |_| | |_| |                         |
+#   |                           \___/|____/ \___/                          |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+def inventory_alcoma_almp_odu(info):
+    yield "Link Summary", {}
+    yield "Link Metering", {}
+
+def check_alcoma_almp_odu(item, params, info):
+    almp_odu = info[2]
+    almp_modem = info[3]
+    tx_freq, rx_freq, tx_pwr_raw, rx_pwr_raw, tx_mode, temp_raw, odu_type, ptx = almp_odu[0]
+    quality, snr_raw, rate, qam, acm_active, acm_status, bw, max_rate = almp_modem[0]
+    perfdata = []
+    map_power = {
+      "-1" : ("offline"), "0" : ("off"), "1" : ("MTPC"), "2" : ("ATPC"),
+    }
+    map_qam = {
+       "1" : ("4FSK"), "2" : ("QPSK"), "3" : ("4QAM1"), "4" : ("4QAM1"), "5" : ("16QAM1"), "6" : ("4QAM2"),
+       "7" : ("16QAM2"), "8" : ("32QAM"), "9" : ("64QAM"), "10" : ("128QAM"), "11" : ("256QAM"),
+      "13" : ("512QAM"), "14" : ("1024QAM"), "15" : ("8QAM"),
+    }
+    map_bandwidth = {
+       "1" : ("3.5"), "2" : ("5"), "3" : ("7"), "4" : ("7.5"), "5" : ("10"), "6" : ("13.75"), "7" : ("14"),
+       "8" : ("20"), "9" : ("20"), "10" : ("27.5"), "11" : ("28"), "12" : ("28"), "13" : ("30"), "14" : ("40"),
+      "15" : ("50"), "16" : ("55"), "17" : ("56"), "18" : ("56"), "19" : ("80"), "20" : ("110"), "21" : ("112"),
+    }
+    map_rate = {
+       "8" : ("22"),
+    }
+
+    if item == "Link Summary":
+        infotext = "TX: %.0f MHz, RX: %.0f MHz, TX Power: %s, %s Mbps (%s,%sMHz)" % \
+                   (float(tx_freq), float(rx_freq), map_power.get(tx_mode), map_rate.get(rate),
+                    map_qam.get(qam), map_bandwidth.get(bw))
+
+    if item == "Link Metering":
+        tx_pwr = float(tx_pwr_raw)
+        rx_pwr = float(rx_pwr_raw)
+        snr = savefloat(snr_raw)
+        infotext = "Input Power: %.1fdBm, Output Power: %.1fdBm, SNR: %.1fdBm, Signal: %d%%" % \
+                   (rx_pwr, tx_pwr, snr, int(quality))
+        perfdata = [("output_power", "%.1fdBm" % tx_pwr), ("input_power", "%.1fdBm" % rx_pwr),
+                    ("snr", "%.1fdBm" % snr)]
+
+
+    return (0, infotext, perfdata)
+
+check_info["alcoma_almp.odu"] = {
+    "check_function"        : check_alcoma_almp_odu,
+    "inventory_function"    : inventory_alcoma_almp_odu,
+    "service_description"   : "%s",
+    "snmp_info"             : alcoma_almp_info,
+    "snmp_scan_function"    : alcoma_almp_scan,
+    "has_perfdata"          : True,
+
+}
+
+#.
+#   .--info----------------------------------------------------------------.
+#   |                           _        __                                |
+#   |                          (_)_ __  / _| ___                           |
+#   |                          | | '_ \| |_ / _ \                          |
+#   |                          | | | | |  _| (_) |                         |
+#   |                          |_|_| |_|_|  \___/                          |
+#   |                                                                      |
+#   +----------------------------------------------------------------------+
+
+def inventory_alcoma_almp_status(info):
+    yield "Device Info", {}
+    yield "Device Status", {}
+
+def check_alcoma_almp_status(item, _no_params, info):
+    almp_status = info[4]
+    ehw, esr, esl, station_status, dev_type, model, sw_ver = almp_status[0]
+
+    if item == "Device Status":
+        if ehw != "":
+            infotext = "Hardware: "  
+            if ehw == "0":
+                infotext += "good" 
+                yield 0, infotext
+            else:
+                infotext += "faulty"
+                yield 2, infotext
+  
+            infotext = "Alarm state: "
+            if station_status == "1":
+                infotext += "ok"
+                yield 0, infotext
+            elif station_status == "2":
+                infotext += "warning"
+                yield 1, infotext
+            else:
+                infotext += "error"
+                yield 2, infotext
+  
+            infotext = "Signal errors: "
+            if esr == "0":
+                infotext += "no"
+                yield 0, infotext
+            else:
+                infotext += "yes"
+                yield 1, infotext
+  
+            infotext = "Line errors: "
+            if esl == "0":
+                infotext += "no"
+                yield 0, infotext
+            else:
+                infotext += "yes"
+                yield 1, infotext
+
+    if item == "Device Info":
+        yield 0, "Model: %s, Type: %s, Firmware Ver: %s." % (model, dev_type, sw_ver)
+
+check_info["alcoma_almp.status"] = {
+    "inventory_function"    : inventory_alcoma_almp_status,
+    "check_function"        : check_alcoma_almp_status,
+    "service_description"   : "%s",
+    "snmp_info"             : alcoma_almp_info,
+    "snmp_scan_function"    : alcoma_almp_scan,
+}
+
+#.
+#   .--temp----------------------------------------------------------------.
+#   |                       _                                              |
+#   |                      | |_ ___ _ __ ___  _ __                         |
+#   |                      | __/ _ \ '_ ` _ \| '_ \                        |
+#   |                      | ||  __/ | | | | | |_) |                       |
+#   |                       \__\___|_| |_| |_| .__/                        |
+#   |                                        |_|                           |
+#   +----------------------------------------------------------------------+
+
+factory_settings["alcoma_almp_temp_default_levels"] = {
+    "levels" : (45, 50),
+}
+
+def inventory_alcoma_almp_temp(info):
+    almp_odu = info[2]
+    raw_temp = almp_odu[0][5]
+    if raw_temp != "":
+        yield "Chassis", {}
+
+def check_alcoma_almp_temp(item, params, info):
+    almp_odu = info[2]
+    raw_temp = almp_odu[0][5]
+    if raw_temp != "":
+       temp = float(raw_temp)
+       return check_temperature(temp, params, "alcoma_almp_temp_%s" % item)
+
+
+check_info["alcoma_almp.temp"] = {
+    "inventory_function"        : inventory_alcoma_almp_temp,
+    "check_function"            : check_alcoma_almp_temp,
+    "service_description"       : "Temperature %s",
+    "has_perfdata"              : True,
+    "snmp_info"                 : alcoma_almp_info,
+    "snmp_scan_function"        : alcoma_almp_scan,
+    "group"                     : "temperature",
+    "default_levels_variable"   : "alcoma_almp_temp_default_levels",
+    "includes"                  : [ "temperature.include" ],
+}
+
+# Fin.
+
