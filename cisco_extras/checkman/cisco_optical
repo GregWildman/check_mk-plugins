@@ -1,0 +1,24 @@
+title: Cisco: settings for each of the physical transceiver devices.
+catalog: unsorted
+agents: snmp
+license: GPL
+distribution: Techfu NMS
+description:
+ This check monitors the state and laser parameters of interfaces of the
+ Cisco switches running IOS.
+
+ State information is collected from the SNMP CISCO-ENTITY-SENSOR-MIB.
+
+item:
+ {Optical} with the interface number. This number matches the ethernet interface number.
+
+inventory:
+ The inventory creates one service for each entity that fulfills
+ configurable conditions. Per default these are entities which currently
+ have a sensortype of 14 (dBm sensor).
+
+ The RX and TX power levels are recorded. The RX power high warning/crit levels are set at
+ +1.5/+2 dBm. The RX power low warning/crit levels are set at -1.5/-2 dBm. The same thresholds
+ are set to the TX power.
+
+ 
