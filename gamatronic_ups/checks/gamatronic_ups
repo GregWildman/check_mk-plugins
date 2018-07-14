@@ -62,9 +62,9 @@
 # .1.3.6.1.4.1.6050.1.6.3.0 = INTEGER: 0
 # .1.3.6.1.4.1.6050.1.6.4.0 = INTEGER: 2332
 
-gammatronics_ups_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.6050"
+gamatronics_ups_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.6050"
 
-gammatronics_ups_info = [(".1.3.6.1.4.1.6050.1.1", [ #  GAMMATRONIC-MIB::psUnit
+gamatronics_ups_info = [(".1.3.6.1.4.1.6050.1.1", [ #  GAMMATRONIC-MIB::psUnit
                                "1.0",    # psUnitSysName
                                "2.0",    # psUnitManufacture
                                "3.0",    # psUnitBatteryType
@@ -110,12 +110,12 @@ gammatronics_ups_info = [(".1.3.6.1.4.1.6050.1.1", [ #  GAMMATRONIC-MIB::psUnit
 #   |                                                                      |
 #   +----------------------------------------------------------------------+
 
-def inventory_gammatronics_ups_info(info):
+def inventory_gamatronics_ups_info(info):
     chassis_info = info[0]  # psUnit
     if len(chassis_info) > 0:
             yield None, {}
 
-def check_gammatronics_ups_info(item, params, info):
+def check_gamatronics_ups_info(item, params, info):
     chassis_info = info[0]  # psUnit
     sys_name, manufacture, bat_type, ps_type, controller_type, sw_ver, \
         proto_ver, serial = chassis_info[0]
@@ -125,12 +125,12 @@ def check_gammatronics_ups_info(item, params, info):
     return 0, infotext
 
 
-check_info["gammatronics_ups.info"] = {
-    "inventory_function"        : inventory_gammatronics_ups_info,
-    "check_function"            : check_gammatronics_ups_info,
+check_info["gamatronics_ups.info"] = {
+    "inventory_function"        : inventory_gamatronics_ups_info,
+    "check_function"            : check_gamatronics_ups_info,
     "service_description"       : 'Chassis Info',
-    "snmp_info"                 : gammatronics_ups_info,
-    "snmp_scan_function"        : gammatronics_ups_scan,
+    "snmp_info"                 : gamatronics_ups_info,
+    "snmp_scan_function"        : gamatronics_ups_scan,
 
 }
 
@@ -144,12 +144,12 @@ check_info["gammatronics_ups.info"] = {
 #   |                                               |___/                  |
 #   +----------------------------------------------------------------------+
 
-def inventory_gammatronics_ups_battery(info):
+def inventory_gamatronics_ups_battery(info):
     battery_info = info[1]  # psBattery 
     if len(battery_info) > 0:
             yield None, {}
 
-def check_gammatronics_ups_battery(item, _no_params, info):
+def check_gamatronics_ups_battery(item, _no_params, info):
     map_mode = {
        "0": ("floating"),
        "1": ("equalizes"),
@@ -163,12 +163,12 @@ def check_gammatronics_ups_battery(item, _no_params, info):
 
     return 0, infotext
 
-check_info["gammatronics_ups.battery"] = {
-    "inventory_function"        : inventory_gammatronics_ups_battery,
-    "check_function"            : check_gammatronics_ups_battery,
+check_info["gamatronics_ups.battery"] = {
+    "inventory_function"        : inventory_gamatronics_ups_battery,
+    "check_function"            : check_gamatronics_ups_battery,
     "service_description"       : 'Battery',
-    "snmp_info"                 : gammatronics_ups_info,
-    "snmp_scan_function"        : gammatronics_ups_scan,
+    "snmp_info"                 : gamatronics_ups_info,
+    "snmp_scan_function"        : gamatronics_ups_scan,
 
 }
 
@@ -181,17 +181,17 @@ check_info["gammatronics_ups.battery"] = {
 #   |                                        |_|                           |
 #   +----------------------------------------------------------------------+
 
-factory_settings["gammatronics_ups_temp_default_levels"] = {
+factory_settings["gamatronics_ups_temp_default_levels"] = {
     "levels": (70, 80),
 }
 
-def inventory_gammatronics_ups_temp(info):
+def inventory_gamatronics_ups_temp(info):
     battery_table = info[2]
     for idx, current_direction, current, temp_sign, temp_raw, batt_status in battery_table:
         if idx != "":
             yield idx, {}
 
-def check_gammatronics_ups_temp(item, params, info):
+def check_gamatronics_ups_temp(item, params, info):
     battery_table = info[2]
     for idx, current_direction, current, temp_sign, temp_raw, batt_status in battery_table:
         if item == idx:
@@ -199,18 +199,18 @@ def check_gammatronics_ups_temp(item, params, info):
                 yield 3, "Battery temperature info not available"
 
             temp = float("%s%s" % (temp_sign,temp_raw))
-            yield check_temperature(temp, params, "gammatronics_ups_temp_%s" % item)
+            yield check_temperature(temp, params, "gamatronics_ups_temp_%s" % item)
 
-check_info["gammatronics_ups.temp"] = {
-    "check_function"          : check_gammatronics_ups_temp,
-    "inventory_function"      : inventory_gammatronics_ups_temp,
+check_info["gamatronics_ups.temp"] = {
+    "check_function"          : check_gamatronics_ups_temp,
+    "inventory_function"      : inventory_gamatronics_ups_temp,
     "service_description"     : "Temperature %s",
     "group"                   : "temperature",
     "has_perfdata"            : True,
-    "snmp_info"               : gammatronics_ups_info,
-    "snmp_scan_function"      : gammatronics_ups_scan,
+    "snmp_info"               : gamatronics_ups_info,
+    "snmp_scan_function"      : gamatronics_ups_scan,
     "includes"                : [ "temperature.include" ],
-    "default_levels_variable" : "gammatronics_ups_temp_default_levels",
+    "default_levels_variable" : "gamatronics_ups_temp_default_levels",
 }
 
 # Fin.
