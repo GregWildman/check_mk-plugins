@@ -1,0 +1,136 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# RADWIN-MIB-WINLINK1000::winlink1000Odu
+# .1.3.6.1.4.1.4458.1000.1.1.1.0 = ""
+# .1.3.6.1.4.1.4458.1000.1.1.2.0 = STRING: "6"
+# .1.3.6.1.4.1.4458.1000.1.1.3.0 = STRING: "4.1.60_b4172_Jul 26 2015"
+# .1.3.6.1.4.1.4458.1000.1.1.14.0 = STRING: "5K/F35/SU2/25/FCC/INT/HG"
+# .1.3.6.1.4.1.4458.1000.1.1.29.0 = STRING: "P10900I200A00408"
+# .1.3.6.1.4.1.4458.1000.1.1.30.0 = STRING: "RW5000/HSU/5525/F36/FCC/SFF/INT/20 - RW-5525-0H30"
+# .1.3.6.1.4.1.4458.1000.1.1.35.0 = INTEGER: 2
+# .1.3.6.1.4.1.4458.1000.1.1.36.0 = INTEGER: 3
+# .1.3.6.1.4.1.4458.1000.1.5.1.0 = INTEGER: 3620000
+# .1.3.6.1.4.1.4458.1000.1.5.3.0 = STRING: "MP31014-180-2"
+# .1.3.6.1.4.1.4458.1000.1.5.24.0 = INTEGER: 10000
+#
+# RADWIN-MIB-WINLINK1000::winlink1000HsuAir
+# .1.3.6.1.4.1.4458.1000.4.1.1.0 = INTEGER: 7
+# .1.3.6.1.4.1.4458.1000.4.1.2.0 = INTEGER: 4
+# .1.3.6.1.4.1.4458.1000.4.1.3.0 = INTEGER: 2
+# .1.3.6.1.4.1.4458.1000.4.1.6.0 = Hex-STRING: BC 00 00 05 DD 28 15 BC 5C 6D 40 BF AE D3 1C 07 ...
+# .1.3.6.1.4.1.4458.1000.4.1.7.0 = STRING: "31000024,0A284203,FFFFFF80,2,3130,ATC_Mountview_180_2"
+
+radwin_5000_cpe_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.4458.20.6.1.1")
+                               
+radwin_5000_cpe_info = [ (".1.3.6.1.4.1.4458.1000.1", [  # RADWIN-MIB-WINLINK1000::winlink1000Odu
+                               "1.2.0",    # OduAdmHwRev                       0
+                               "1.3.0",    # OduAdmSwRev                       1
+                               "1.14.0",   # OduProductId                      2
+                               "1.29.0",   # OduAdmSN                          3
+                               "1.30.0",   # OduAdmProductName                 4
+                               "1.35.0",   # OduAdmLinkMode                    5
+                               "1.36.0",   # OduAdmActualConnectMode           6
+                               "5.1.0",    # OduAirAirFreq                     7
+                               "5.3.0",    # OduAirSSID                        8
+                               "5.24.0",   # OduAirChannelBandwidth            9
+                               "5.9.1.0",  # winlink1000OduAirRxPower         10
+                         ]),
+                         (".1.3.6.1.4.1.4458.1000.4.1", [  # RADWIN-MIB-WINLINK1000::winlink1000HsuAir
+                               "1.0",      # winlink1000HsuAirState
+                               "2.0",      # winlink1000HsuAirLinkState
+                               "3.0",      # winlink1000HsuAirHsuId
+                        BINARY("6.0"),     # winlink1000HsuAirRemoteCompressedMon
+                               "7.0",      # winlink1000HsuAirRemoteCompressedStatic
+                         ]),
+                         ('.1.3.6.1.2.1.1', ['5.0', '6.0']), #  sysName & sysLocation
+                       ]
+
+def inventory_radwin_5000_cpe(info):
+    odu_info = info[0][0]
+    air_info = info[1][0]
+
+    if len(odu_info) > 0:
+        yield "HSU Info", {}
+    if len(air_info) > 0:
+        yield "HSU Link", {}
+
+def check_radwin_5000_cpe(item, params, info):
+    state = 0
+    perfdata = []
+    map_state = {
+        "1": ("noSync"),
+        "2": ("violated"),
+        "3": ("syncUnregistered"),
+        "4": ("syncRegistered"),
+        "5": ("authenticationError"),
+        "6": ("swUpgradeRequired"),
+        "7": ("syncRegisteredPassive"),
+        "8": ("syncRegisteredALP"),
+    }
+
+    hw_rev, sw_rev, product_id, serial, product_name, link_mode, connect_mode, freq, ssid, bandwidth, rss = info[0][0]
+
+    if item == "HSU Info":
+        infotext = "%s, HW Ver: %s, SW Ver: %s, Freq: %s Mhz (BW: %s Mhz), Sector: %s" % \
+                (product_name, hw_rev, sw_rev, int(freq)/1000, int(bandwidth)/1000, ssid)
+        return (state, infotext, perfdata)
+
+    if item == "HSU Link":
+        hsu_state, hsu_link_state, hsu_id, remote_mon, remote_static = info[1][0]
+        sys_name, sys_location = info[2][0]
+
+        hbs_info = remote_static.split(",")
+
+#        # Convert hex (1 byte) into signed integer
+#        source = hex(remote_mon[0])
+#        sign_bit_mask = 1 << (len(source)*2-1)
+#        other_bits_mask = sign_bit_mask - 1
+#        value = int(source, 16)
+#        rss = -(value & sign_bit_mask) | (value & other_bits_mask)
+
+        infotext = "[%s - %s] (%s), RSS: %s dBm, HBS: (%s), %s" % \
+                   (sys_name, sys_location, map_state.get(hsu_link_state), rss, hbs_info[0], hbs_info[5])
+        perfdata = [("hsu_rss", "%.1fdBm" % float(rss))]
+
+        return (state, infotext, perfdata)
+
+check_info["radwin_5000_cpe"] = {
+    "inventory_function"        : inventory_radwin_5000_cpe,
+    "check_function"            : check_radwin_5000_cpe,
+    "service_description"       : "%s",
+    "has_perfdata"              : True,
+    "snmp_info"                 : radwin_5000_cpe_info,
+    "snmp_scan_function"        : radwin_5000_cpe_scan,
+}
+
+# Fin.
+
+
