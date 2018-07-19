@@ -97,7 +97,6 @@ def inventory_radwin_2000(info):
         yield "Link Metering", {}
 
 def check_radwin_2000(item, params, info):
-    import pprint;pprint.pprint(info)
     state = 0
     infotext = ""
     perfdata = []
