@@ -48,7 +48,7 @@ factory_settings["radwin_2000_odu_default_levels"] = {
     "uas_secs": (2, 4),
     "ers_secs": (2, 4),
     "ses_secs": (2, 4),
-    "bbe_secs": (2, 4),
+    "bbe_secs": (800, 900),
 }
 
 def inventory_radwin_2000_odu(info):
