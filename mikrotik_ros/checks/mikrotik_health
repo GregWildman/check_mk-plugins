@@ -141,7 +141,7 @@ def check_mikrotik_health_voltage(item, params, info):
             yield 3, "Chassis voltage info not available"
         else:
             voltage = float(raw_voltage) / 10.0
-            yield 0, "%s: %.2f V" % ("Output", voltage), [("in_voltage", voltage)]
+            yield 0, "%s: %.2f V" % ("Input", voltage), [("in_voltage", voltage)]
 
             warn_lower, crit_lower = params["levels_lower"]
             if voltage <= crit_lower:
