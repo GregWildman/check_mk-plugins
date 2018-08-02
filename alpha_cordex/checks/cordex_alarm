@@ -49,20 +49,18 @@ def inventory_cordex_alarm(info):
 
 def check_cordex_alarm(item, params, info):
     alarm_cnt = 0
-    alarmtext = ""
+    alarmtext = []
     for line in info:
         if int(line[1]) > 0:
-            alarmtext += ", %s" % line[2]
+            alarmtext += [line[2]]
             alarm_cnt += 1
 
     if alarm_cnt > 0:
         state = 2
-        infotext = "Count: %d" % alarm_cnt  + alarmtext
+        yield 2, "Count: %d" % alarm_cnt
+        yield 0, ", ".join(alarmtext)
     else:
-        state = 0
-        infotext = "All Clear"
-
-    return (state, infotext)
+        yield 0, "All Clear"
 
 check_info["cordex_alarm"] = {
     "check_function"        : check_cordex_alarm,
