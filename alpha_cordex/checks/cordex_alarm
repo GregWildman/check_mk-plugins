@@ -60,7 +60,7 @@ def check_cordex_alarm(item, params, info):
         infotext = "Count: %d" % alarm_cnt  + alarmtext
     else:
         state = 0
-        infotext = "None"
+        infotext = "All Clear"
 
     return (state, infotext)
 
