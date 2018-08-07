@@ -4,7 +4,8 @@
  'files': {'agents': [],
            'bin': [],
            'checkman': [],
-           'checks': ['necneo_info'],
+           'checks': ['necneo_info',
+                      'necneo_alarm'],
            'doc': [],
            'inventory': [],
            'lib': [],
@@ -15,6 +16,6 @@
  'name': 'nec_radios',
  'num_files': 3,
  'title': 'NEC PASOLINK radios',
- 'version': '1.6',
+ 'version': '1.7',
  'version.min_required': '1.4.0',
  'version.packaged': '1.4.0p33'}
