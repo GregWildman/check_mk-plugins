@@ -15,6 +15,6 @@
  'name': 'nec_radios',
  'num_files': 3,
  'title': 'NEC PASOLINK radios',
- 'version': '1.5',
+ 'version': '1.6',
  'version.min_required': '1.4.0',
  'version.packaged': '1.4.0p33'}
