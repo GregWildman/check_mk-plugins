@@ -30,38 +30,32 @@
 #
 # MIB-PM-NEO-STD::pnSystemInfo
 # .1.3.6.1.4.1.119.2.3.69.3.1.1.1.0 = STRING: "Proton-Northcliff"
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.2.0 = STRING: "GP WEST"
 # .1.3.6.1.4.1.119.2.3.69.3.1.1.4.0 = IpAddress: 10.9.70.42
 # .1.3.6.1.4.1.119.2.3.69.3.1.1.7.0 = INTEGER: 100
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.1 = INTEGER: 1
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.2 = INTEGER: 2
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.3 = INTEGER: 3
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.1.4 = INTEGER: 4
 # .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.1 = IpAddress: 10.9.70.41
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.2 = IpAddress: 0.0.0.0
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.3 = IpAddress: 0.0.0.0
-# .1.3.6.1.4.1.119.2.3.69.3.1.1.11.1.2.4 = IpAddress: 0.0.0.0
 # .1.3.6.1.4.1.119.2.3.69.3.1.1.12.0 = Hex-STRING: 00 30 13 33 1D 79 
-
 #
 # MIB-PM-NEO-STD::esCommonItem
 # .1.3.6.1.4.1.119.2.3.69.401.4.1.1.0 = INTEGER: 2
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.2.0 = INTEGER: 1
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.4.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.5.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.6.0 = INTEGER: 2
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.7.0 = INTEGER: 0
 # .1.3.6.1.4.1.119.2.3.69.401.4.1.8.0 = INTEGER: 2
 # .1.3.6.1.4.1.119.2.3.69.401.4.1.9.0 = INTEGER: 4
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.10.0 = INTEGER: 2
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.12.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.13.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.14.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.15.0 = INTEGER: 40
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.16.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.17.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.18.0 = INTEGER: 0
-# .1.3.6.1.4.1.119.2.3.69.401.4.1.19.0 = INTEGER: 0
+#
+# MIB-PM-NEO-STD::esSysTable
+# .1.3.6.1.4.1.119.2.3.69.401.4.2.1.2.1 = STRING: "15019.000"
+# .1.3.6.1.4.1.119.2.3.69.401.4.2.1.3.1 = STRING: "14599.000"
+# .1.3.6.1.4.1.119.2.3.69.401.4.2.1.4.1 = INTEGER: 1
+# .1.3.6.1.4.1.119.2.3.69.401.4.2.1.5.1 = INTEGER: 10
+#
+# MIB-PM-NEO-STD::meteringSysTable
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.2.1 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.3.1 = STRING: "+22.5"
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.4.1 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.5.1 = STRING: "-38.6"
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.6.1 = INTEGER: 2
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.7.1 = STRING: "-54"
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.12.1 = INTEGER: 255
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.13.1 = INTEGER: 0
+# .1.3.6.1.4.1.119.2.3.69.401.8.1.1.14.1 = INTEGER: 8
 
 necneo_info_scan = lambda oid: ".1.3.6.1.4.1.119.2.3.69" in oid(".1.3.6.1.2.1.1.2.0")
 
@@ -90,6 +84,9 @@ necneo_info_info = [(".1.3.6.1.4.1.119.2.3.69.3.1.1", [  #  MIB-PM-NEO-STD::pnSy
                          "1.5",     # metSysRxLevelValue
                          "1.6",     # metSysPSVoltageStasus
                          "1.7",     # metSysPSVoltageValue
+                        "1.12",     # metSysBitErrorRateStatus
+                        "1.13",     # metSysBitErrorRateXValue
+                        "1.14",     # metSysBitErrorRateYValue
                     ]),
                    ]
 
@@ -157,6 +154,12 @@ def check_necneo_info(item, params, info):
        "1" : ("MTPC"),
        "2" : ("ATPC"),
     }
+    map_ber_status = {
+       "0" : ("invalid"),
+      "42" : ("invalid"),
+     "127" : ("calculating"),
+     "255" : ("fixed"),
+    }
 
     sys_info, es_common_item, es_sys, metering_sys = info
     arch, modulation, capacity = es_common_item[0]
@@ -173,11 +176,22 @@ def check_necneo_info(item, params, info):
                    (ip_a, ip_b, float(tx_freq), float(rx_freq), map_power.get(tx_power), int(frame_id))
 
     elif item == "Link Metering":
-        tx_pwr_status, tx_pwr_raw, rx_level_status, rx_level_raw, voltage_status, voltage_raw = metering_sys[0]
+        tx_pwr_status, tx_pwr_raw, rx_level_status, rx_level_raw, voltage_status, voltage_raw, \
+            ber_status, ber_x, ber_y = metering_sys[0]
         tx_pwr = float(tx_pwr_raw)
         rx_level = float(rx_level_raw)
         voltage = int(voltage_raw)
-        infotext = "TX Power: %.1fdBm, RX Level: %.1fdBm, ODU Power: %d V" % (tx_pwr, rx_level, voltage)
+
+        # Customer still to decide how they want the BER displayed and monitored. Until then
+        # just display - Greg.
+        if ber_x == 0:
+            ber_significant = 0.0
+        else:
+            ber_significant = float(ber_x) / 10.0
+        ber_exponential = int(ber_y)
+
+        infotext = "TX Power: %.1fdBm, RX Level: %.1fdBm, ODU Power: %d V, BER (%s): %.1fE-%d" % \
+                   (tx_pwr, rx_level, voltage, map_ber_status.get(ber_status), ber_significant, ber_exponential)
         perfdata = [("output_power", "%.1fdBm" % tx_pwr), ("input_power", "%.1fdBm" % rx_level),
                     ("voltage", "%d" % voltage)]
 
