@@ -51,16 +51,6 @@
 # .1.3.6.1.4.1.6050.1.2.26.1.4.1 = INTEGER: 0
 # .1.3.6.1.4.1.6050.1.2.26.1.5.1 = INTEGER: 43
 # .1.3.6.1.4.1.6050.1.2.26.1.6.1 = INTEGER: 30
-#
-# GAMMATRONIC-MIB::psACInput
-# .1.3.6.1.4.1.6050.1.5.1.0 = INTEGER: 230
-# .1.3.6.1.4.1.6050.1.5.7.0 = INTEGER: 5000
-#
-# GAMMATRONIC-MIB::psDCOutput
-# .1.3.6.1.4.1.6050.1.6.1.0 = INTEGER: 5243
-# .1.3.6.1.4.1.6050.1.6.2.0 = INTEGER: 2295
-# .1.3.6.1.4.1.6050.1.6.3.0 = INTEGER: 0
-# .1.3.6.1.4.1.6050.1.6.4.0 = INTEGER: 2332
 
 gamatronics_ups_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.6050"
 
@@ -87,16 +77,6 @@ gamatronics_ups_info = [(".1.3.6.1.4.1.6050.1.1", [ #  GAMMATRONIC-MIB::psUnit
                                "1.4",  # psBatteryTemperatureSign
                                "1.5",  # psBatteryTemperature
                                "1.6",  # psBatteryStatus
-                          ]),
-                         (".1.3.6.1.4.1.6050.1.5", [ #  GAMMATRONIC-MIB::psACInput
-                               "1.0",    # psACInputVoltage1
-                               "7.0",    # psACInputFrequency
-                          ]),
-                         (".1.3.6.1.4.1.6050.1.6", [ #  GAMMATRONIC-MIB::psDCOutput
-                               "1.0",    # psDCoutputVoltage
-                               "2.0",    # psDCoutputCurrent1
-                               "3.0",    # psDCoutputCurrent2
-                               "4.0",    # psDCoutputCurrent3
                           ]),
                      ]
 
