@@ -56,6 +56,7 @@
 # .1.3.6.1.4.1.12140.2.3.4.0 = INTEGER: -46
 # .1.3.6.1.4.1.12140.2.3.7.0 = INTEGER: 1
 # .1.3.6.1.4.1.12140.2.3.9.0 = INTEGER: 32
+# .1.3.6.1.4.1.12140.2.3.10.0 = ""
 # .1.3.6.1.4.1.12140.2.3.12.0 = INTEGER: 0
 # .1.3.6.1.4.1.12140.2.3.13.0 = INTEGER: 12
 #
@@ -100,33 +101,35 @@ alcoma_almp_info = [
                               "11.0",        # alMPError2
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPODU
-                               "3.1.0",      # alMPTuneTX
-                               "3.2.0",      # alMPTuneRX
-                               "3.3.0",      # alMPRX-PWR
-                               "3.4.0",      # alMPRX-Level
-                               "3.7.0",      # alMPMode-TX
-                               "3.9.0",      # alMPTemperature
-                              "3.12.0",      # alMPTypeODU
-                              "3.13.0",      # alMPPTX
+                               "3.1",      # alMPTuneTX
+                               "3.2",      # alMPTuneRX
+                               "3.3",      # alMPRX-PWR
+                               "3.4",      # alMPRX-Level
+                               "3.7",      # alMPMode-TX
+                               "3.9",      # alMPTemperature
+                              "3.12",      # alMPTypeODU
+                              "3.13",      # alMPPTX
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPModem 
-                               "4.1.0",      # alMPQuality
-                               "4.2.0",      # alMPSNR
-                               "4.5.0",      # alMPRate
-                               "4.6.0",      # alMPQAM
-                               "4.7.0",      # alMPActiveACM
-                               "4.8.0",      # alMPStatusACM
-                               "4.9.0",      # alMPBW
-                              "4.10.0",      # alMPMaxRate
+                               "4.1",      # alMPQuality
+                               "4.2",      # alMPSNR
+                               "4.5",      # alMPRate
+                               "4.6",      # alMPQAM
+                               "4.7",      # alMPActiveACM
+                               "4.8",      # alMPStatusACM
+                               "4.9",      # alMPBW
+                              "4.10",      # alMPMaxRate
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPStatusLED / alMPGeneral
-                               "1.1.0",      # alMPEHW, hardware error
-                               "1.2.0",      # alMPESR, signal error in radio
-                               "1.3.0",      # alMPESL, signal error on lines
-                               "2.3.0",      # alMPStatus, station alarm status
-                               "2.8.0",      # alMPDevType
-                               "2.9.0",      # alMPModel
-                              "2.10.0",      # alMPVersionSW
+                               "1.1",      # alMPEHW, hardware error
+                               "1.2",      # alMPESR, signal error in radio
+                               "1.3",      # alMPESL, signal error on lines
+                               "2.2",      # alMPConfiguration
+                               "2.3",      # alMPStatus, station alarm status
+                               "2.8",      # alMPDevType
+                               "2.9",      # alMPModel
+                              "2.10",      # alMPVersionSW
+                              "3.11",      # alMPSerNumMW
                           ]),
                   ]
 
@@ -191,6 +194,15 @@ check_info["alcoma_almp.ber"] = {
 #   |                \__,_|_|_|  |_|_|   |_____|_|_| |_|\___|              |
 #   |                                                                      |
 #   +----------------------------------------------------------------------+
+
+# [[[u'0', u'0']],
+#  [[u'9.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0'],
+#   [u'10.', u'0', u'1', u'1', u'2736428080', u'3031196801', u'2292004179', u'4027285144', u'0'],
+#   [u'11.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0']],
+#  [[u'17112.50', u'17252.50', u'12', u'-45', u'1', u'30', u'0', u'12']],
+#  [[u'100', u'36.0', u'8', u'7', u'0', u'0', u'3', u'27']],
+#  [[u'0', u'0', u'0', u'1', u'AL_MINI - MP3M5R EGMII', u'MP300', u'5.2']]]
+
 
 def parse_alcoma_almp_line(info):
     map_speed = {
@@ -269,7 +281,7 @@ def check_alcoma_almp_odu(item, params, info):
     almp_odu = info[2]
     almp_modem = info[3]
     tx_freq, rx_freq, tx_pwr_raw, rx_pwr_raw, tx_mode, temp_raw, odu_type, ptx = almp_odu[0]
-    quality, snr_raw, rate, qam, acm_active, acm_status, bw, max_rate = almp_modem[0]
+    quality_raw, snr_raw, rate, qam, acm_active, acm_status, bw, max_rate = almp_modem[0]
     perfdata = []
     map_power = {
       "-1" : ("offline"), "0" : ("off"), "1" : ("MTPC"), "2" : ("ATPC"),
@@ -287,20 +299,24 @@ def check_alcoma_almp_odu(item, params, info):
     map_rate = {
        "8" : ("22"),
     }
+    map_type = {
+       "-1": ("offline"), "0": ("A"), "1": ("B"),
+    }
 
     if item == "Link Summary":
-        infotext = "TX: %.0f MHz, RX: %.0f MHz, TX Power: %s, %s Mbps (%s,%sMHz)" % \
-                   (float(tx_freq), float(rx_freq), map_power.get(tx_mode), map_rate.get(rate),
+        infotext = "Type: %s, TX: %s MHz, RX: %s MHz, TX Power: %s, %s Mbps (%s,%sMHz)" % \
+                   (map_type.get(odu_type), tx_freq, rx_freq, map_power.get(tx_mode), map_rate.get(rate),
                     map_qam.get(qam), map_bandwidth.get(bw))
 
     if item == "Link Metering":
         tx_pwr = float(tx_pwr_raw)
         rx_pwr = float(rx_pwr_raw)
         snr = savefloat(snr_raw)
+        quality = int(quality_raw)
         infotext = "Input Power: %.1fdBm, Output Power: %.1fdBm, SNR: %.1fdBm, Signal: %d%%" % \
-                   (rx_pwr, tx_pwr, snr, int(quality))
+                   (rx_pwr, tx_pwr, snr, quality)
         perfdata = [("output_power", "%.1fdBm" % tx_pwr), ("input_power", "%.1fdBm" % rx_pwr),
-                    ("snr", "%.1fdBm" % snr)]
+                    ("snr", "%.1fdBm" % snr), ("signal_quality", "%d%%" % quality)]
 
 
     return (0, infotext, perfdata)
@@ -331,7 +347,7 @@ def inventory_alcoma_almp_status(info):
 
 def check_alcoma_almp_status(item, _no_params, info):
     almp_status = info[4]
-    ehw, esr, esl, station_status, dev_type, model, sw_ver = almp_status[0]
+    ehw, esr, esl, config, station_status, dev_type, model, sw_ver, serial = almp_status[0]
 
     if item == "Device Status":
         if ehw != "":
@@ -371,7 +387,16 @@ def check_alcoma_almp_status(item, _no_params, info):
                 yield 1, infotext
 
     if item == "Device Info":
-        yield 0, "Model: %s, Type: %s, Firmware Ver: %s." % (model, dev_type, sw_ver)
+        map_config = {
+           "-1" : ("offline"),
+            "0" : ("undefined"),
+           "30" : ("2 x Eth_G"),
+        }
+
+        yield 0, "Model: %s, Type: %s, Config: %s, Firmware Ver: %s" % (model, dev_type, map_config.get(config), sw_ver)
+
+        if serial != "":
+            yield 0, "Serial: %s" % serial
 
 check_info["alcoma_almp.status"] = {
     "inventory_function"    : inventory_alcoma_almp_status,
