@@ -297,7 +297,9 @@ def check_alcoma_almp_odu(item, params, info):
       "15" : ("50"), "16" : ("55"), "17" : ("56"), "18" : ("56"), "19" : ("80"), "20" : ("110"), "21" : ("112"),
     }
     map_rate = {
-       "8" : ("22"),
+       "1" : ("5"), "2" : ("8"), "3" : ("11"), "4" : ("14"), "5" : ("16"), "6" : ("17"), "7" : ("20"), "8" : ("22"),
+       "9" : ("25"), "10" : ("27"), "11" : ("28"), "14" : ("40"), "17" : ("50"), "24" : ("100"), "25" : ("104"),
+      "27" : ("116"), "33" : ("200"), "36" : ("232"), "37" : ("265"),
     }
     map_type = {
        "-1": ("offline"), "0": ("A"), "1": ("B"),
@@ -305,8 +307,8 @@ def check_alcoma_almp_odu(item, params, info):
 
     if item == "Link Summary":
         infotext = "Type: %s, TX: %s MHz, RX: %s MHz, TX Power: %s, %s Mbps (%s,%sMHz)" % \
-                   (map_type.get(odu_type), tx_freq, rx_freq, map_power.get(tx_mode), map_rate.get(rate),
-                    map_qam.get(qam), map_bandwidth.get(bw))
+                   (map_type.get(odu_type), tx_freq, rx_freq, map_power.get(tx_mode), map_rate.get(rate, "0"),
+                    map_qam.get(qam, "???%s" % qam), map_bandwidth.get(bw, "???%s" % bw))
 
     if item == "Link Metering":
         tx_pwr = float(tx_pwr_raw)
