@@ -49,15 +49,15 @@ def check_gamatronic_in_voltage_info(item, params, info):
     voltage, freq = info[0]
     warn, crit = params
     infotext = "in voltage: %sV, (warn/crit at %dV/%dV)" % (voltage, warn, crit)
-    perfdata = [("in_voltage", "%d" % int(voltage), warn, crit)]
+    perfdata = [("voltage", int(voltage), warn, crit),
+                ("frequency", float(freq) * 100)]
     return 0, infotext, perfdata
 
-check_info["gamatronic_in_voltage.info"] = {
+check_info["gamatronic_in_voltage"] = {
     "inventory_function"        : inventory_gamatronic_in_voltage_info,
     "check_function"            : check_gamatronic_in_voltage_info,
     "service_description"       : 'AC Mains',
     "has_perfdata"              : True,
-    "includes"                  : [ 'ups_in_voltage.include' ],
     "snmp_info"                 : gamatronic_in_voltage_info,
     "snmp_scan_function"        : gamatronic_in_voltage_scan,
 

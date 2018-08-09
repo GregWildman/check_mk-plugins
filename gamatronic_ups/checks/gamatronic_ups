@@ -51,6 +51,9 @@
 # .1.3.6.1.4.1.6050.1.2.26.1.4.1 = INTEGER: 0
 # .1.3.6.1.4.1.6050.1.2.26.1.5.1 = INTEGER: 43
 # .1.3.6.1.4.1.6050.1.2.26.1.6.1 = INTEGER: 30
+#
+# GAMMATRONIC-MIB::psDCOutput
+# .1.3.6.1.4.1.6050.1.6.3.0 = INTEGER: 0
 
 gamatronics_ups_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.6050"
 
@@ -77,6 +80,9 @@ gamatronics_ups_info = [(".1.3.6.1.4.1.6050.1.1", [ #  GAMMATRONIC-MIB::psUnit
                                "1.4",  # psBatteryTemperatureSign
                                "1.5",  # psBatteryTemperature
                                "1.6",  # psBatteryStatus
+                          ]),
+                         (".1.3.6.1.4.1.6050.1.6", [ #  GAMMATRONIC-MIB::psDCOutput
+                               "3.0",    # psDCoutputCurrent2 - battery current
                           ]),
                      ]
 
@@ -132,21 +138,30 @@ def inventory_gamatronics_ups_battery(info):
 def check_gamatronics_ups_battery(item, _no_params, info):
     map_mode = {
        "0": ("floating"),
-       "1": ("equalizes"),
+       "1": ("equalized"),
     }
 
     battery_info = info[1]  # psBattery
+    dc_output = info[3]  # psDCOutput
     voltage_raw, test_status, capacity, charge_mode = battery_info[0]
+    battery_raw = dc_output[0][0]
     voltage = float(voltage_raw) / 100.0
-    infotext = "Charge Mode: %s, Capacity: %sAh, Voltage: %.2fV" % \
-               (map_mode.get(charge_mode), capacity, voltage)
+    if battery_raw == "0":
+        battery_current = 0.0
+    else:
+        battery_current = float(battery_raw) / 100.0
 
-    return 0, infotext
+    infotext = "Charge Mode: %s, Capacity: %sAh, Voltage: %.2fV, Load: %.2fA" % \
+               (map_mode.get(charge_mode), capacity, voltage, battery_current)
+    perfdata = [("current", battery_current)]
+
+    return 0, infotext, perfdata
 
 check_info["gamatronics_ups.battery"] = {
     "inventory_function"        : inventory_gamatronics_ups_battery,
     "check_function"            : check_gamatronics_ups_battery,
     "service_description"       : 'Battery',
+    "has_perfdata"              : True,
     "snmp_info"                 : gamatronics_ups_info,
     "snmp_scan_function"        : gamatronics_ups_scan,
 

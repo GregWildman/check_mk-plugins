@@ -53,9 +53,9 @@ def check_gamatronic_rectifier_battery(item, _no_params, info):
 
     infotext = "DC Voltage: %.2fV, Rectifier: %.2fA, Load: %.2fA" % \
                (voltage, rectifier_current, load_current)
-    perfdata = [("out_voltage", "%.2f" % voltage), \
-                ("rectifier_current", "%.2f" % rectifier_current), \
-                ("load_current", "%.2f" % load_current) ]
+    perfdata = [("voltage", voltage), \
+                ("rectifier_current", rectifier_current), \
+                ("load_current", load_current) ]
     
     return 0, infotext, perfdata
 
