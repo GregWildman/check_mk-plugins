@@ -16,6 +16,6 @@
  'name': 'alcoma_almp',
  'num_files': 5,
  'title': 'ALCOMA Radiorelay systems',
- 'version': '1.15',
+ 'version': '1.16',
  'version.min_required': '1.4.0',
  'version.packaged': '1.4.0p33'}
