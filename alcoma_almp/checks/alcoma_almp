@@ -307,15 +307,15 @@ def check_alcoma_almp_odu(item, params, info):
 
     if item == "Link Summary":
         infotext = ""
-        if odu_type != None:
+        if odu_type != "":
             infotext += "Type: %s, " % map_type.get(odu_type)
 
         infotext += "TX: %s MHz, RX: %s MHz, TX Power: %s, %s Mbps" % \
                    (tx_freq, rx_freq, map_power.get(tx_mode), map_rate.get(rate, "---"))
 
-        if qam != None:
+        if qam != "":
             infotext += " (%s" % map_qam.get(qam, "?[%s]?" % qam)
-            if bw != None:
+            if bw != "":
                 infotext += ", %sMHz" % map_bandwidth.get(bw, "?[%s]?" % bw)
             infotext += ")"
 
