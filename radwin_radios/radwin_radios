@@ -13,10 +13,11 @@
            'doc': [],
            'inventory': [],
            'lib': [],
-           'mibs': [],
+           'mibs': ['RADWIN-MIB-WINLINK1000'],
            'notifications': [],
            'pnp-templates': ['check_mk-radwin_2000_odu.php'],
-           'web': ['plugins/metrics/check_mk-radwin_2000.py',
+           'web': ['plugins/icons/radwin_peer_radio.py',
+                   'plugins/metrics/check_mk-radwin_2000.py',
                    'plugins/metrics/check_mk-radwin_2000_odu.py',
                    'plugins/metrics/check_mk-radwin_5000.py',
                    'plugins/metrics/check_mk-radwin_5000_gsu.py',
@@ -25,6 +26,6 @@
  'name': 'radwin_radios',
  'num_files': 13,
  'title': 'RADWIN Ltd. radios',
- 'version': '1.23',
+ 'version': '1.24',
  'version.min_required': '1.4.0',
- 'version.packaged': '1.5.0b9'}
+ 'version.packaged': '1.5.0'}
