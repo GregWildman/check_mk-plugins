@@ -64,7 +64,8 @@
 #  [u'Network Processor', u'npu', u'6.320.320.N', u'', u'', u'', u'']]
 
 
-intracom_chassis_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.250"
+intracom_chassis_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.250" or \
+                                    oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.251"
 
 intracom_chassis_info = ( ".1.3.6.1.2.1.47.1.1.1", [  # ENTITY-MIB::entityPhysical
                                 "1.2",     # entPhysicalDescr

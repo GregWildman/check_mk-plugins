@@ -31,7 +31,8 @@
 # .1.3.6.1.4.1.1807.30.1.1.1.4.3 = INTEGER: 275
 
 
-intracom_temp_scan = lambda oid: "OSDR-HUB WiBAS IP card running Linux" in oid(".1.3.6.1.2.1.1.1.0")
+intracom_temp_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.250" or \
+                                 oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.251"
 
 intracom_temp_info = ( ".1.3.6.1.4.1.1807.30.1.1.1", [ "4" ] )
 

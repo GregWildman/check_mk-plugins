@@ -34,6 +34,9 @@
 # .1.3.6.1.4.1.1807.65.2.2.1.5.2 = Counter64: 2326412
 # .1.3.6.1.4.1.1807.65.2.2.1.6.2 = Counter64: 502761
 
+intracom_eth_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.250" or \
+                                oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.251"
+
 intracom_eth_info = [(".1.3.6.1", [
                                      "2.1.2.2.1.1",                 # ifIndex                   0
                                      "2.1.2.2.1.2",                 # ifDescr                   1
@@ -64,8 +67,6 @@ intracom_eth_info = [(".1.3.6.1", [
                                   6, # icomEthPerfCurrentRxOctets
                               ]),
                     ]
-
-intracom_eth_scan = lambda oid: "OSDR-HUB WiBAS IP card running Linux" in oid(".1.3.6.1.2.1.1.1.0")
 
 
 def parse_intracom_eth(info):

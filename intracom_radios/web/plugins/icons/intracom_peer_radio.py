@@ -26,18 +26,28 @@
 
 # Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
 
+# Intracom BS radios
 # Extract the peer radio IP from the service detail. Present a icon to open this
 # peers web interface.
-#
-# Example plugin_output
-# OK - connected, IP: 10.12.42.17, MAC: 00:05:59:74:0E:7C, dl: 128q  ul: 128q, RSSI (dBm) dl: -67.57 ul: -68.16, Distance: 9966m
 
 def paint_peer_radio_icon(what, row, tags, custom_vars):
+
+    # Base station
+    # OK - connected, IP: 10.12.42.17, MAC: 00:05:59:74:0E:7C, dl: 128q  ul: 128q, RSSI (dBm) dl: -67.57 ul: -68.16, Distance: 9966m
     if what == 'service' and row['service_description'].startswith('TS '):
         peer_ip = row['service_plugin_output'].split(",")[1][5:]
         url = 'http://%s/' % peer_ip
-        return u'<a href="%s" title="Peer Radio Web Interface" target="_blank">' \
+        return u'<a href="%s" title="Terminal Station Web Interface" target="_blank">' \
                '<img class=icon src="images/icon_www.png"/>Open terminal station web interface</a>' % (url)
+
+    # Terminal station
+    # OK - connected, BS IP: 10.12.39.5, BS MAC: 00:05:59:5E:FE:0A, MAC: 00:05:59:72:67:AC
+    elif what == 'service' and row['service_description'].startswith('Terminal '):
+        peer_ip = row['service_plugin_output'].split(",")[1][8:]
+        url = 'http://%s/' % peer_ip
+        return u'<a href="%s" title="Base Station Web Interface" target="_blank">' \
+               '<img class=icon src="images/icon_www.png"/>Open base station web interface</a>' % (url)
+
 
 multisite_icons.append({
     'paint':           paint_peer_radio_icon,
