@@ -26,15 +26,7 @@
 
 # Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
 
-# in=3584.058175;;;0;12500000 inucast=44.202156;;;; innucast=0;;;; indisc=0;;;; inerr=0;0.01;0.1;; out=1546.440383;;;0;12500000 outucast=16.385282;;;; outnucast=0;;;; outdisc=0;;;; outerr=0;0.01;0.1;; outqlen=0;;;0.0;
-check_metrics["check_mk-alcoma_almp.line"] = if_translation
-
-# output_power=12.0dBm;;;; input_power=-42.0dBm;;;; snr=38.5dBm;;;; signal_quality=100%;;;;
-check_metrics["check_mk-alcoma_almp.odu"] = {
-    "output_power" : { "name" : "output_signal_power_dbm" },
-    "input_power"  : { "name" : "input_signal_power_dbm" },
-    "snr"          : { "name" : "signal_noise" }
-}
+perfometers["check_mk-alcoma_almp.line"] = perfometer_check_mk_if
 
 # Fin.
 

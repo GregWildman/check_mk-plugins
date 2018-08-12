@@ -101,35 +101,35 @@ alcoma_almp_info = [
                               "11.0",        # alMPError2
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPODU
-                               "3.1",      # alMPTuneTX
-                               "3.2",      # alMPTuneRX
-                               "3.3",      # alMPRX-PWR
-                               "3.4",      # alMPRX-Level
-                               "3.7",      # alMPMode-TX
-                               "3.9",      # alMPTemperature
-                              "3.12",      # alMPTypeODU
-                              "3.13",      # alMPPTX
+                               "3.1",        # alMPTuneTX
+                               "3.2",        # alMPTuneRX
+                               "3.3",        # alMPRX-PWR
+                               "3.4",        # alMPRX-Level
+                               "3.7",        # alMPMode-TX
+                               "3.9",        # alMPTemperature
+                              "3.12",        # alMPTypeODU
+                              "3.13",        # alMPPTX
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPModem 
-                               "4.1",      # alMPQuality
-                               "4.2",      # alMPSNR
-                               "4.5",      # alMPRate
-                               "4.6",      # alMPQAM
-                               "4.7",      # alMPActiveACM
-                               "4.8",      # alMPStatusACM
-                               "4.9",      # alMPBW
-                              "4.10",      # alMPMaxRate
+                               "4.1",        # alMPQuality
+                               "4.2",        # alMPSNR
+                               "4.5",        # alMPRate
+                               "4.6",        # alMPQAM
+                               "4.7",        # alMPActiveACM
+                               "4.8",        # alMPStatusACM
+                               "4.9",        # alMPBW
+                              "4.10",        # alMPMaxRate
                           ]),
                     (".1.3.6.1.4.1.12140.2", [ # ALCOMA_MIB::alMPStatusLED / alMPGeneral
-                               "1.1",      # alMPEHW, hardware error
-                               "1.2",      # alMPESR, signal error in radio
-                               "1.3",      # alMPESL, signal error on lines
-                               "2.2",      # alMPConfiguration
-                               "2.3",      # alMPStatus, station alarm status
-                               "2.8",      # alMPDevType
-                               "2.9",      # alMPModel
-                              "2.10",      # alMPVersionSW
-                              "3.11",      # alMPSerNumMW
+                               "1.1",        # alMPEHW, hardware error
+                               "1.2",        # alMPESR, signal error in radio
+                               "1.3",        # alMPESL, signal error on lines
+                               "2.2",        # alMPConfiguration
+                               "2.3",        # alMPStatus, station alarm status
+                               "2.8",        # alMPDevType
+                               "2.9",        # alMPModel
+                              "2.10",        # alMPVersionSW
+                              "3.11",        # alMPSerNumMW
                           ]),
                   ]
 
@@ -194,15 +194,6 @@ check_info["alcoma_almp.ber"] = {
 #   |                \__,_|_|_|  |_|_|   |_____|_|_| |_|\___|              |
 #   |                                                                      |
 #   +----------------------------------------------------------------------+
-
-# [[[u'0', u'0']],
-#  [[u'9.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0'],
-#   [u'10.', u'0', u'1', u'1', u'2736428080', u'3031196801', u'2292004179', u'4027285144', u'0'],
-#   [u'11.', u'-1', u'-1', u'-1', u'0', u'0', u'0', u'0', u'0']],
-#  [[u'17112.50', u'17252.50', u'12', u'-45', u'1', u'30', u'0', u'12']],
-#  [[u'100', u'36.0', u'8', u'7', u'0', u'0', u'3', u'27']],
-#  [[u'0', u'0', u'0', u'1', u'AL_MINI - MP3M5R EGMII', u'MP300', u'5.2']]]
-
 
 def parse_alcoma_almp_line(info):
     map_speed = {
