@@ -38,7 +38,7 @@ def paint_rw5k_peer_radio_icon(what, row, tags, custom_vars):
         peer_ip = row['service_plugin_output'].split(",")[1][5:]
         url = 'http://operator:public@%s/mobile/monitor.asp' % peer_ip
         return u'<a href="%s" title="Peer Radio Web Interface" target="_blank">' \
-               '<img class=icon src="images/icon_www.png"/>Open terminal station web interface</a>' % (url)
+               '<img class=icon src="images/icon_www.png"/>Open HSU web interface</a>' % (url)
 
 multisite_icons.append({
     'paint':           paint_rw5k_peer_radio_icon,
