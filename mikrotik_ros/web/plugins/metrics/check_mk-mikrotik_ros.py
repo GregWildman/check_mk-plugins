@@ -26,37 +26,36 @@
 
 # Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
 
-# Example Output
-#
-# SNMPv2-SMI::enterprises.14988.1.1.7.3.0 = STRING: "82230825B608"
-# SNMPv2-SMI::enterprises.14988.1.1.7.4.0 = STRING: "6.42.3"
-# SNMPv2-SMI::enterprises.14988.1.1.7.6.0 = STRING: "May/24/2018 09:20:22"
-# SNMPv2-SMI::enterprises.14988.1.1.7.7.0 = STRING: "6.42.3"
-
-mikrotik_health_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.14988.1")
-
-mikrotik_health_info = (".1.3.6.1.4.1.14988.1.1.7", [   # MIKROTIK.MIB::mtxrSystem
-                                   "3.0",    # mtxrSerialNumber
-                                   "4.0",    # mtxrFirmwareVersion
-                                   "6.0",    # mtxrBuildTime
-                                   "7.0",    # mtxrFirmwareUpgradeVersion
-                       ])
-
-def inventory_mikrotik_system(info):
-    yield None, {}
-
-def check_mikrotik_system(no_item, no_params, info):
-    serial, sw_ver, build_time, sw_upgrade_ver = info[0]
-    infotext = "Serial: %s, Firmware: %s, %s" % (serial, sw_ver, build_time)
-    return 0, infotext
-
-check_info["mikrotik_system"] = {
-    "inventory_function"        : inventory_mikrotik_system,
-    "check_function"            : check_mikrotik_system,
-    "service_description"       : 'Chassis Info',
-    "snmp_info"                 : mikrotik_health_info,
-    "snmp_scan_function"        : mikrotik_health_scan,
+# ppp_sessions=223;;;;
+check_metrics["check_mk-mikrotik_aaa"] = {
+    "ppp_sessions" : { "name" : "active_sessions" }
 }
+
+
+# in_voltage=17.9;;;;
+check_metrics["check_mk-mikrotik_health.voltage"] = {
+    "in_voltage"   : { "name" : "voltage" }
+}
+
+
+# input_power=-3.7dBm;;;; output_power=-2.5dBm;;;;
+check_metrics["check_mk-mikrotik_optical"] = {
+    "output_power" : { "name" : "output_signal_power_dbm" },
+    "input_power"  : { "name" : "input_signal_power_dbm" }
+}
+
+
+# in=60518.909091;;;0;88064 out=1248366.090909;;;0;147456 inpkts=519.818182;;;; outpkts=944.454545;;;; rx_strength=-56.0dBm;;;; tx_strength=-52.0dBm;;;;
+mikrotik_wiresless_clients_if_translation = {
+    "in"          : { "name": "if_in_bps", "scale": 8 },
+    "out"         : { "name": "if_out_bps", "scale": 8 },
+    "inpkts"      : { "name": "if_in_unicast" },
+    "outpkts"     : { "name": "if_out_unicast" },
+    "tx_strength" : { "name" : "output_signal_power_dbm" },
+    "rx_strength" : { "name" : "input_signal_power_dbm" }
+}
+
+check_metrics["check_mk-mikrotik_wireless_clients"] = mikrotik_wiresless_clients_if_translation
 
 # Fin.
 

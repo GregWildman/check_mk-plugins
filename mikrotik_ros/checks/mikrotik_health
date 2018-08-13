@@ -38,21 +38,21 @@
 
 mikrotik_health_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.14988.1")
 
-mikrotik_health_info = (".1.3.6.1.4.1.14988.1.1.3", [ #  MIKROTIK.MIB::mtxrHealth
-                                "5.0", # MIKROTIK.MIB::mtxrHlSensorTemperature
-                                "6.0", # MIKROTIK.MIB::mtxrHlCpuTemperature
-                                "7.0", # MIKROTIK.MIB::mtxrHlBoardTemperature
-                                "8.0", # MIKROTIK.MIB::mtxrHlVoltage
-                                "9.0", # MIKROTIK.MIB::mtxrHlActiveFan
-                               "10.0", # MIKROTIK.MIB::mtxrHlTemperature
-                               "11.0", # MIKROTIK.MIB::mtxrHlProcessorTemperature
-                               "12.0", # MIKROTIK.MIB::mtxrHlPower
-                               "13.0", # MIKROTIK.MIB::mtxrHlCurrent
-                               "14.0", # MIKROTIK.MIB::mtxrHlProcessorFrequency
-                               "15.0", # MIKROTIK.MIB::mtxrHlPowerSupplyState
-                               "16.0", # MIKROTIK.MIB::mtxrHlBackupPowerSupplyState
-                               "17.0", # MIKROTIK.MIB::mtxrHlFanSpeed1
-                               "18.0", # MIKROTIK.MIB::mtxrHlFanSpeed2
+mikrotik_health_info = (".1.3.6.1.4.1.14988.1.1.3", [   # MIKROTIK.MIB::mtxrHealth
+                                  "5.0",    # mtxrHlSensorTemperature
+                                  "6.0",    # mtxrHlCpuTemperature
+                                  "7.0",    # mtxrHlBoardTemperature
+                                  "8.0",    # mtxrHlVoltage
+                                  "9.0",    # mtxrHlActiveFan
+                                 "10.0",    # mtxrHlTemperature
+                                 "11.0",    # mtxrHlProcessorTemperature
+                                 "12.0",    # mtxrHlPower
+                                 "13.0",    # mtxrHlCurrent
+                                 "14.0",    # mtxrHlProcessorFrequency
+                                 "15.0",    # mtxrHlPowerSupplyState
+                                 "16.0",    # mtxrHlBackupPowerSupplyState
+                                 "17.0",    # mtxrHlFanSpeed1
+                                 "18.0",    # mtxrHlFanSpeed2
                          ])
 
 #.

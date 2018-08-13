@@ -46,13 +46,13 @@
 mikrotik_poe_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.14988.1") and \
                                 oid(".1.3.6.1.4.1.14988.1.1.15.1.1.1.1") != None
 
-mikrotik_poe_info = [ (".1.3.6.1.4.1.14988.1.1.15.1", [ #  MIKROTIK.MIB::mtxrPOETable
-                                "1.1", # MIKROTIK.MIB::mtxrPOEInterfaceIndex
-                                "1.2", # MIKROTIK.MIB::mtxrPOEName
-                                "1.3", # MIKROTIK.MIB::mtxrPOEStatus
-                                "1.4", # MIKROTIK.MIB::mtxrPOEVoltage
-                                "1.5", # MIKROTIK.MIB::mtxrPOECurrent
-                                "1.6", # MIKROTIK.MIB::mtxrPOEPower
+mikrotik_poe_info = [ (".1.3.6.1.4.1.14988.1.1.15.1", [   # MIKROTIK.MIB::mtxrPOETable
+                                   "1.1",    # mtxrPOEInterfaceIndex
+                                   "1.2",    # mtxrPOEName
+                                   "1.3",    # mtxrPOEStatus
+                                   "1.4",    # mtxrPOEVoltage
+                                   "1.5",    # mtxrPOECurrent
+                                   "1.6",    # mtxrPOEPower
                          ]),
                        ]
 
