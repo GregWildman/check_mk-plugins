@@ -44,9 +44,9 @@
 
 
 
-intracom_cpe_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.251" and \
-                                oid(".1.3.6.1.4.1.1807.111.1.1.1.2.1") != None
-
+intracom_cpe_scan = lambda oid: (oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.251" or \
+                                 oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.1807.1.2.259") and \
+                                 oid(".1.3.6.1.4.1.1807.111.1.1.1.2.1") != None
 
 intracom_cpe_info = [( ".1.3.6.1.4.1.1807.111.1.1", [   # ICOM-WMAC-TS-MIB
                                      "1.2.1",      # icomWmacTsStatusConnectivity
