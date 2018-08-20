@@ -315,8 +315,14 @@ def check_alcoma_almp_odu(item, params, info):
         channel = map_channel.get("%s,%s" % (bw, tx_freq), "0")
         if channel != "0":
             infotext += " (Ch%s)" % channel
-        infotext += ", RX: %s MHz, TX Power: %s, %s Mbps" % \
-                   (rx_freq, map_power.get(tx_mode), map_rate.get(rate, "---"))
+
+        infotext += ", RX: %s MHz" % rx_freq
+        channel = map_channel.get("%s,%s" % (bw, rx_freq), "0")
+        if channel != "0":
+            infotext += " (Ch%s)" % channel
+
+        infotext += ", TX Power: %s, %s Mbps" % \
+                   (map_power.get(tx_mode), map_rate.get(rate, "---"))
 
         if qam != "":
             infotext += " (%s" % map_qam.get(qam, "?[%s]?" % qam)
