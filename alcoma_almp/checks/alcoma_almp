@@ -295,14 +295,28 @@ def check_alcoma_almp_odu(item, params, info):
     map_type = {
        "-1": ("offline"), "0": ("A"), "1": ("B"),
     }
-
+    # This is customer specific. Index is bandwith code, frequesncy.
+    # Change to suit. TODO: wato option to ignore.
+    map_channel = {
+       "17,17130.00": ("1"), "11,17116.00": ("2"), "11,17144.00": ("3"), "7,17109.00": ("4"), "7,17123.00": ("5"),
+       "7,17137.00": ("6"), "7,17151.00": ("7"), "3,17105.50": ("8"), "3,17112.50": ("9"), "3,17119.50": ("10"),
+       "3,17126.50": ("11"), "3,17133.50": ("12"), "3,17140.50": ("13"), "3,17147.50": ("14"), "3,17154.50": ("15"),
+       "1,17103.75": ("16"), "1,17107.25": ("17"), "1,17110.75": ("18"), "1,17114.25": ("19"), "1,17117.75": ("20"),
+       "1,17121.25": ("21"), "1,17124.75": ("22"), "1,17128.25": ("23"), "1,17131.75": ("24"), "1,17135.25": ("25"),
+       "1,17138.75": ("26"), "1,17142.25": ("27"), "1,17145.75": ("28"), "1,17149.25": ("29"), "1,17152.75": ("30"),
+       "1,17156.25": ("31"), "19,17130.00": ("1w"), "14,17125.00": ("2w"), "14,17165.00": ("3w"),
+    }
     if item == "Link Summary":
         infotext = ""
         if odu_type != "":
             infotext += "Type: %s, " % map_type.get(odu_type)
 
-        infotext += "TX: %s MHz, RX: %s MHz, TX Power: %s, %s Mbps" % \
-                   (tx_freq, rx_freq, map_power.get(tx_mode), map_rate.get(rate, "---"))
+        infotext += "TX: %s MHz" % tx_freq
+        channel = map_channel.get("%s,%s" % (bw, tx_freq), "0")
+        if channel != "0":
+            infotext += " (Ch%s)" % channel
+        infotext += ", RX: %s MHz, TX Power: %s, %s Mbps" % \
+                   (rx_freq, map_power.get(tx_mode), map_rate.get(rate, "---"))
 
         if qam != "":
             infotext += " (%s" % map_qam.get(qam, "?[%s]?" % qam)
