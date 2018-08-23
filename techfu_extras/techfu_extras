@@ -2,9 +2,7 @@
  'description': 'Notifications and WATO cutomizations ',
  'download_url': 'https://github.com/GregWildman/check_mk-plugins/tree/master/techfu_extras',
  'files': {'agents': [],
-           'bin': ['generate_device-list.sh',
-                   'generate_notes.sh',
-                   'fix_site-info_name.sh'],
+           'bin': [],
            'checkman': [],
            'checks': [],
            'doc': [],
@@ -18,6 +16,6 @@
  'name': 'techfu_extras',
  'num_files': 7,
  'title': 'Techfu Extras',
- 'version': '1.8',
+ 'version': '1.9',
  'version.min_required': '1.4.0',
  'version.packaged': '1.4.0p33'}
