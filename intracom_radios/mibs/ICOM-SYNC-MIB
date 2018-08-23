@@ -1,0 +1,972 @@
+ICOM-SYNC-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+        Unsigned32, Gauge32
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION, RowStatus, TruthValue, TimeStamp
+                FROM SNMPv2-TC
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        intracom
+                FROM ICOM-SMI;
+
+icomSyncMIB MODULE-IDENTITY
+    LAST-UPDATED        "201405050000Z"     -- 05 May 2014
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        ITU-T G.781 clock synchronization (option I). The MIB includes
+        the following proprietary objects:
+
+        1.  icomSyncTrapEnable
+        2.  icomSyncCfgTable
+        3.  icomSyncStatusTable
+        4.  icomSyncCmdTable (placeholder)
+        5.  icomSyncSrcCfgTable
+        6.  icomSyncSrcStatusTable
+        7.  icomSyncSrcCmdTable
+        8.  icomSyncClockModeTrap
+        9.  icomSyncSelClockTrap
+        10. icomSyncSrcAlarmTrap
+       "
+
+-- Revision History
+
+    REVISION            "201405050000Z"     -- 05 May 2014
+    DESCRIPTION
+       "
+        This is the initial version of this MIB.
+       "
+
+::= { intracom 67 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+IcomSyncSourceType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates the type of a synchronization source.
+       "
+    SYNTAX      INTEGER {
+            unknown     (1), -- unknown
+            internal    (2), -- internal
+            ethernet    (3), -- Ethernet
+            top         (4), -- Timing Over Packet
+            external    (5), -- external
+            modem       (6)  -- modem
+    }
+
+IcomSyncQLType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates the clock-source quality-level in option I networks.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.4.1.1, 5.4.2.1
+       "
+    SYNTAX      INTEGER {
+            null          (1),
+            prc           (2), -- QL-PRC (ITU-T G.811 primary reference clock)
+            ssuA          (3), -- QL-SSU-A (ITU-T G.812 type I or V slave clock)
+            ssuB          (4), -- QL-SSU-B (ITU-T G.812 type VI slave clock)
+            sec           (5), -- QL-SEC (ITU-T G.813/G.8262 synchronous
+                               --         equipment clock)
+            dnu           (6), -- QL-DNU (should not be used for
+                               --         synchronization)
+            inv           (7), -- QL-INVx (unallocated SSM value received)
+            failed        (8), -- QL-FAILED (signal fail state)
+            unc           (9), -- QL-UNC (output signal not connected to an
+                               --         input)
+            nsupp        (10)  -- QL-NSUPP (SSM processing not supported)
+    }
+
+IcomSyncSourceUAType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates a synchronization source unavailability type.
+       "
+    SYNTAX      BITS {
+            pll           (0), -- PLL unavailability (PLL failed to lock)
+            oduLoopback   (1)  -- ODU loopback unavailability
+    }
+
+IcomSyncAlarmType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates a synchronization source alarm.
+       "
+    SYNTAX      BITS {
+            signalFail    (0), -- signal fail
+            sourceUA      (1)  -- source unavailable
+    }
+
+--
+-- Object groups
+--
+icomSyncMIBObjPrefix   OBJECT IDENTIFIER ::= { icomSyncMIB 1 }
+icomSyncMIBObjects     OBJECT IDENTIFIER ::= { icomSyncMIBObjPrefix 1 }
+
+icomSyncTrapEnable OBJECT-TYPE
+    SYNTAX      BITS {
+            clockMode     (0),
+            selClock      (1),
+            srcAlarm      (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "A bitmap indicating which types of notifications are enabled.
+
+        If bit 'clockMode(0)' is set, then icomSyncClockModeTrap
+        notifications are enabled.
+
+        If bit 'selClock(1)' is set, then icomSyncSelClockTrap
+        notifications are enabled.
+
+        If bit 'srcAlarm(2)' is set, then icomSyncSrcAlarmTrap
+        notifications are enabled.
+       "
+    DEFVAL { {clockMode} }
+    ::= { icomSyncMIBObjects 1 }
+
+-- -------------------------------------------------------------
+-- icomSyncCfgTable
+-- -------------------------------------------------------------
+
+icomSyncCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSyncCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains configuration for each G.781 clock selection
+        process.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomSyncMIBObjects 2 }
+
+icomSyncCfgEntry OBJECT-TYPE
+    SYNTAX      IcomSyncCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSyncCfgTable.
+       "
+    INDEX       { icomSyncCfgIndex }
+    ::= { icomSyncCfgTable 1 }
+
+IcomSyncCfgEntry ::= SEQUENCE {
+    icomSyncCfgIndex                            Unsigned32,
+    icomSyncCfgQLMode                           INTEGER,
+    icomSyncCfgWtrTime                          Unsigned32
+}
+
+icomSyncCfgIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An index that uniquely identifies a clock selection process.
+       "
+    ::= { icomSyncCfgEntry 1 }
+
+icomSyncCfgQLMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+            qlEnabled   (1),
+            qlDisabled  (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the selection process working mode.
+
+        If value is set to 'qlEnabled(1)', then the selection process is
+        working in QL-enabled mode, which primarily considers the source's
+        clock quality level and priority as the clock selection criteria.
+
+        If value is set to 'qlDisabled(2)', then the selection process
+        is working in QL-disabled mode, which primarily considers the
+        source's priority as the clock selection criterion.
+       "
+    REFERENCE
+       "ITU-T G.781 section 5.12
+       "
+    DEFVAL { qlDisabled }
+    ::= { icomSyncCfgEntry 2 }
+
+icomSyncCfgWtrTime OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..12)
+    UNITS       "minutes"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the wait to restore time, which ensures that
+        a previous failed synchronization source is only again considered
+        as available by the selection process if it is fault-free for
+        a certain time.
+
+        The wait to restore time is configurable in the range of 0 to
+        12 minutes in steps of 1 minute for all inputs of a selection
+        process in common.
+       "
+    REFERENCE
+       "ITU-T G.781 section 5.9
+       "
+    DEFVAL { 5 }
+    ::= { icomSyncCfgEntry 3 }
+
+-- -------------------------------------------------------------
+-- icomSyncStatusTable
+-- -------------------------------------------------------------
+
+icomSyncStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSyncStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains status information for each G.781 clock
+        selection process.
+       "
+    ::= { icomSyncMIBObjects 3 }
+
+icomSyncStatusEntry OBJECT-TYPE
+    SYNTAX      IcomSyncStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSyncStatusTable.
+       "
+    AUGMENTS    { icomSyncCfgEntry }
+    ::= { icomSyncStatusTable 1 }
+
+IcomSyncStatusEntry ::= SEQUENCE {
+    icomSyncStatusClockMode                     INTEGER,
+    icomSyncStatusNumSources                    Gauge32,
+    icomSyncStatusLastHoldover                  Unsigned32,
+    icomSyncStatusCurrHoldover                  Unsigned32,
+    icomSyncStatusSelSlot                       Unsigned32,
+    icomSyncStatusSelType                       IcomSyncSourceType,
+    icomSyncStatusSelIndex                      Unsigned32,
+    icomSyncStatusSelTimeStamp                  TimeStamp
+}
+
+icomSyncStatusClockMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+            unknown       (1),
+            freerun       (2),
+            holdover      (3),
+            locked        (4),
+            lockAcquiring (5)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the operating mode of the system clock.
+
+        If value equals 'unknown(1)', then the operating mode of the
+        system clock could not be determined.
+
+        If value equals 'freerun(2)', then the system clock is operating
+        in freerun mode.
+
+        If value equals 'holdover(3)', then the system clock is operating
+        in holdover mode.
+
+        If value equals 'locked(4)', then the system clock is locked to
+        a valid clock reference.
+
+        If value equals 'lockAcquiring(5)', then the system clock is
+        acquiring a lock to a valid clock reference.
+       "
+    REFERENCE
+       "ITU-T G.781 section 6.3
+       "
+    ::= { icomSyncStatusEntry 1 }
+
+icomSyncStatusNumSources OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "sources"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of synchronization sources
+        currently configured for the clock selection process.
+       "
+    ::= { icomSyncStatusEntry 2 }
+
+icomSyncStatusLastHoldover OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the duration of the last holdover period
+        (in seconds). If the last holdover period lasted less than a
+        second, then the object will hold the value zero.
+       "
+    ::= { icomSyncStatusEntry 3 }
+
+icomSyncStatusCurrHoldover OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the duration of the current holdover
+        period.
+
+        If the system clock is operating in holdover mode, then the
+        object holds the elapsed duration of the current holdover interval
+        (in seconds).
+
+        If the system clock is not operating in holdover mode, then the
+        object will hold the value zero.
+       "
+    ::= { icomSyncStatusEntry 4 }
+
+icomSyncStatusSelSlot OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the slot of the selected synchronization
+        source. It maps to an icomSyncSrcCfgSlot index of
+        icomSyncSrcCfgTable.
+       "
+    ::= { icomSyncStatusEntry 5 }
+
+icomSyncStatusSelType OBJECT-TYPE
+    SYNTAX      IcomSyncSourceType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the type of the selected synchronization
+        source. It maps to an icomSyncSrcCfgType index of
+        icomSyncSrcCfgTable.
+       "
+    ::= { icomSyncStatusEntry 6 }
+
+icomSyncStatusSelIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the index of the selected synchronization
+        source. It maps to an icomSyncSrcCfgIndex index of
+        icomSyncSrcCfgTable.
+       "
+    ::= { icomSyncStatusEntry 7 }
+
+icomSyncStatusSelTimeStamp OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the timestamp of the selected synchronization
+        source.
+       "
+    ::= { icomSyncStatusEntry 8 }
+
+-- -------------------------------------------------------------
+-- icomSyncCmdTable
+-- -------------------------------------------------------------
+
+--icomSyncCmdTable       OBJECT IDENTIFIER ::= { icomSyncMIBObjects 4 }
+
+-- -------------------------------------------------------------
+-- icomSyncSrcCfgTable
+-- -------------------------------------------------------------
+
+icomSyncSrcCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSyncSrcCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains configuration for each synchronization source
+        that can be used for an ITU-T G.781 clock selection process.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomSyncMIBObjects 5 }
+
+icomSyncSrcCfgEntry OBJECT-TYPE
+    SYNTAX      IcomSyncSrcCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSyncSrcCfgTable.
+       "
+    INDEX       { icomSyncSrcCfgSlot, icomSyncSrcCfgType, icomSyncSrcCfgIndex }
+    ::= { icomSyncSrcCfgTable 1 }
+
+IcomSyncSrcCfgEntry ::= SEQUENCE {
+    icomSyncSrcCfgSlot                          Unsigned32,
+    icomSyncSrcCfgType                          IcomSyncSourceType,
+    icomSyncSrcCfgIndex                         Unsigned32,
+    icomSyncSrcCfgPriority                      Unsigned32,
+    icomSyncSrcCfgQLoverwrite                   TruthValue,
+    icomSyncSrcCfgQLfixedValue                  IcomSyncQLType,
+    icomSyncSrcCfgHoldoffTime                   Unsigned32,
+    icomSyncSrcCfgLockout                       TruthValue,
+    icomSyncSrcCfgFSw                           TruthValue,
+    icomSyncSrcCfgRowStatus                     RowStatus
+}
+
+icomSyncSrcCfgSlot OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the slot of this synchronization source.
+       "
+    ::= { icomSyncSrcCfgEntry 1 }
+
+icomSyncSrcCfgType OBJECT-TYPE
+    SYNTAX      IcomSyncSourceType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the type of this synchronization source.
+       "
+    ::= { icomSyncSrcCfgEntry 2 }
+
+icomSyncSrcCfgIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the index of this synchronization source,
+        in order to identify the latter among all synchronization sources
+        of the same slot and type.
+       "
+    ::= { icomSyncSrcCfgEntry 3 }
+
+icomSyncSrcCfgPriority OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..250)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the synchronization source priority.
+
+        A smaller value represents a higher priority. In order to define
+        a preferred network synchronization flow, priority values are
+        allocated to assigned synchronization sources within a network
+        element. Different priorities reflect a preference of one
+        synchronization source over the other. Equal synchronization
+        source priorities reflect that no preference exists between the
+        synchronization sources. Within the group of synchronization
+        sources with equal priorities, the selection process has a
+        non-revertive behaviour.
+
+        A value of zero implies that this synchronization source is
+        not nominated for the selection process (priority value 'dis'
+        of G.781).
+       "
+    REFERENCE
+       "ITU-T G.781 section 5.10
+       "
+    DEFVAL { 1 }
+    ::= { icomSyncSrcCfgEntry 4 }
+
+icomSyncSrcCfgQLoverwrite OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object enables overwriting the incoming quality level
+        information.
+
+        If value is set to 'true(1)', then the incoming quality level
+        information will be overwritten by icomSyncSrcCfgQLfixedValue.
+
+        If value is set to 'false(2)', then the incoming quality level
+        information will be passed through.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.4.3, 6.2.2
+       "
+    DEFVAL { false }
+    ::= { icomSyncSrcCfgEntry 5 }
+
+icomSyncSrcCfgQLfixedValue OBJECT-TYPE
+    SYNTAX      IcomSyncQLType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies a fixed provisioned value to force onto the
+        quality level of this synchronization source. Forcing of quality
+        levels is used for new equipment operating in QL-enabled mode in
+        order to:
+
+        - interwork with old equipment not supporting SSM/TM generation;
+        - interwork with new equipment operating in QL-disabled mode;
+        - select interfaces not supporting SSM/TM processing;
+        - select signals for which SSM/TM is not defined
+
+        The object is only applicable if the icomSyncSrcCfgQLoverwrite
+        has been set to the value 'true(1)'.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.4.3, 6.2.2
+       "
+    DEFVAL { dnu }
+    ::= { icomSyncSrcCfgEntry 6 }
+
+icomSyncSrcCfgHoldoffTime OBJECT-TYPE
+    SYNTAX      Unsigned32 (300..10000)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies a hold-off time for this synchronization
+        source (in msec). The hold-off time ensures that a short
+        activation of signal fail is not passed to the selection
+        process. In QL-disabled mode, signal fail shall be active for the
+        hold-off time before it is passed to the selection process. In
+        QL-enabled mode, a QL value of QL-FAILED shall exist for the
+        hold-off time before it is passed to the selection process. In
+        the meantime, the previous QL value is passed to the selection
+        process.
+       "
+    REFERENCE
+       "ITU-T G.781 section 5.8
+       "
+    DEFVAL { 300 }
+    ::= { icomSyncSrcCfgEntry 7 }
+
+icomSyncSrcCfgLockout OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object enables issuing the lockout command for this
+        synchronization source.
+
+        If value is set to 'true(1)', then lockout is set, and this
+        source is no longer considered as available synchronization
+        source for the selection process.
+
+        If value is set to 'false(2)', then lockout is cleared, and this
+        source is again considered as available synchronization source
+        for the selection process.
+       "
+    REFERENCE
+       "ITU-T G.781 section 5.11.1
+       "
+    DEFVAL { false }
+    ::= { icomSyncSrcCfgEntry 8 }
+
+icomSyncSrcCfgFSw OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object enables issuing the forced switch command for this
+        synchronization source.
+
+        A forced switch to #p command can be used to override the
+        currently selected synchronization source, assuming the
+        synchronization source #p is enabled and not locked out. The
+        forced switch overrides the manual switch, and a subsequent
+        forced switch pre-empts the previous forced switch. If the source
+        selected by the forced switch command (#p) is disabled or locked
+        out, the forced switch command is automatically rejected. A
+        forced switch command to a synchronization source #p that is in
+        the signal fail state or has a QL of DNU in QL-enabled mode will
+        result in the network element entering holdover.
+
+        If value is set to 'true(1)', then forced switch is ordered for
+        this synchronization source.
+
+        If value is set to 'false(2)', then forced switch is cleared
+        for this synchronization source.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.11.2.1, 5.11.2.2
+       "
+    DEFVAL { false }
+    ::= { icomSyncSrcCfgEntry 9 }
+
+icomSyncSrcCfgRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the RowStatus. It is used for creation
+        and deletion of rows from the manager.
+       "
+    ::= { icomSyncSrcCfgEntry 10 }
+
+-- -------------------------------------------------------------
+-- icomSyncSrcStatusTable
+-- -------------------------------------------------------------
+
+icomSyncSrcStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSyncSrcStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains status information for each synchronization
+        source that can be used for an ITU-T G.781 clock selection process.
+       "
+    ::= { icomSyncMIBObjects 6 }
+
+icomSyncSrcStatusEntry OBJECT-TYPE
+    SYNTAX      IcomSyncSrcStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSyncSrcStatusTable.
+       "
+    AUGMENTS    { icomSyncSrcCfgEntry }
+    ::= { icomSyncSrcStatusTable 1 }
+
+IcomSyncSrcStatusEntry ::= SEQUENCE {
+    icomSyncSrcStatusName                       SnmpAdminString,
+    icomSyncSrcStatusTxQL                       IcomSyncQLType,
+    icomSyncSrcStatusRxQL                       IcomSyncQLType,
+    icomSyncSrcStatusQL                         IcomSyncQLType,
+    icomSyncSrcStatusSourceUA                   IcomSyncSourceUAType,
+    icomSyncSrcStatusSignalFail                 TruthValue,
+    icomSyncSrcStatusCurAlarm                   IcomSyncAlarmType,
+    icomSyncSrcStatusPrevAlarm                  IcomSyncAlarmType
+}
+
+icomSyncSrcStatusName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the name of this synchronization source.
+       "
+    ::= { icomSyncSrcStatusEntry 1 }
+
+icomSyncSrcStatusTxQL OBJECT-TYPE
+    SYNTAX      IcomSyncQLType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the most recent clock quality level
+        transmitted to the network via this synchronization source.
+       "
+    ::= { icomSyncSrcStatusEntry 2 }
+
+icomSyncSrcStatusRxQL OBJECT-TYPE
+    SYNTAX      IcomSyncQLType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the most recent clock quality level
+        received from the network via this synchronization source.
+       "
+    ::= { icomSyncSrcStatusEntry 3 }
+
+icomSyncSrcStatusQL OBJECT-TYPE
+    SYNTAX      IcomSyncQLType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the current clock quality level of this
+        synchronization source. This is the effective clock quality which
+        is derived from three factors (in ascending order of precedence):
+
+        1) most recent clock quality level received, or
+        2) configured forced clock quality level, or
+        3) system-overridden clock quality level as a result of
+        exceptional events, such as signal fail or ESMC failure.
+       "
+    ::= { icomSyncSrcStatusEntry 4 }
+
+icomSyncSrcStatusSourceUA OBJECT-TYPE
+    SYNTAX      IcomSyncSourceUAType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the unavailability status of this
+        synchronization source. If this value is non-zero, then the
+        synchronization source is excluded from the selection process.
+       "
+    ::= { icomSyncSrcStatusEntry 5 }
+
+icomSyncSrcStatusSignalFail OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the signal fail status of this
+        synchronization source. Signal fail for a synchronization
+        source is activated in case of defects detected in the server
+        layers. In addition, an unconnected synchronization source has
+        also signal fail active in order to allow correct processing in
+        the QL-disabled mode.
+
+        If value is 'true(1)', then a signal fail event is currently
+        being reported for this synchronization source.
+
+        If value is 'false(2)', then no signal fail event is currently
+        being reported for this synchronization source.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.7
+       "
+    ::= { icomSyncSrcStatusEntry 6 }
+
+icomSyncSrcStatusCurAlarm OBJECT-TYPE
+    SYNTAX      IcomSyncAlarmType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the current alarm state of this
+        synchronization source.
+       "
+    ::= { icomSyncSrcStatusEntry 7 }
+
+icomSyncSrcStatusPrevAlarm OBJECT-TYPE
+    SYNTAX      IcomSyncAlarmType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the previous alarm state of this
+        synchronization source (i.e., prior to the emission of the
+        last icomSyncSrcAlarmTrap notification).
+       "
+    ::= { icomSyncSrcStatusEntry 8 }
+
+-- -------------------------------------------------------------
+-- icomSyncSrcCmdTable
+-- -------------------------------------------------------------
+
+icomSyncSrcCmdTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSyncSrcCmdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table enables issuing commands to a synchronization
+        source that can be used for an ITU-T G.781 clock selection
+        process.
+       "
+    ::= { icomSyncMIBObjects 7 }
+
+icomSyncSrcCmdEntry OBJECT-TYPE
+    SYNTAX      IcomSyncSrcCmdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSyncSrcCmdTable.
+       "
+    AUGMENTS    { icomSyncSrcCfgEntry }
+    ::= { icomSyncSrcCmdTable 1 }
+
+IcomSyncSrcCmdEntry ::= SEQUENCE {
+    icomSyncSrcCmdClearWtr                      TruthValue,
+    icomSyncSrcCmdClearSourceUA                 IcomSyncSourceUAType,
+    icomSyncSrcCmdMSw                           TruthValue
+}
+
+icomSyncSrcCmdClearWtr OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables clearing the wait to restore timer of this
+        synchronization source.
+
+        If value is set to 'true(1)', then the wait to restore timer
+        of this synchronization source is cleared, and the new QL value
+        (in QL-enabled mode), or signal fail value (in QL-disabled mode),
+        is immediately passed to the selection process.
+
+        If value is set to 'false(2)', then no action is performed.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.9
+       "
+    ::= { icomSyncSrcCmdEntry 1 }
+
+icomSyncSrcCmdClearSourceUA OBJECT-TYPE
+    SYNTAX      IcomSyncSourceUAType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables clearing the unavailability status of this
+        synchronization source. If a bit is set, then the corresponding
+        bit of the source unavailability status is ordered to
+        be cleared. The specific bits that are allowed to be set
+        (i.e., cleared in the source unavailability status) are
+        implementation-specific.
+       "
+    ::= { icomSyncSrcCmdEntry 2 }
+
+icomSyncSrcCmdMSw OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables issuing the manual switch command for this
+        synchronization source.
+
+        A manual switch to #p command selects the synchronization source
+        #p, assuming it is enabled, not locked out, not in signal
+        fail condition, and has a QL better than DNU in QL-enabled
+        mode. Furthermore, in QL-enabled mode, a manual switch can be
+        performed only to a source which has the highest available QL. As
+        such, these conditions have the effect that manual switching can
+        only be used to override the assigned synchronization source
+        priorities. A manual switch request overrides a previous
+        manual switch request. If the source selected by the manual
+        switch command (#p) is disabled, locked out, in signal fail or
+        has a QL of DNU or lower than one of the other source signals,
+        the manual switch command is automatically rejected.
+
+        If value is set to 'true(1)', then manual switch is ordered for
+        this synchronization source.
+
+        If value is set to 'false(2)', then manual switch is cleared
+        for this synchronization source.
+       "
+    REFERENCE
+       "ITU-T G.781 sections 5.11.2.1, 5.11.2.3
+       "
+    ::= { icomSyncSrcCmdEntry 3 }
+
+--
+--  Notifications groups
+--
+icomSyncMIBNotifObjects OBJECT IDENTIFIER ::= { icomSyncMIB 0 }
+
+icomSyncClockModeTrap NOTIFICATION-TYPE
+    OBJECTS {
+        icomSyncStatusClockMode
+    }
+    STATUS      current
+    DESCRIPTION
+       "This trap reports a system clock mode event. This notification
+        is generated whenever the operating mode of the system clock
+        is changed.
+       "
+    ::= { icomSyncMIBNotifObjects 1 }
+
+icomSyncSelClockTrap NOTIFICATION-TYPE
+    OBJECTS {
+        icomSyncSrcStatusName,
+        icomSyncSrcStatusQL,
+        icomSyncSrcCfgPriority
+    }
+    STATUS      current
+    DESCRIPTION
+       "This trap reports a clock selection event. This notification is
+        generated when one of the following conditions is met:
+
+        - A new clock source is selected by the clock selection process.
+        - The clock quality of a selected clock source is changed.
+        - The configured priority of a selected clock source is changed.
+       "
+    ::= { icomSyncMIBNotifObjects 2 }
+
+icomSyncSrcAlarmTrap NOTIFICATION-TYPE
+    OBJECTS {
+        icomSyncSrcStatusName,
+        icomSyncSrcStatusCurAlarm,
+        icomSyncSrcStatusPrevAlarm
+    }
+    STATUS      current
+    DESCRIPTION
+       "This trap reports a synchronization source alarm event. This
+        notification is generated when an alarm event is reported on an
+        input synchronization source.
+       "
+    ::= { icomSyncMIBNotifObjects 3 }
+
+--
+-- Conformance information
+--
+
+icomSyncMIBConformance OBJECT IDENTIFIER ::= { icomSyncMIB 2 }
+icomSyncMIBCompliances OBJECT IDENTIFIER ::= { icomSyncMIBConformance 1 }
+icomSyncMIBGroups      OBJECT IDENTIFIER ::= { icomSyncMIBConformance 2 }
+
+--
+-- Compliance statements
+--
+icomSyncMIBCompliance MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+       "The compliance statement for icomSyncMIB.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        icomSyncMIBGroup,
+        icomSyncMIBNotifGroup
+    }
+    ::= { icomSyncMIBCompliances 1 }
+
+icomSyncMIBGroup OBJECT-GROUP
+    OBJECTS {
+        icomSyncTrapEnable,
+
+        icomSyncCfgQLMode,
+        icomSyncCfgWtrTime,
+
+        icomSyncStatusClockMode,
+        icomSyncStatusNumSources,
+        icomSyncStatusLastHoldover,
+        icomSyncStatusCurrHoldover,
+        icomSyncStatusSelSlot,
+        icomSyncStatusSelType,
+        icomSyncStatusSelIndex,
+        icomSyncStatusSelTimeStamp,
+
+        icomSyncSrcCfgPriority,
+        icomSyncSrcCfgQLoverwrite,
+        icomSyncSrcCfgQLfixedValue,
+        icomSyncSrcCfgHoldoffTime,
+        icomSyncSrcCfgLockout,
+        icomSyncSrcCfgFSw,
+        icomSyncSrcCfgRowStatus,
+
+        icomSyncSrcStatusName,
+        icomSyncSrcStatusTxQL,
+        icomSyncSrcStatusRxQL,
+        icomSyncSrcStatusQL,
+        icomSyncSrcStatusSourceUA,
+        icomSyncSrcStatusSignalFail,
+        icomSyncSrcStatusCurAlarm,
+        icomSyncSrcStatusPrevAlarm,
+
+        icomSyncSrcCmdClearWtr,
+        icomSyncSrcCmdClearSourceUA,
+        icomSyncSrcCmdMSw
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomSyncMIB."
+    ::= { icomSyncMIBGroups 1 }
+
+icomSyncMIBNotifGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        icomSyncClockModeTrap,
+        icomSyncSelClockTrap,
+        icomSyncSrcAlarmTrap
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of notifications for icomSyncMIB.
+        "
+    ::= { icomSyncMIBGroups 2 }
+
+END

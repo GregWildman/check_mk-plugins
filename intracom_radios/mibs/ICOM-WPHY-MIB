@@ -1,0 +1,3147 @@
+ICOM-WPHY-MIB DEFINITIONS ::= BEGIN
+
+-- =========================================================
+-- ICOM WPHY MIB MODULE
+-- =========================================================
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Integer32, Counter64, Unsigned32
+        FROM SNMPv2-SMI                   -- [RFC2578]
+    TEXTUAL-CONVENTION, TruthValue, TimeInterval
+        FROM SNMPv2-TC                    -- [RFC2579]
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+        FROM SNMPv2-CONF                  -- [RFC2580]
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    IcomDateTimeType
+        FROM ICOM-PERFHIST-TC-MIB
+    intracom
+      FROM ICOM-SMI;
+
+icomWphyMIB MODULE-IDENTITY
+    LAST-UPDATED "201402200000Z"
+    ORGANIZATION "Intracom Wireless Group"
+    CONTACT-INFO
+        "EMail:
+         Phone:
+         Co-editor:
+         EMail:
+         Phone:
+        "
+    DESCRIPTION
+        "This MIB module defines proprietary information related to WPHY
+         configuration and management.
+        "
+    REVISION "201402200000Z"
+    DESCRIPTION
+        "Initial version
+        "
+::= { intracom 113 }
+
+icomWPhyNotificationObjects   OBJECT IDENTIFIER ::= { icomWphyMIB 0 }
+icomWPhyNotificationPrefix    OBJECT IDENTIFIER ::= { icomWPhyNotificationObjects 0 }
+
+icomWPhyTsObjects             OBJECT IDENTIFIER ::= { icomWphyMIB 1 }
+icomWPhyCommonObjects         OBJECT IDENTIFIER ::= { icomWphyMIB 2 }
+icomWPhyPerfObjects           OBJECT IDENTIFIER ::= { icomWphyMIB 3 }
+icomWPhyConformance           OBJECT IDENTIFIER ::= { icomWphyMIB 4 }
+
+icomWPhyGroups                OBJECT IDENTIFIER ::= { icomWPhyConformance 1 }
+icomWPhyCompliances           OBJECT IDENTIFIER ::= { icomWPhyConformance 2 }
+
+--=========================================================
+-- Textual Conventions
+--=========================================================
+
+IcomWphyBandwidthType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Indicates the modem bandwidth type.
+        "
+    SYNTAX      INTEGER {
+            bw7MHz      (1),
+            bw14MHz     (2),
+            bw28MHz     (3),
+            bw56MHz     (4),
+            bw10MHz     (5),
+            bw20MHz     (6),
+            bw30MHz     (7),
+            bw40MHz     (8),
+            bw50MHz     (9)
+    }
+
+IcomWphyModulationType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Indicates the modem modulation type.
+        "
+    SYNTAX      INTEGER {
+            qam4        (1),
+            qam16       (2),
+            qam32       (3),
+            qam64       (4),
+            qam128      (5),
+            qam256      (6),
+            qam512      (7),
+            qam1024     (8),
+            qam2048     (9),
+            qam4096     (10)
+    }
+
+IcomWphyAcmThrOpType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "ACM threshold operation selection.
+        "
+    SYNTAX      INTEGER {
+            disabled    (1),
+            and         (2),
+            or          (3),
+            pn          (4),
+            fecStress   (5)
+    }
+
+IcomWphyDbmType ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-1"
+    STATUS      current
+    DESCRIPTION
+        "Tenths of dBm. To obtain the actual value in dBm, divide the
+         IcomWphyDbmType value by 10.
+        "
+    SYNTAX      Integer32
+
+IcomWphyDbType ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-1"
+    STATUS      current
+    DESCRIPTION
+        "Tenths of dB. To obtain the actual value in dB, divide the
+         IcomWphyDbType value by 10.
+        "
+    SYNTAX      Integer32
+
+IcomWphyFecRateType ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-3"
+    STATUS      current
+    DESCRIPTION
+        "Thousandths of FEC rate. To obtain the actual value, divide
+         the IcomWphyFecRateType value by 1000.
+        "
+    SYNTAX      Unsigned32
+
+IcomWphyBerType ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d" -- normalized value = value * 2^32
+    STATUS      current
+    DESCRIPTION
+        "Bit Error Rate (BER). To obtain the actual value, divide
+         the IcomWphyBerType value by 2^32.
+        "
+    SYNTAX      Unsigned32
+
+IcomWphyRfuStatusAlarmBitmapType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "RFU status alarm bitmap. Each bit corresponds to a specific
+         RFU status alarm.
+        "
+    SYNTAX      BITS {
+            tableError     (0),
+            txPowerAlarm   (1),
+            txPllLockFail  (2),
+            rxPllLockFail  (3),
+            mwPllLockFail  (4),
+            freqOutOfRange (5),
+            internalAlarm  (6)
+    }
+
+IcomWphyLinkStatusAlarmBitmapType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Link status alarm bitmap. Each bit corresponds to a specific
+         link status alarm.
+        "
+    SYNTAX      BITS {
+            frameSyncUnlock     (0),
+            symbolTimingUnlock  (1),
+            fecCtrlZoneUnlock   (2),
+            fecUnlock           (3),
+            agcUnlock           (4),
+            mseAlarm            (5),
+            fecAlarm            (6),
+            berCorrectedAlarm   (7),
+            berUncorrectedAlarm (8)
+    }
+
+IcomWphyLinkStatusThresBitmapType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "Threshold crossing information bitmap. Each bit corresponds to
+         a specific threshold crossing event.
+        "
+    SYNTAX       BITS {
+            rssi                (0),
+            snr                 (1),
+            fecStress           (2)
+    }
+
+--=========================================================
+-- Rfu Scan Table
+--=========================================================
+
+icomWphyTsRfuScanTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyTsRfuScanEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table holds a list of 16 TX/RX (UL/DL) frequency pairs
+         and enable values. The TS attempts to lock to the BS using each
+         enabled pair sequentially in the scanning phase.
+
+         This table is only meaningful for the TS.
+        "
+    ::= { icomWPhyTsObjects  1 }
+
+icomWphyTsRfuScanEntry OBJECT-TYPE
+    SYNTAX       IcomWphyTsRfuScanEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyTsRfuScanTable.
+        "
+    INDEX  { icomWphyTsRfuScanId }
+    ::={ icomWphyTsRfuScanTable 1 }
+
+IcomWphyTsRfuScanEntry ::= SEQUENCE {
+    icomWphyTsRfuScanId              Integer32,
+    icomWphyTsRfuScanRxFrequency     Unsigned32,
+    icomWphyTsRfuScanTxFrequency     Unsigned32,
+    icomWphyTsRfuScanEnable          TruthValue
+}
+
+icomWphyTsRfuScanId   OBJECT-TYPE
+    SYNTAX       Integer32 (1..16)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "RFU scan Id value. This references one of the TX/RX frequency
+         pairs in the scan table. There are 16 entries, but some can be
+         disabled, i.e., icomWphyTsRfuScanEnable is set to false.
+        "
+    ::= { icomWphyTsRfuScanEntry 1 }
+
+icomWphyTsRfuScanRxFrequency    OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "TS RX (DL) frequency in kHz.
+        "
+    ::= { icomWphyTsRfuScanEntry 2 }
+
+icomWphyTsRfuScanTxFrequency   OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "TS TX (UL) frequency in kHz.
+        "
+    ::= { icomWphyTsRfuScanEntry 3 }
+
+icomWphyTsRfuScanEnable   OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Enable scan for the selected frequency.
+        "
+    ::= { icomWphyTsRfuScanEntry 4 }
+
+--=========================================================
+-- Rfu Config Table
+--=========================================================
+
+icomWphyRfuCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyRfuCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table holds the RFU configuration.
+        "
+    ::= { icomWPhyCommonObjects  1 }
+
+icomWphyRfuCfgEntry OBJECT-TYPE
+    SYNTAX       IcomWphyRfuCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyRfuCfgTable.
+        "
+    INDEX  { icomWphyRfuCfgId }
+    ::={ icomWphyRfuCfgTable 1 }
+
+IcomWphyRfuCfgEntry ::= SEQUENCE {
+    icomWphyRfuCfgId             Integer32,
+    icomWphyRfuCfgReset          TruthValue,
+    icomWphyRfuCfgMute           TruthValue,
+    icomWphyRfuCfgLoop           TruthValue,
+    icomWphyRfuCfgTxPower        IcomWphyDbmType,
+    icomWphyRfuCfgTxFrequency    Unsigned32,
+    icomWphyRfuCfgRxFrequency    Unsigned32
+}
+
+icomWphyRfuCfgId   OBJECT-TYPE
+    SYNTAX       Integer32 (1..32768)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "RFU Id value. One instance exists per attached RFU.
+         Base Station:     It is restricted to 1 instance in full-outdoor models.
+         Terminal Station: It is restricted to 1 instance.
+        "
+    ::= { icomWphyRfuCfgEntry 1 }
+
+icomWphyRfuCfgReset    OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU reset action.
+        "
+    DEFVAL { false }
+    ::= { icomWphyRfuCfgEntry 2 }
+
+icomWphyRfuCfgMute    OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU mute enable.
+
+         Only valid in BS mode.
+        "
+    DEFVAL { true }
+    ::= { icomWphyRfuCfgEntry 3 }
+
+icomWphyRfuCfgLoop     OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU loopback enable.
+
+         This object is currently not applicable.
+        "
+    DEFVAL { false }
+    ::= { icomWphyRfuCfgEntry 4 }
+
+icomWphyRfuCfgTxPower      OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU configured TX power in 0.1 dBm steps.
+
+         Only valid in BS mode. In TS mode, the BS is responsible for
+         configuring the TS TX power.
+        "
+    ::= { icomWphyRfuCfgEntry 5 }
+
+icomWphyRfuCfgTxFrequency       OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU configured TX Frequency in kHz.
+
+         Only valid in BS mode. In TS mode, the icomWphyTsRfuScanTable
+         is used instead.
+        "
+    ::= { icomWphyRfuCfgEntry 6 }
+
+icomWphyRfuCfgRxFrequency      OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "RFU configured RX frequency in kHz.
+
+         Only valid in BS mode. In TS mode, the icomWphyTsRfuScanTable
+         is used instead.
+        "
+    ::= { icomWphyRfuCfgEntry 7 }
+
+--=========================================================
+-- Rfu Capabilities Table
+--=========================================================
+
+icomWphyRfuCapTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyRfuCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only RFU capabilities information.
+        "
+    ::= { icomWPhyCommonObjects  2 }
+
+icomWphyRfuCapEntry OBJECT-TYPE
+    SYNTAX       IcomWphyRfuCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyRfuCapTable.
+        "
+    AUGMENTS { icomWphyRfuCfgEntry }
+    ::={ icomWphyRfuCapTable 1 }
+
+IcomWphyRfuCapEntry  ::= SEQUENCE {
+    icomWphyRfuCapBand             INTEGER,
+    icomWphyRfuCapTxPowerMin       IcomWphyDbmType,
+    icomWphyRfuCapTxPowerMax       IcomWphyDbmType,
+    icomWphyRfuCapTxFreqMin        Integer32,
+    icomWphyRfuCapTxFreqMax        Integer32,
+    icomWphyRfuCapRxFreqMin        Integer32,
+    icomWphyRfuCapRxFreqMax        Integer32,
+    icomWphyRfuCapFreqStep         Integer32,
+    icomWphyRfuCapAllowedTxFreqMin Integer32,
+    icomWphyRfuCapAllowedTxFreqMax Integer32,
+    icomWphyRfuCapAllowedRxFreqMin Integer32,
+    icomWphyRfuCapAllowedRxFreqMax Integer32,
+    icomWphyRfuCapDuplexSpacing    Integer32
+}
+
+icomWphyRfuCapBand     OBJECT-TYPE
+    SYNTAX       INTEGER {
+            low         (1),
+            high        (2)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "RFU band (high/low).
+        "
+    ::= { icomWphyRfuCapEntry 1 }
+
+icomWphyRfuCapTxPowerMin     OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MIN TX power (nominal) in 0.1 dBm steps.
+        "
+    ::= { icomWphyRfuCapEntry 2 }
+
+icomWphyRfuCapTxPowerMax     OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MAX TX power (nominal) in 0.1 dBm steps.
+        "
+    ::= { icomWphyRfuCapEntry 3 }
+
+icomWphyRfuCapTxFreqMin     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Factory MIN TX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 4 }
+
+icomWphyRfuCapTxFreqMax     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Factory MAX TX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 5 }
+
+icomWphyRfuCapRxFreqMin     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Factory MIN RX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 6 }
+
+icomWphyRfuCapRxFreqMax     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Factory MAX RX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 7 }
+
+icomWphyRfuCapFreqStep     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Frequency step in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 8 }
+
+icomWphyRfuCapAllowedTxFreqMin     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MIN TX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 9 }
+
+icomWphyRfuCapAllowedTxFreqMax     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MAX TX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 10 }
+
+icomWphyRfuCapAllowedRxFreqMin     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MIN RX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 11 }
+
+icomWphyRfuCapAllowedRxFreqMax     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "MAX RX frequency in kHz.
+        "
+    ::= { icomWphyRfuCapEntry 12 }
+
+icomWphyRfuCapDuplexSpacing     OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Difference Tx Frequency minus RX frequency in kHz. The
+         icomWphyRfuCapBand object indicates if the Tx Frequency is
+         lower or higher than the Rx Frequency and therefore indicates
+         the sign of the Duplex Spacing value.
+        "
+    ::= { icomWphyRfuCapEntry 13 }
+
+--=========================================================
+-- Rfu Status Table
+--=========================================================
+
+icomWphyRfuStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyRfuStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table holds read-only RFU status information.
+        "
+    ::= { icomWPhyCommonObjects  3 }
+
+icomWphyRfuStatusEntry OBJECT-TYPE
+    SYNTAX       IcomWphyRfuStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyRfuStatusTable.
+        "
+    AUGMENTS { icomWphyRfuCfgEntry }
+    ::={ icomWphyRfuStatusTable 1 }
+
+IcomWphyRfuStatusEntry  ::= SEQUENCE {
+    icomWphyRfuStatusState               INTEGER,
+    icomWphyRfuStatusCurAlarmInfo        IcomWphyRfuStatusAlarmBitmapType,
+    icomWphyRfuStatusPrevAlarmInfo       IcomWphyRfuStatusAlarmBitmapType,
+    icomWphyRfuStatusMute                TruthValue,
+    icomWphyRfuStatusTxFrequency         Unsigned32,
+    icomWphyRfuStatusRxFrequency         Unsigned32,
+    icomWphyRfuStatusTxPower             IcomWphyDbmType
+}
+
+icomWphyRfuStatusState    OBJECT-TYPE
+    SYNTAX       INTEGER {
+            working     (1),
+            failed      (2)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "RFU State.
+        "
+    ::= { icomWphyRfuStatusEntry 1 }
+
+icomWphyRfuStatusCurAlarmInfo    OBJECT-TYPE
+    SYNTAX       IcomWphyRfuStatusAlarmBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current bit-mapped RFU alarms (0:No alarm, 1:Alarm).
+        "
+    ::= { icomWphyRfuStatusEntry 2 }
+
+icomWphyRfuStatusPrevAlarmInfo    OBJECT-TYPE
+    SYNTAX       IcomWphyRfuStatusAlarmBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Previous bit-mapped RFU alarms (0:No alarm, 1:Alarm).
+
+         If no previous RFU alarm information exists, then this object
+         holds a value of zero.
+        "
+    ::= { icomWphyRfuStatusEntry 3 }
+
+icomWphyRfuStatusMute    OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "RFU mute operational status.
+        "
+    ::= { icomWphyRfuStatusEntry 4 }
+
+icomWphyRfuStatusTxFrequency     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current TX frequency in kHz.
+        "
+    ::= { icomWphyRfuStatusEntry 5 }
+
+icomWphyRfuStatusRxFrequency    OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "kHz"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current RX frequency in kHz.
+        "
+    ::= { icomWphyRfuStatusEntry 6 }
+
+icomWphyRfuStatusTxPower    OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current TX power in 0.1 dBm steps.
+        "
+    ::= { icomWphyRfuStatusEntry 7 }
+
+--=========================================================
+-- Modem Config Table
+--=========================================================
+
+icomWphyModemCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table holds the modem configuration.
+        "
+    ::= { icomWPhyCommonObjects  4 }
+
+icomWphyModemCfgEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemCfgTable.
+        "
+    INDEX  { icomWphyModemCfgId }
+    ::={ icomWphyModemCfgTable 1 }
+
+IcomWphyModemCfgEntry  ::= SEQUENCE {
+    icomWphyModemCfgId              Integer32,
+    icomWphyModemCfgReset           TruthValue,
+    icomWphyModemCfgLoopback        TruthValue,
+    icomWphyModemCfgProfile         Integer32,
+    icomWphyModemCfgBandwidth       IcomWphyBandwidthType
+}
+
+icomWphyModemCfgId    OBJECT-TYPE
+    SYNTAX       Integer32 (1..32768)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Modem Id. One instance exists per attached modem.
+         Base Station:     It is restricted to 1 instance in full-outdoor models.
+         Terminal Station: It is restricted to 1 instance.
+        "
+    ::= { icomWphyModemCfgEntry 1 }
+
+icomWphyModemCfgReset     OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Modem reset action.
+        "
+    DEFVAL { false }
+    ::= { icomWphyModemCfgEntry 2 }
+
+icomWphyModemCfgLoopback     OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Digital loopback enable.
+        "
+    DEFVAL { false }
+    ::= { icomWphyModemCfgEntry 3 }
+
+icomWphyModemCfgProfile     OBJECT-TYPE
+    SYNTAX       Integer32 (1..16)
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Preset profile that sets up the modem parameters, such as pilots,
+         codewords/frame, available PHYmodes, etc.
+        "
+    DEFVAL { 1 }
+    ::= { icomWphyModemCfgEntry 4 }
+
+icomWphyModemCfgBandwidth     OBJECT-TYPE
+    SYNTAX       IcomWphyBandwidthType
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Modem bandwidth selection.
+        "
+    DEFVAL { bw7MHz }
+    ::= { icomWphyModemCfgEntry 5 }
+
+--=========================================================
+-- Modem Capabilities Table
+--=========================================================
+
+icomWphyModemCapTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only modem capability information.
+        "
+    ::= { icomWPhyCommonObjects  5 }
+
+icomWphyModemCapEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemCapTable.
+        "
+    AUGMENTS { icomWphyModemCfgEntry }
+    ::={ icomWphyModemCapTable 1 }
+
+IcomWphyModemCapEntry ::= SEQUENCE {
+    icomWphyModemCapRole            INTEGER
+}
+
+icomWphyModemCapRole      OBJECT-TYPE
+    SYNTAX       INTEGER {
+            ptmpBs         (1),
+            ptmpTs         (2),
+            ptp            (3)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modem role (PTMP-BS / PTMP-TS / PTP).
+        "
+    ::= { icomWphyModemCapEntry 1 }
+
+--=========================================================
+-- Modem Status Table
+--=========================================================
+
+icomWphyModemStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only modem status information.
+        "
+    ::= { icomWPhyCommonObjects  6 }
+
+icomWphyModemStatusEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemStatusTable.
+        "
+    AUGMENTS  { icomWphyModemCfgEntry }
+    ::={ icomWphyModemStatusTable 1 }
+
+IcomWphyModemStatusEntry  ::= SEQUENCE {
+    icomWphyModemStatusState      INTEGER,
+    icomWphyModemStatusAlarmMask  IcomWphyLinkStatusAlarmBitmapType
+}
+
+icomWphyModemStatusState        OBJECT-TYPE
+    SYNTAX       INTEGER {
+            working        (1),
+            waitMacPhySync (2),
+            comFail        (3),
+            initialize     (4),
+            powerFail      (5)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current modem state.
+        "
+    ::= { icomWphyModemStatusEntry 1 }
+
+icomWphyModemStatusAlarmMask      OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusAlarmBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Mask to derive the critical link status alarm from
+         IcomWphyLinkStatusAlarmBitmapType objects. If a bit is set,
+         then the corresponding alarm is considered critical.
+        "
+    ::= { icomWphyModemStatusEntry 2 }
+
+--=========================================================
+-- Modem Profile Table
+--=========================================================
+
+icomWphyModemProfileTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemProfileEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only information for the available
+         modem profiles.
+        "
+    ::= { icomWPhyCommonObjects  7 }
+
+icomWphyModemProfileEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemProfileEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemProfileTable.
+        "
+    INDEX  { icomWphyModemProfileId }
+    ::={ icomWphyModemProfileTable 1 }
+
+IcomWphyModemProfileEntry ::= SEQUENCE {
+    icomWphyModemProfileId              Integer32,
+    icomWphyModemProfileName            SnmpAdminString,
+    icomWphyModemProfileVersion         SnmpAdminString
+}
+
+icomWphyModemProfileId       OBJECT-TYPE
+    SYNTAX       Integer32 (1..16)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Modem profile index.
+        "
+    ::= { icomWphyModemProfileEntry 1 }
+
+icomWphyModemProfileName       OBJECT-TYPE
+    SYNTAX       SnmpAdminString
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modem profile name.
+        "
+    ::= { icomWphyModemProfileEntry 2 }
+
+icomWphyModemProfileVersion       OBJECT-TYPE
+    SYNTAX       SnmpAdminString
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modem profile version.
+        "
+    ::= { icomWphyModemProfileEntry 3 }
+
+--=========================================================
+-- Modem Profile Capabilities Table
+--=========================================================
+
+icomWphyModemProfileCapTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemProfileCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only per-modem information for the
+         available modem profiles.
+        "
+    ::= { icomWPhyCommonObjects  8 }
+
+icomWphyModemProfileCapEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemProfileCapEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemProfileCapTable.
+        "
+    INDEX  { icomWphyModemCfgId, icomWphyModemProfileId }
+    ::={ icomWphyModemProfileCapTable 1 }
+
+IcomWphyModemProfileCapEntry ::= SEQUENCE {
+    icomWphyModemProfileCapSymbolRate   Unsigned32,
+    icomWphyModemProfileCapFrameLength  Integer32,
+    icomWphyModemProfileCapValid        TruthValue
+}
+
+icomWphyModemProfileCapSymbolRate       OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "symbols/sec"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Symbol rate of the current configuration in symbols/sec.
+        "
+    ::= { icomWphyModemProfileCapEntry 1 }
+
+icomWphyModemProfileCapFrameLength       OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "microseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Frame length for the selected profile in usec.
+        "
+    ::= { icomWphyModemProfileCapEntry 2 }
+
+icomWphyModemProfileCapValid         OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Valid flag for the profile. If true, the indexed profile is
+         valid for the indexed modem; else, the profile is considered
+         invalid for the specific modem.
+        "
+    ::= { icomWphyModemProfileCapEntry 3 }
+
+--=========================================================
+-- Modem Tx Phy Mode Table
+--=========================================================
+
+icomWphyModemTxPhyModeTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemTxPhyModeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only per-modem, per-profile and
+         per-PHYmode modem TX capabilities information.
+        "
+    ::= { icomWPhyCommonObjects  9 }
+
+icomWphyModemTxPhyModeEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemTxPhyModeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemTxPhyModeTable.
+        "
+    INDEX  { icomWphyModemCfgId, icomWphyModemProfileId, icomWphyModemTxPhyModeModeId }
+    ::={ icomWphyModemTxPhyModeTable 1 }
+
+IcomWphyModemTxPhyModeEntry ::= SEQUENCE {
+    icomWphyModemTxPhyModeModeId                 Integer32,
+    icomWphyModemTxPhyModeAirRate                Unsigned32,
+    icomWphyModemTxPhyModeModulation             IcomWphyModulationType,
+    icomWphyModemTxPhyModeFecRate                IcomWphyFecRateType,
+    icomWphyModemTxPhyModeAcmThrLoSnr            IcomWphyDbType,
+    icomWphyModemTxPhyModeAcmThrLoFecStress      IcomWphyBerType,
+    icomWphyModemTxPhyModeAcmThrLoOp             IcomWphyAcmThrOpType,
+    icomWphyModemTxPhyModeAcmThrHiSnr            IcomWphyDbType,
+    icomWphyModemTxPhyModeAcmThrHiFecStress      IcomWphyBerType,
+    icomWphyModemTxPhyModeAcmThrHiOp             IcomWphyAcmThrOpType,
+    icomWphyModemTxPhyModeValid                  TruthValue
+}
+
+icomWphyModemTxPhyModeModeId        OBJECT-TYPE
+    SYNTAX       Integer32 (1..16)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "TX PHY mode, used as key to get specific phymode parameters.
+
+         The table has 16 entries per modem and profile, but some may
+         be disabled, i.e., icomWphyModemTxPhyModeValid is false.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 1 }
+
+icomWphyModemTxPhyModeAirRate         OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "bytes/sec"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum air throughput in bytes/sec.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 2 }
+
+icomWphyModemTxPhyModeModulation         OBJECT-TYPE
+    SYNTAX       IcomWphyModulationType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modulation.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 3 }
+
+icomWphyModemTxPhyModeFecRate         OBJECT-TYPE
+    SYNTAX       IcomWphyFecRateType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "FEC rate, in 0.001 steps.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 4 }
+
+icomWphyModemTxPhyModeAcmThrLoSnr         OBJECT-TYPE
+    SYNTAX       IcomWphyDbType
+    UNITS        "dB"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low SNR ACM threshold in 0.1 dB steps.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 5 }
+
+icomWphyModemTxPhyModeAcmThrLoFecStress         OBJECT-TYPE
+    SYNTAX       IcomWphyBerType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low FEC stress ACM threshold in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyModemTxPhyModeEntry 6 }
+
+icomWphyModemTxPhyModeAcmThrLoOp         OBJECT-TYPE
+    SYNTAX       IcomWphyAcmThrOpType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low threshold ACM operation selection.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 7 }
+
+icomWphyModemTxPhyModeAcmThrHiSnr         OBJECT-TYPE
+    SYNTAX       IcomWphyDbType
+    UNITS        "dB"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High SNR ACM threshold in 0.1 dB steps.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 8 }
+
+icomWphyModemTxPhyModeAcmThrHiFecStress         OBJECT-TYPE
+    SYNTAX       IcomWphyBerType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High FEC stress ACM threshold in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyModemTxPhyModeEntry 9 }
+
+icomWphyModemTxPhyModeAcmThrHiOp         OBJECT-TYPE
+    SYNTAX       IcomWphyAcmThrOpType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High threshold ACM operation selection.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 10 }
+
+icomWphyModemTxPhyModeValid         OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Valid flag for the addressed PHY mode.
+        "
+    ::= { icomWphyModemTxPhyModeEntry 11 }
+
+--=========================================================
+-- Modem Rx Phy Mode Table
+--=========================================================
+
+icomWphyModemRxPhyModeTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemRxPhyModeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only per-modem, per-profile and
+         per-PHYmode modem RX capabilities information.
+        "
+    ::= { icomWPhyCommonObjects  10 }
+
+icomWphyModemRxPhyModeEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemRxPhyModeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemRxPhyModeTable.
+        "
+    INDEX  { icomWphyModemCfgId, icomWphyModemProfileId, icomWphyModemRxPhyModeModeId }
+    ::={ icomWphyModemRxPhyModeTable 1 }
+
+IcomWphyModemRxPhyModeEntry ::= SEQUENCE {
+    icomWphyModemRxPhyModeModeId                 Integer32,
+    icomWphyModemRxPhyModeAirRate                Integer32,
+    icomWphyModemRxPhyModeModulation             IcomWphyModulationType,
+    icomWphyModemRxPhyModeFecRate                IcomWphyFecRateType,
+    icomWphyModemRxPhyModeAcmThrLoSnr            IcomWphyDbType,
+    icomWphyModemRxPhyModeAcmThrLoFecStress      IcomWphyBerType,
+    icomWphyModemRxPhyModeAcmThrLoOp             IcomWphyAcmThrOpType,
+    icomWphyModemRxPhyModeAcmThrHiSnr            IcomWphyDbType,
+    icomWphyModemRxPhyModeAcmThrHiFecStress      IcomWphyBerType,
+    icomWphyModemRxPhyModeAcmThrHiOp             IcomWphyAcmThrOpType,
+    icomWphyModemRxPhyModeValid                  TruthValue
+}
+
+icomWphyModemRxPhyModeModeId     OBJECT-TYPE
+    SYNTAX       Integer32 (1..16)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Rx PHY mode, used as key to get specific phymode parameters.
+
+         The table has 16 entries per modem and profile, but some may
+         be disabled, i.e., icomWphyModemRxPhyModeValid is false.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 1 }
+
+icomWphyModemRxPhyModeAirRate    OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "bytes/sec"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum air throughput in bytes/sec.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 2 }
+
+icomWphyModemRxPhyModeModulation    OBJECT-TYPE
+    SYNTAX       IcomWphyModulationType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modulation.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 3 }
+
+icomWphyModemRxPhyModeFecRate     OBJECT-TYPE
+    SYNTAX       IcomWphyFecRateType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "FEC rate in 0.001 steps.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 4 }
+
+icomWphyModemRxPhyModeAcmThrLoSnr   OBJECT-TYPE
+    SYNTAX       IcomWphyDbType
+    UNITS        "dB"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low SNR ACM threshold in 0.1 dB steps.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 5 }
+
+icomWphyModemRxPhyModeAcmThrLoFecStress   OBJECT-TYPE
+    SYNTAX       IcomWphyBerType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low FEC stress ACM threshold in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyModemRxPhyModeEntry 6 }
+
+icomWphyModemRxPhyModeAcmThrLoOp   OBJECT-TYPE
+    SYNTAX       IcomWphyAcmThrOpType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Low threshold ACM operation selection.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 7 }
+
+icomWphyModemRxPhyModeAcmThrHiSnr   OBJECT-TYPE
+    SYNTAX       IcomWphyDbType
+    UNITS        "dB"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High SNR ACM threshold in 0.1 dB steps.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 8 }
+
+icomWphyModemRxPhyModeAcmThrHiFecStress   OBJECT-TYPE
+    SYNTAX       IcomWphyBerType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High FEC stress ACM threshold in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyModemRxPhyModeEntry 9 }
+
+icomWphyModemRxPhyModeAcmThrHiOp  OBJECT-TYPE
+    SYNTAX       IcomWphyAcmThrOpType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "High threshold ACM operation selection.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 10 }
+
+icomWphyModemRxPhyModeValid    OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Valid flag for the addressed PHY mode.
+        "
+    ::= { icomWphyModemRxPhyModeEntry 11 }
+
+--=========================================================
+-- Modem Link Status Table
+--=========================================================
+
+icomWphyModemLinkStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemLinkStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only link status information.
+        "
+    ::= { icomWPhyCommonObjects  11 }
+
+icomWphyModemLinkStatusEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemLinkStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemLinkStatusTable.
+        "
+    INDEX  { icomWphyModemCfgId, icomWphyModemLinkStatusPeerId }
+    ::={ icomWphyModemLinkStatusTable 1 }
+
+IcomWphyModemLinkStatusEntry  ::= SEQUENCE {
+    icomWphyModemLinkStatusPeerId              Integer32,
+    icomWphyModemLinkStatusRssi                IcomWphyDbmType,
+    icomWphyModemLinkStatusSnr                 IcomWphyDbType,
+    icomWphyModemLinkStatusFecStress           IcomWphyBerType,
+    icomWphyModemLinkStatusRxPhyModeId         Integer32,
+    icomWphyModemLinkStatusTxPhyModeId         Integer32,
+    icomWphyModemLinkStatusModemAlarmState     INTEGER,
+    icomWphyModemLinkStatusModemCurAlarmInfo   IcomWphyLinkStatusAlarmBitmapType,
+    icomWphyModemLinkStatusModemPrevAlarmInfo  IcomWphyLinkStatusAlarmBitmapType,
+    icomWphyModemLinkStatusThresAlarmState     INTEGER,
+    icomWphyModemLinkStatusThresCurAlarmInfo   IcomWphyLinkStatusThresBitmapType,
+    icomWphyModemLinkStatusThresPrevAlarmInfo  IcomWphyLinkStatusThresBitmapType
+}
+
+icomWphyModemLinkStatusPeerId        OBJECT-TYPE
+    SYNTAX       Integer32 (1..32768)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Base Station:     PeerId = 1..30,
+         Terminal Station: PeerId = 1.
+        "
+    ::= { icomWphyModemLinkStatusEntry 1 }
+
+icomWphyModemLinkStatusRssi          OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current RX RSSI in 0.1 dBm steps.
+        "
+    ::= { icomWphyModemLinkStatusEntry 2 }
+
+icomWphyModemLinkStatusSnr          OBJECT-TYPE
+    SYNTAX       IcomWphyDbType
+    UNITS        "dB"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current RX SNR in 0.1 dB steps.
+        "
+    ::= { icomWphyModemLinkStatusEntry 3 }
+
+icomWphyModemLinkStatusFecStress       OBJECT-TYPE
+    SYNTAX       IcomWphyBerType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current RX FEC Stress in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyModemLinkStatusEntry 4 }
+
+icomWphyModemLinkStatusRxPhyModeId     OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current RX physical mode index. This references
+         icomWphyModemRxPhyModeModeId.
+
+         BS: This is equal to the current UIUC of the link
+         TS: This is equal to the current MAX DIUC of the link
+        "
+    ::= { icomWphyModemLinkStatusEntry 5 }
+
+icomWphyModemLinkStatusTxPhyModeId      OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current TX physical mode index. This references
+         icomWphyModemTxPhyModeModeId.
+
+         BS: This is equal to the current MAX DIUC of the link
+         TS: This is equal to the current UIUC of the link
+        "
+    ::= { icomWphyModemLinkStatusEntry 6 }
+
+icomWphyModemLinkStatusModemAlarmState  OBJECT-TYPE
+    SYNTAX       INTEGER {
+            none        (1),
+            yellow      (2),
+            red         (3)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Modem alarm state.
+
+         This state depends on the alarm info bits
+         icomWphyModemLinkStatusModemCurAlarmInfo.
+        "
+    ::= { icomWphyModemLinkStatusEntry 7 }
+
+icomWphyModemLinkStatusModemCurAlarmInfo   OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusAlarmBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current bit mapped link status alarms (0:No alarm, 1:Alarm).
+        "
+    ::= { icomWphyModemLinkStatusEntry 8 }
+
+icomWphyModemLinkStatusModemPrevAlarmInfo   OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusAlarmBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Previous bit mapped link status alarms (0:No alarm, 1:Alarm).
+
+         If no previous link status alarm information exists, then this
+         object holds a value of zero.
+        "
+    ::= { icomWphyModemLinkStatusEntry 9 }
+
+icomWphyModemLinkStatusThresAlarmState  OBJECT-TYPE
+    SYNTAX       INTEGER {
+            noAlarm     (1),
+            alarm       (2)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "State of the threshold alarm.
+        "
+    ::= { icomWphyModemLinkStatusEntry 10 }
+
+icomWphyModemLinkStatusThresCurAlarmInfo  OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusThresBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current bit-mapped threshold crossing information.
+        "
+    ::= { icomWphyModemLinkStatusEntry 11 }
+
+icomWphyModemLinkStatusThresPrevAlarmInfo  OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusThresBitmapType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Previous bit-mapped threshold crossing information.
+
+         If no previous threshold crossing information exists, then this
+         object holds a value of zero.
+        "
+    ::= { icomWphyModemLinkStatusEntry 12 }
+
+--=========================================================
+-- Modem Counters Table
+--=========================================================
+
+icomWphyModemStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyModemStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides read-only link performance statistics.
+        "
+    ::= { icomWPhyCommonObjects  12 }
+
+icomWphyModemStatsEntry OBJECT-TYPE
+    SYNTAX       IcomWphyModemStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyModemStatsTable.
+        "
+    AUGMENTS { icomWphyModemLinkStatusEntry }
+    ::={ icomWphyModemStatsTable 1 }
+
+IcomWphyModemStatsEntry  ::= SEQUENCE {
+    icomWphyModemStatsRcvBlocks           Counter64,
+    icomWphyModemStatsCorrectedBlocks     Counter64,
+    icomWphyModemStatsErrorBlocks         Counter64,
+    icomWphyModemStatsLinkLossEvents      Counter64,
+    icomWphyModemStatsReset               TruthValue
+}
+
+icomWphyModemStatsRcvBlocks    OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Total received blocks.
+        "
+    ::= { icomWphyModemStatsEntry 1 }
+
+icomWphyModemStatsCorrectedBlocks   OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Total corrected blocks.
+        "
+    ::= { icomWphyModemStatsEntry 2 }
+
+icomWphyModemStatsErrorBlocks    OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Erroneous received blocks.
+        "
+    ::= { icomWphyModemStatsEntry 3 }
+
+icomWphyModemStatsLinkLossEvents  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of Link Loss events.
+        "
+    ::= { icomWphyModemStatsEntry 4 }
+
+icomWphyModemStatsReset   OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Modem counters reset.
+        "
+    DEFVAL { false }
+    ::= { icomWphyModemStatsEntry 5 }
+
+--=========================================================
+-- G.826 Counters Table
+--=========================================================
+
+icomWphyG826StatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyG826StatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table provides G.826 end-to-end error performance counters.
+        "
+    ::= { icomWPhyCommonObjects  13 }
+
+icomWphyG826StatsEntry OBJECT-TYPE
+    SYNTAX       IcomWphyG826StatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyG826StatsTable.
+        "
+    AUGMENTS  { icomWphyModemLinkStatusEntry }
+    ::={ icomWphyG826StatsTable 1 }
+
+IcomWphyG826StatsEntry  ::= SEQUENCE {
+    icomWphyG826StatsBlockErrors         Counter64,
+    icomWphyG826StatsBgBlockErrors       Counter64,
+    icomWphyG826StatsESs                 Counter64,
+    icomWphyG826StatsSESs                Counter64,
+    icomWphyG826StatsASs                 Counter64,
+    icomWphyG826StatsUASs                Counter64,
+    icomWphyG826StatsReset               TruthValue
+}
+
+icomWphyG826StatsBlockErrors  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error block counter.
+        "
+    ::= { icomWphyG826StatsEntry 1 }
+
+icomWphyG826StatsBgBlockErrors  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Background block error counter.
+        "
+    ::= { icomWphyG826StatsEntry 2 }
+
+icomWphyG826StatsESs  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error seconds counter.
+        "
+    ::= { icomWphyG826StatsEntry 3 }
+
+icomWphyG826StatsSESs  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Severely errored seconds counter.
+        "
+    ::= { icomWphyG826StatsEntry 4 }
+
+icomWphyG826StatsASs  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Available seconds counter.
+        "
+    ::= { icomWphyG826StatsEntry 5 }
+
+icomWphyG826StatsUASs  OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Unavailable seconds counter.
+        "
+    ::= { icomWphyG826StatsEntry 6 }
+
+icomWphyG826StatsReset   OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "G.826 counters reset.
+        "
+    DEFVAL { false }
+    ::= { icomWphyG826StatsEntry 7 }
+
+--=========================================================
+-- icomWphyPerfRfuEnable
+--=========================================================
+
+icomWphyPerfRfuEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of historical
+        performance statistics for the attached RFUs.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWPhyPerfObjects 1 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfRfuCurrentTable
+-- -------------------------------------------------------------
+
+icomWphyPerfRfuCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfRfuCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides RFU performance statistics for the current
+        1-minute interval.
+       "
+    ::= { icomWPhyPerfObjects 2 }
+
+icomWphyPerfRfuCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfRfuCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfRfuCurrentTable.
+       "
+    INDEX  { icomWphyRfuCfgId }
+    ::= { icomWphyPerfRfuCurrentTable 1 }
+
+IcomWphyPerfRfuCurrentEntry ::= SEQUENCE {
+    icomWphyPerfRfuCurrentSuspect        TruthValue,
+    icomWphyPerfRfuCurrentTxPower        IcomWphyDbmType
+}
+
+icomWphyPerfRfuCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfuCurrentEntry 1 }
+
+icomWphyPerfRfuCurrentTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current TX power in 0.1 dBm steps in the current 1-minute
+         interval.
+        "
+    ::= { icomWphyPerfRfuCurrentEntry 2 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfRfu1MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWphyPerfRfu1MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfRfu1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides RFU performance statistics for historical
+        (completed) 1-minute intervals.
+
+        This table will have a maximum of 60 entries of completed 1-minute
+        intervals, to provide historical statistics for one hour.
+       "
+    ::= { icomWPhyPerfObjects 3 }
+
+icomWphyPerfRfu1MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfRfu1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfRfu1MinIntervalTable.
+       "
+    INDEX  { icomWphyRfuCfgId,
+             icomWphyPerfRfu1MinIntervalNumber
+           }
+    ::= { icomWphyPerfRfu1MinIntervalTable 1 }
+
+IcomWphyPerfRfu1MinIntervalEntry ::= SEQUENCE {
+    icomWphyPerfRfu1MinIntervalNumber    Unsigned32,
+    icomWphyPerfRfu1MinIntervalEndTime   IcomDateTimeType,
+    icomWphyPerfRfu1MinIntervalSuspect   TruthValue,
+    icomWphyPerfRfu1MinIntervalTxPower   IcomWphyDbmType
+}
+
+icomWphyPerfRfu1MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..60)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfRfu1MinIntervalEntry 1 }
+
+icomWphyPerfRfu1MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu1MinIntervalEntry 2 }
+
+icomWphyPerfRfu1MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu1MinIntervalEntry 3 }
+
+icomWphyPerfRfu1MinIntervalTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the current TX power in 0.1 dBm steps at the end
+         of this completed 1-minute interval.
+        "
+    ::= { icomWphyPerfRfu1MinIntervalEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfRfu15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWphyPerfRfu15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfRfu15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides RFU performance statistics for historical
+        (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed
+        15-minute intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWPhyPerfObjects 4 }
+
+icomWphyPerfRfu15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfRfu15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfRfu15MinIntervalTable.
+       "
+    INDEX  { icomWphyRfuCfgId,
+             icomWphyPerfRfu15MinIntervalNumber
+           }
+    ::= { icomWphyPerfRfu15MinIntervalTable 1 }
+
+IcomWphyPerfRfu15MinIntervalEntry ::= SEQUENCE {
+    icomWphyPerfRfu15MinIntervalNumber     Unsigned32,
+    icomWphyPerfRfu15MinIntervalEndTime    IcomDateTimeType,
+    icomWphyPerfRfu15MinIntervalSuspect    TruthValue,
+    icomWphyPerfRfu15MinIntervalMinTxPower IcomWphyDbmType,
+    icomWphyPerfRfu15MinIntervalMaxTxPower IcomWphyDbmType,
+    icomWphyPerfRfu15MinIntervalAvgTxPower IcomWphyDbmType
+}
+
+icomWphyPerfRfu15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 1 }
+
+icomWphyPerfRfu15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 2 }
+
+icomWphyPerfRfu15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 3 }
+
+icomWphyPerfRfu15MinIntervalMinTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum TX power in 0.1 dBm steps in this completed 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 4 }
+
+icomWphyPerfRfu15MinIntervalMaxTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum TX power in 0.1 dBm steps in this completed 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 5 }
+
+icomWphyPerfRfu15MinIntervalAvgTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average TX power in 0.1 dBm steps in this completed 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfRfu15MinIntervalEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfRfu1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWphyPerfRfu1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfRfu1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides RFU performance statistics for historical
+        (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed
+        1-day intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWPhyPerfObjects 5 }
+
+icomWphyPerfRfu1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfRfu1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfRfu1DayIntervalTable.
+       "
+    INDEX  { icomWphyRfuCfgId,
+             icomWphyPerfRfu1DayIntervalNumber
+           }
+    ::= { icomWphyPerfRfu1DayIntervalTable 1 }
+
+IcomWphyPerfRfu1DayIntervalEntry ::= SEQUENCE {
+    icomWphyPerfRfu1DayIntervalNumber      Unsigned32,
+    icomWphyPerfRfu1DayIntervalEndTime     IcomDateTimeType,
+    icomWphyPerfRfu1DayIntervalSuspect     TruthValue,
+    icomWphyPerfRfu1DayIntervalMinTxPower  IcomWphyDbmType,
+    icomWphyPerfRfu1DayIntervalMaxTxPower  IcomWphyDbmType,
+    icomWphyPerfRfu1DayIntervalAvgTxPower  IcomWphyDbmType
+}
+
+icomWphyPerfRfu1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 1 }
+
+icomWphyPerfRfu1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 2 }
+
+icomWphyPerfRfu1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 3 }
+
+icomWphyPerfRfu1DayIntervalMinTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum TX power in 0.1 dBm steps in this completed 1-day
+         interval.
+        "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 4 }
+
+icomWphyPerfRfu1DayIntervalMaxTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum TX power in 0.1 dBm steps in this completed 1-day
+         interval.
+        "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 5 }
+
+icomWphyPerfRfu1DayIntervalAvgTxPower OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType
+    UNITS        "dBm"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average TX power in 0.1 dBm steps in this completed 1-day
+         interval.
+        "
+    ::= { icomWphyPerfRfu1DayIntervalEntry 6 }
+
+--=========================================================
+-- icomWphyPerfModemEnable
+--=========================================================
+
+icomWphyPerfModemEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of historical
+        performance statistics for the modem link counters.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWPhyPerfObjects 6 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfModemCurrentTable
+-- -------------------------------------------------------------
+
+icomWphyPerfModemCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfModemCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides modem link counter performance statistics
+        for the current 15-minute interval. All table statistics are
+        reset to zero after the completion of each 15-minute measurement
+        interval.
+       "
+    ::= { icomWPhyPerfObjects 7 }
+
+icomWphyPerfModemCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfModemCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfModemCurrentTable.
+       "
+    INDEX  { icomWphyModemCfgId, icomWphyModemLinkStatusPeerId }
+    ::= { icomWphyPerfModemCurrentTable 1 }
+
+IcomWphyPerfModemCurrentEntry ::= SEQUENCE {
+    icomWphyPerfModemCurrentElapsedTime   TimeInterval,
+    icomWphyPerfModemCurrentSuspect       TruthValue,
+    icomWphyPerfModemCurrentErrorBlocks   Counter64
+}
+
+icomWphyPerfModemCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModemCurrentEntry 1 }
+
+icomWphyPerfModemCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModemCurrentEntry 2 }
+
+icomWphyPerfModemCurrentErrorBlocks OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Erroneous received blocks in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfModemCurrentEntry 3 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfModem15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWphyPerfModem15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfModem15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides modem link counter performance statistics
+        for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed 15-minute
+        intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWPhyPerfObjects 8 }
+
+icomWphyPerfModem15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfModem15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfModem15MinIntervalTable.
+       "
+    INDEX  { icomWphyModemCfgId,
+             icomWphyModemLinkStatusPeerId,
+             icomWphyPerfModem15MinIntervalNumber
+           }
+    ::= { icomWphyPerfModem15MinIntervalTable 1 }
+
+IcomWphyPerfModem15MinIntervalEntry ::= SEQUENCE {
+    icomWphyPerfModem15MinIntervalNumber      Unsigned32,
+    icomWphyPerfModem15MinIntervalEndTime     IcomDateTimeType,
+    icomWphyPerfModem15MinIntervalElapsedTime TimeInterval,
+    icomWphyPerfModem15MinIntervalSuspect     TruthValue,
+    icomWphyPerfModem15MinIntervalErrorBlocks Counter64
+}
+
+icomWphyPerfModem15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfModem15MinIntervalEntry 1 }
+
+icomWphyPerfModem15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem15MinIntervalEntry 2 }
+
+icomWphyPerfModem15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem15MinIntervalEntry 3 }
+
+icomWphyPerfModem15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem15MinIntervalEntry 4 }
+
+icomWphyPerfModem15MinIntervalErrorBlocks OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Erroneous received blocks in this completed 15-minute interval.
+        "
+    ::= { icomWphyPerfModem15MinIntervalEntry 5 }
+
+-- -------------------------------------------------------------
+-- icomWphyPerfModem1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWphyPerfModem1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfModem1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides modem link counter performance statistics
+        for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWPhyPerfObjects 9 }
+
+icomWphyPerfModem1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfModem1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfModem1DayIntervalTable.
+       "
+    INDEX  { icomWphyModemCfgId,
+             icomWphyModemLinkStatusPeerId,
+             icomWphyPerfModem1DayIntervalNumber
+           }
+    ::= { icomWphyPerfModem1DayIntervalTable 1 }
+
+IcomWphyPerfModem1DayIntervalEntry ::= SEQUENCE {
+    icomWphyPerfModem1DayIntervalNumber      Unsigned32,
+    icomWphyPerfModem1DayIntervalEndTime     IcomDateTimeType,
+    icomWphyPerfModem1DayIntervalElapsedTime TimeInterval,
+    icomWphyPerfModem1DayIntervalSuspect     TruthValue,
+    icomWphyPerfModem1DayIntervalErrorBlocks Counter64
+}
+
+icomWphyPerfModem1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfModem1DayIntervalEntry 1 }
+
+icomWphyPerfModem1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem1DayIntervalEntry 2 }
+
+icomWphyPerfModem1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem1DayIntervalEntry 3 }
+
+icomWphyPerfModem1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfModem1DayIntervalEntry 4 }
+
+icomWphyPerfModem1DayIntervalErrorBlocks OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Erroneous received blocks in this completed 1-day interval.
+        "
+    ::= { icomWphyPerfModem1DayIntervalEntry 5 }
+
+--=========================================================
+-- icomWphyPerfG826Enable
+--=========================================================
+
+icomWphyPerfG826Enable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of historical
+        performance statistics for G.826 end-to-end error performance
+        counters.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWPhyPerfObjects 10 }
+
+--=========================================================
+-- icomWphyPerfG826CurrentTable
+--=========================================================
+
+icomWphyPerfG826CurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfG826CurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides G.826 end-to-end error performance statistics
+        for the current 15-minute interval. All table statistics are
+        reset to zero after the completion of each 15-minute measurement
+        interval.
+       "
+    ::= { icomWPhyPerfObjects 11 }
+
+icomWphyPerfG826CurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfG826CurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfG826CurrentTable.
+       "
+    INDEX  { icomWphyModemCfgId, icomWphyModemLinkStatusPeerId }
+    ::= { icomWphyPerfG826CurrentTable 1 }
+
+IcomWphyPerfG826CurrentEntry  ::= SEQUENCE {
+    icomWphyPerfG826CurrentElapsedTime   TimeInterval,
+    icomWphyPerfG826CurrentSuspect       TruthValue,
+    icomWphyPerfG826CurrentBlockErrors   Counter64,
+    icomWphyPerfG826CurrentBgBlockErrors Counter64,
+    icomWphyPerfG826CurrentESs           Counter64,
+    icomWphyPerfG826CurrentSESs          Counter64,
+    icomWphyPerfG826CurrentASs           Counter64,
+    icomWphyPerfG826CurrentUASs          Counter64
+}
+
+icomWphyPerfG826CurrentElapsedTime OBJECT-TYPE
+    SYNTAX       TimeInterval
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG826CurrentEntry 1 }
+
+icomWphyPerfG826CurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG826CurrentEntry 2 }
+
+icomWphyPerfG826CurrentBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error block counter in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 3 }
+
+icomWphyPerfG826CurrentBgBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Background block error counter in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 4 }
+
+icomWphyPerfG826CurrentESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error seconds counter in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 5 }
+
+icomWphyPerfG826CurrentSESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Severely errored seconds counter in the current 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 6 }
+
+icomWphyPerfG826CurrentASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Available seconds counter in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 7 }
+
+icomWphyPerfG826CurrentUASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Unavailable seconds counter in the current 15-minute interval.
+        "
+    ::= { icomWphyPerfG826CurrentEntry 8 }
+
+--=========================================================
+-- icomWphyPerfG82615MinIntervalTable
+--=========================================================
+
+icomWphyPerfG82615MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfG82615MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides G.826 end-to-end error performance statistics
+        for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed
+        15-minute intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWPhyPerfObjects 12 }
+
+icomWphyPerfG82615MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfG82615MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfG82615MinIntervalTable.
+       "
+    INDEX  { icomWphyModemCfgId,
+             icomWphyModemLinkStatusPeerId,
+             icomWphyPerfG82615MinIntervalNumber
+           }
+    ::= { icomWphyPerfG82615MinIntervalTable 1 }
+
+IcomWphyPerfG82615MinIntervalEntry  ::= SEQUENCE {
+    icomWphyPerfG82615MinIntervalNumber        Unsigned32,
+    icomWphyPerfG82615MinIntervalEndTime       IcomDateTimeType,
+    icomWphyPerfG82615MinIntervalElapsedTime   TimeInterval,
+    icomWphyPerfG82615MinIntervalSuspect       TruthValue,
+    icomWphyPerfG82615MinIntervalBlockErrors   Counter64,
+    icomWphyPerfG82615MinIntervalBgBlockErrors Counter64,
+    icomWphyPerfG82615MinIntervalESs           Counter64,
+    icomWphyPerfG82615MinIntervalSESs          Counter64,
+    icomWphyPerfG82615MinIntervalASs           Counter64,
+    icomWphyPerfG82615MinIntervalUASs          Counter64
+}
+
+icomWphyPerfG82615MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfG82615MinIntervalEntry 1 }
+
+icomWphyPerfG82615MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG82615MinIntervalEntry 2 }
+
+icomWphyPerfG82615MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX       TimeInterval
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG82615MinIntervalEntry 3 }
+
+icomWphyPerfG82615MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG82615MinIntervalEntry 4 }
+
+icomWphyPerfG82615MinIntervalBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error block counter in this completed 15-minute interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 5 }
+
+icomWphyPerfG82615MinIntervalBgBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Background block error counter in this completed 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 6 }
+
+icomWphyPerfG82615MinIntervalESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error seconds counter in this completed 15-minute interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 7 }
+
+icomWphyPerfG82615MinIntervalSESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Severely errored seconds counter in this completed 15-minute
+         interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 8 }
+
+icomWphyPerfG82615MinIntervalASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Available seconds counter in this completed 15-minute interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 9 }
+
+icomWphyPerfG82615MinIntervalUASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Unavailable seconds counter in this completed 15-minute interval.
+        "
+    ::= { icomWphyPerfG82615MinIntervalEntry 10 }
+
+--=========================================================
+-- icomWphyPerfG8261DayIntervalTable
+--=========================================================
+
+icomWphyPerfG8261DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWphyPerfG8261DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides G.826 end-to-end error performance statistics
+        for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWPhyPerfObjects 13 }
+
+icomWphyPerfG8261DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWphyPerfG8261DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWphyPerfG8261DayIntervalTable.
+       "
+    INDEX  { icomWphyModemCfgId,
+             icomWphyModemLinkStatusPeerId,
+             icomWphyPerfG8261DayIntervalNumber
+           }
+    ::= { icomWphyPerfG8261DayIntervalTable 1 }
+
+IcomWphyPerfG8261DayIntervalEntry  ::= SEQUENCE {
+    icomWphyPerfG8261DayIntervalNumber         Unsigned32,
+    icomWphyPerfG8261DayIntervalEndTime        IcomDateTimeType,
+    icomWphyPerfG8261DayIntervalElapsedTime    TimeInterval,
+    icomWphyPerfG8261DayIntervalSuspect        TruthValue,
+    icomWphyPerfG8261DayIntervalBlockErrors    Counter64,
+    icomWphyPerfG8261DayIntervalBgBlockErrors  Counter64,
+    icomWphyPerfG8261DayIntervalESs            Counter64,
+    icomWphyPerfG8261DayIntervalSESs           Counter64,
+    icomWphyPerfG8261DayIntervalASs            Counter64,
+    icomWphyPerfG8261DayIntervalUASs           Counter64
+}
+
+icomWphyPerfG8261DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWphyPerfG8261DayIntervalEntry 1 }
+
+icomWphyPerfG8261DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG8261DayIntervalEntry 2 }
+
+icomWphyPerfG8261DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX       TimeInterval
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG8261DayIntervalEntry 3 }
+
+icomWphyPerfG8261DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWphyPerfG8261DayIntervalEntry 4 }
+
+icomWphyPerfG8261DayIntervalBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error block counter in this completed 1-day interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 5 }
+
+icomWphyPerfG8261DayIntervalBgBlockErrors OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Background block error counter in this completed 1-day
+         interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 6 }
+
+icomWphyPerfG8261DayIntervalESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Error seconds counter in this completed 1-day interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 7 }
+
+icomWphyPerfG8261DayIntervalSESs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Severely errored seconds counter in this completed 1-day
+         interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 8 }
+
+icomWphyPerfG8261DayIntervalASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Available seconds counter in this completed 1-day interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 9 }
+
+icomWphyPerfG8261DayIntervalUASs OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Unavailable seconds counter in this completed 1-day interval.
+        "
+    ::= { icomWphyPerfG8261DayIntervalEntry 10 }
+
+--=========================================================
+-- Notification objects
+--=========================================================
+
+icomWphyTrapControlRegister    OBJECT-TYPE
+    SYNTAX       BITS {
+            icomWphyModemStateChange (0),
+            icomWphyRfuStateChange   (1),
+            icomWphyModemAlarm       (2),
+            icomWphyThresholdAlarm   (3)
+    }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "The object is a bitmask to enable or disable specific traps.
+        "
+    DEFVAL { {icomWphyModemStateChange, icomWphyRfuStateChange} }
+    ::= { icomWPhyNotificationObjects 1 }
+
+--=========================================================
+-- Wphy Threshold Config Table
+--=========================================================
+
+icomWphyThresholdCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWphyThresholdCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "This table configures the wphyThresholdAlarm trap.
+        "
+    ::= { icomWPhyNotificationObjects 2 }
+
+icomWphyThresholdCfgEntry OBJECT-TYPE
+    SYNTAX       IcomWphyThresholdCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry (conceptual row) in the icomWphyThresholdCfgTable.
+        "
+    INDEX  { icomWphyModemCfgId }
+    ::={ icomWphyThresholdCfgTable 1 }
+
+IcomWphyThresholdCfgEntry  ::= SEQUENCE {
+    icomWphyThresholdCfgRssiThres          IcomWphyDbmType,
+    icomWphyThresholdCfgSnrThres           IcomWphyDbType,
+    icomWphyThresholdCfgFecStressThres     IcomWphyBerType,
+    icomWphyThresholdCfgThresAlarmSel      IcomWphyLinkStatusThresBitmapType
+}
+
+icomWphyThresholdCfgRssiThres  OBJECT-TYPE
+    SYNTAX       IcomWphyDbmType (-1300..200)
+    UNITS        "dBm"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Rssi alarm threshold in 0.1 dBm steps.
+        "
+    ::= { icomWphyThresholdCfgEntry 1 }
+
+icomWphyThresholdCfgSnrThres  OBJECT-TYPE
+    SYNTAX       IcomWphyDbType (-100..600)
+    UNITS        "dB"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "SNR alarm threshold in 0.1 dB steps.
+        "
+    ::= { icomWphyThresholdCfgEntry 2 }
+
+icomWphyThresholdCfgFecStressThres  OBJECT-TYPE
+    SYNTAX       IcomWphyBerType (0..42949673) -- 0.01
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Fec Stress alarm threshold in 2^-32 steps, range [0,1).
+        "
+    ::= { icomWphyThresholdCfgEntry 3 }
+
+icomWphyThresholdCfgThresAlarmSel  OBJECT-TYPE
+    SYNTAX       IcomWphyLinkStatusThresBitmapType
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Bitmask to enable or disable threshold checks.
+        "
+    ::= { icomWphyThresholdCfgEntry 4 }
+
+--=========================================================
+-- Traps
+--=========================================================
+
+icomWphyModemStateChangeTrap NOTIFICATION-TYPE
+    OBJECTS {
+              icomWphyModemStatusState
+            }
+    STATUS current
+    DESCRIPTION
+        "This trap reports the modem state change.
+        "
+    ::= { icomWPhyNotificationPrefix 1 }
+
+icomWphyRfuStateChangeTrap NOTIFICATION-TYPE
+    OBJECTS {
+              icomWphyRfuStatusState,
+              icomWphyRfuStatusCurAlarmInfo,
+              icomWphyRfuStatusPrevAlarmInfo
+            }
+    STATUS current
+    DESCRIPTION
+        "This trap reports the Rfu state change.
+        "
+    ::= { icomWPhyNotificationPrefix 2 }
+
+icomWphyModemAlarmTrap NOTIFICATION-TYPE
+    OBJECTS {
+              icomWphyModemLinkStatusModemAlarmState,
+              icomWphyModemLinkStatusModemCurAlarmInfo,
+              icomWphyModemLinkStatusModemPrevAlarmInfo
+            }
+    STATUS current
+    DESCRIPTION
+        "This trap reports the alarm status generated by the modem.
+        "
+    ::= { icomWPhyNotificationPrefix 3 }
+
+icomWphyThresholdAlarmTrap NOTIFICATION-TYPE
+    OBJECTS {
+              icomWphyModemLinkStatusThresAlarmState,
+              icomWphyModemLinkStatusThresCurAlarmInfo,
+              icomWphyModemLinkStatusThresPrevAlarmInfo
+            }
+    STATUS current
+    DESCRIPTION
+        "This trap reports threshold crossings of the modem performance
+         measurements.
+        "
+    ::= { icomWPhyNotificationPrefix 4 }
+
+--=========================================================
+-- Compliance statements
+--=========================================================
+
+icomWphyMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for Wireless PHY entities
+        "
+    MODULE  -- this module
+    MANDATORY-GROUPS { icomWphyTsGroup,
+                       icomWphyCommonGroup,
+                       icomWphyPerfGroup,
+                       icomWphyTrapGroup,
+                       icomWphyNotificationsGroup
+                     }
+    ::= { icomWPhyCompliances 1 }
+
+icomWphyTsGroup OBJECT-GROUP
+    OBJECTS { -- TS Rfu Scan
+              icomWphyTsRfuScanRxFrequency,
+              icomWphyTsRfuScanTxFrequency,
+              icomWphyTsRfuScanEnable
+            }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing TS Wphy parameters.
+        "
+    ::= { icomWPhyGroups 1 }
+
+icomWphyCommonGroup OBJECT-GROUP
+    OBJECTS { -- Rfu Config
+              icomWphyRfuCfgReset,
+              icomWphyRfuCfgMute,
+              icomWphyRfuCfgLoop,
+              icomWphyRfuCfgTxPower,
+              icomWphyRfuCfgTxFrequency,
+              icomWphyRfuCfgRxFrequency,
+
+              -- Rfu Capabilities
+              icomWphyRfuCapBand,
+              icomWphyRfuCapTxPowerMin,
+              icomWphyRfuCapTxPowerMax,
+              icomWphyRfuCapTxFreqMin,
+              icomWphyRfuCapTxFreqMax,
+              icomWphyRfuCapRxFreqMin,
+              icomWphyRfuCapRxFreqMax,
+              icomWphyRfuCapFreqStep,
+              icomWphyRfuCapAllowedTxFreqMin,
+              icomWphyRfuCapAllowedTxFreqMax,
+              icomWphyRfuCapAllowedRxFreqMin,
+              icomWphyRfuCapAllowedRxFreqMax,
+              icomWphyRfuCapDuplexSpacing,
+
+              -- Rfu Status
+              icomWphyRfuStatusState,
+              icomWphyRfuStatusCurAlarmInfo,
+              icomWphyRfuStatusPrevAlarmInfo,
+              icomWphyRfuStatusMute,
+              icomWphyRfuStatusTxFrequency,
+              icomWphyRfuStatusRxFrequency,
+              icomWphyRfuStatusTxPower,
+
+              -- Modem Config
+              icomWphyModemCfgReset,
+              icomWphyModemCfgLoopback,
+              icomWphyModemCfgProfile,
+              icomWphyModemCfgBandwidth,
+
+              -- Modem Capabilities
+              icomWphyModemCapRole,
+
+              -- Modem Status
+              icomWphyModemStatusState,
+              icomWphyModemStatusAlarmMask,
+
+              -- Modem Profile
+              icomWphyModemProfileName,
+              icomWphyModemProfileVersion,
+
+              -- Modem Profile Capabilities
+              icomWphyModemProfileCapSymbolRate,
+              icomWphyModemProfileCapFrameLength,
+              icomWphyModemProfileCapValid,
+
+              -- Modem Tx Phy Mode
+              icomWphyModemTxPhyModeAirRate,
+              icomWphyModemTxPhyModeModulation,
+              icomWphyModemTxPhyModeFecRate,
+              icomWphyModemTxPhyModeAcmThrLoSnr,
+              icomWphyModemTxPhyModeAcmThrLoFecStress,
+              icomWphyModemTxPhyModeAcmThrLoOp,
+              icomWphyModemTxPhyModeAcmThrHiSnr,
+              icomWphyModemTxPhyModeAcmThrHiFecStress,
+              icomWphyModemTxPhyModeAcmThrHiOp,
+              icomWphyModemTxPhyModeValid,
+
+              -- Modem Rx Phy Mode
+              icomWphyModemRxPhyModeAirRate,
+              icomWphyModemRxPhyModeModulation,
+              icomWphyModemRxPhyModeFecRate,
+              icomWphyModemRxPhyModeAcmThrLoSnr,
+              icomWphyModemRxPhyModeAcmThrLoFecStress,
+              icomWphyModemRxPhyModeAcmThrLoOp,
+              icomWphyModemRxPhyModeAcmThrHiSnr,
+              icomWphyModemRxPhyModeAcmThrHiFecStress,
+              icomWphyModemRxPhyModeAcmThrHiOp,
+              icomWphyModemRxPhyModeValid,
+
+              -- Modem Link Status
+              icomWphyModemLinkStatusRssi,
+              icomWphyModemLinkStatusSnr,
+              icomWphyModemLinkStatusFecStress,
+              icomWphyModemLinkStatusRxPhyModeId,
+              icomWphyModemLinkStatusTxPhyModeId,
+              icomWphyModemLinkStatusModemAlarmState,
+              icomWphyModemLinkStatusModemCurAlarmInfo,
+              icomWphyModemLinkStatusModemPrevAlarmInfo,
+              icomWphyModemLinkStatusThresAlarmState,
+              icomWphyModemLinkStatusThresCurAlarmInfo,
+              icomWphyModemLinkStatusThresPrevAlarmInfo,
+
+              -- Modem Counters
+              icomWphyModemStatsRcvBlocks,
+              icomWphyModemStatsCorrectedBlocks,
+              icomWphyModemStatsErrorBlocks,
+              icomWphyModemStatsLinkLossEvents,
+              icomWphyModemStatsReset,
+
+              -- g826 Counters
+              icomWphyG826StatsBlockErrors,
+              icomWphyG826StatsBgBlockErrors,
+              icomWphyG826StatsESs,
+              icomWphyG826StatsSESs,
+              icomWphyG826StatsASs,
+              icomWphyG826StatsUASs,
+              icomWphyG826StatsReset
+            }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing Wphy common parameters.
+        "
+    ::= { icomWPhyGroups 2 }
+
+icomWphyPerfGroup OBJECT-GROUP
+    OBJECTS {
+              icomWphyPerfRfuEnable,
+
+              icomWphyPerfRfuCurrentSuspect,
+              icomWphyPerfRfuCurrentTxPower,
+
+              icomWphyPerfRfu1MinIntervalEndTime,
+              icomWphyPerfRfu1MinIntervalSuspect,
+              icomWphyPerfRfu1MinIntervalTxPower,
+
+              icomWphyPerfRfu15MinIntervalEndTime,
+              icomWphyPerfRfu15MinIntervalSuspect,
+              icomWphyPerfRfu15MinIntervalMinTxPower,
+              icomWphyPerfRfu15MinIntervalMaxTxPower,
+              icomWphyPerfRfu15MinIntervalAvgTxPower,
+
+              icomWphyPerfRfu1DayIntervalEndTime,
+              icomWphyPerfRfu1DayIntervalSuspect,
+              icomWphyPerfRfu1DayIntervalMinTxPower,
+              icomWphyPerfRfu1DayIntervalMaxTxPower,
+              icomWphyPerfRfu1DayIntervalAvgTxPower,
+
+              icomWphyPerfModemEnable,
+
+              icomWphyPerfModemCurrentElapsedTime,
+              icomWphyPerfModemCurrentSuspect,
+              icomWphyPerfModemCurrentErrorBlocks,
+
+              icomWphyPerfModem15MinIntervalEndTime,
+              icomWphyPerfModem15MinIntervalElapsedTime,
+              icomWphyPerfModem15MinIntervalSuspect,
+              icomWphyPerfModem15MinIntervalErrorBlocks,
+
+              icomWphyPerfModem1DayIntervalEndTime,
+              icomWphyPerfModem1DayIntervalElapsedTime,
+              icomWphyPerfModem1DayIntervalSuspect,
+              icomWphyPerfModem1DayIntervalErrorBlocks,
+
+              icomWphyPerfG826Enable,
+
+              icomWphyPerfG826CurrentElapsedTime,
+              icomWphyPerfG826CurrentSuspect,
+              icomWphyPerfG826CurrentBlockErrors,
+              icomWphyPerfG826CurrentBgBlockErrors,
+              icomWphyPerfG826CurrentESs,
+              icomWphyPerfG826CurrentSESs,
+              icomWphyPerfG826CurrentASs,
+              icomWphyPerfG826CurrentUASs,
+
+              icomWphyPerfG82615MinIntervalEndTime,
+              icomWphyPerfG82615MinIntervalElapsedTime,
+              icomWphyPerfG82615MinIntervalSuspect,
+              icomWphyPerfG82615MinIntervalBlockErrors,
+              icomWphyPerfG82615MinIntervalBgBlockErrors,
+              icomWphyPerfG82615MinIntervalESs,
+              icomWphyPerfG82615MinIntervalSESs,
+              icomWphyPerfG82615MinIntervalASs,
+              icomWphyPerfG82615MinIntervalUASs,
+
+              icomWphyPerfG8261DayIntervalEndTime,
+              icomWphyPerfG8261DayIntervalElapsedTime,
+              icomWphyPerfG8261DayIntervalSuspect,
+              icomWphyPerfG8261DayIntervalBlockErrors,
+              icomWphyPerfG8261DayIntervalBgBlockErrors,
+              icomWphyPerfG8261DayIntervalESs,
+              icomWphyPerfG8261DayIntervalSESs,
+              icomWphyPerfG8261DayIntervalASs,
+              icomWphyPerfG8261DayIntervalUASs
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of performance objects for icomWphyMIB.
+        "
+    ::= { icomWPhyGroups 3 }
+
+icomWphyTrapGroup OBJECT-GROUP
+    OBJECTS { -- Notification Objects
+              icomWphyTrapControlRegister,
+
+              icomWphyThresholdCfgRssiThres,
+              icomWphyThresholdCfgSnrThres,
+              icomWphyThresholdCfgFecStressThres,
+              icomWphyThresholdCfgThresAlarmSel
+            }
+    STATUS  current
+    DESCRIPTION
+        ".
+        "
+    ::= { icomWPhyGroups 4 }
+
+icomWphyNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { -- SNMP Trap
+                    icomWphyModemStateChangeTrap,
+                    icomWphyRfuStateChangeTrap,
+                    icomWphyModemAlarmTrap,
+                    icomWphyThresholdAlarmTrap
+                  }
+    STATUS        current
+    DESCRIPTION
+        "The collection of notifications related to modem and rfu.
+        "
+    ::= { icomWPhyGroups 5 }
+
+--================================================================
+--================================================================
+
+END

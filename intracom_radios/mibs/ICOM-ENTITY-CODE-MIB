@@ -1,0 +1,173 @@
+-- *****************************************************************
+-- ICOM-ENTITY-CODE-MIB.wri
+--
+-- Intracom Extension to ENTITY-MIB(RFC2737) to support repository
+-- codes
+--  
+--  
+--
+-- Copyright (c) 2012  by Intracom Telecommunication Systems.
+-- All rights reserved.
+--
+-- *****************************************************************
+--
+
+ICOM-ENTITY-CODE-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+	MODULE-IDENTITY, OBJECT-TYPE
+				FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP            
+				FROM SNMPv2-CONF
+		TEXTUAL-CONVENTION      
+				FROM SNMPv2-TC
+		entPhysicalIndex        
+				FROM ENTITY-MIB
+        intracom
+                FROM ICOM-SMI;
+
+icomEntityCodeMIB MODULE-IDENTITY
+	LAST-UPDATED  "201202070000Z"  -- 7 February 2012
+    ORGANIZATION  "Intracom S.A."
+    CONTACT-INFO        
+       "Intracom DSLAM Management Group
+        EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+
+   DESCRIPTION "The mib contains the serial numbers of some of the 
+	   entries contained in the entPhysicalTable. The MIB contains 
+	   the following tables:
+	   			o icomEcmProductCodesTable 
+				"
+	   
+	REVISION     "201202070000Z"
+	DESCRIPTION
+                "Initial version of this MIB module."
+
+::= { intracom 32 } 
+
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+ProductCode ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+	STATUS 		   current
+    DESCRIPTION 
+		"A special formated string that contains the serial code of 
+		a product"
+
+	SYNTAX OCTET STRING (SIZE(32)) --specific size string
+
+   --
+   --  The icomEntityCodeMIBObjects group
+   --
+icomEntityCodeMIBObjects   OBJECT IDENTIFIER ::= { icomEntityCodeMIB 1 }  
+
+-- -------------------------------------------------------------
+-- icomEcmProductCodesTable
+-- -------------------------------------------------------------
+icomEcmProductCodesTable     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomEcmProductCodesEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION 
+		"The table contains a set of serial numbers used for product
+		identification. The entries of the tables are created during the 
+		creation of the related entries in the entPhysicalTable. 
+		Not all entries have serial numbers. The elements of the table 
+		are readonly."
+    ::= { icomEntityCodeMIBObjects 1 }
+
+icomEcmProductCodesEntry     OBJECT-TYPE
+    SYNTAX      IcomEcmProductCodesEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "Addition of a Sparse Table to a Base Table"
+    INDEX    { entPhysicalIndex }
+    ::= { icomEcmProductCodesTable 1 }
+
+
+IcomEcmProductCodesEntry ::= SEQUENCE {
+	  ecmZCode					ProductCode,
+	  ecmZSerial				ProductCode,
+	  ecmYCode					ProductCode,
+	  ecmYSerial				ProductCode, 
+	  ecmCustomerCode1			ProductCode,
+	  ecmCustomerCode2			ProductCode,
+	  ecmCustomerCode3			ProductCode,
+	  ecmCustomerCode4			ProductCode
+}
+
+
+ecmZCode OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Z-code of the product. "
+    ::= { icomEcmProductCodesEntry 1 }
+
+ecmZSerial OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Z-serial number of the product. "
+    ::= { icomEcmProductCodesEntry 2 }
+
+ecmYCode OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Y-code of the product. "
+    ::= { icomEcmProductCodesEntry 3 }
+
+ecmYSerial OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Y-serial number of the product. "
+    ::= { icomEcmProductCodesEntry 4 }
+
+	  
+ecmCustomerCode1 OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The custerm code 1 of the product. "
+    ::= { icomEcmProductCodesEntry 5 }
+
+ecmCustomerCode2 OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The custerm code 2 of the product. "
+    ::= { icomEcmProductCodesEntry 6 }
+
+ecmCustomerCode3 OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The custerm code 1 of the product. "
+    ::= { icomEcmProductCodesEntry 7 }
+
+
+ecmCustomerCode4 OBJECT-TYPE
+    SYNTAX      ProductCode
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The custerm code 4 of the product. "
+    ::= { icomEcmProductCodesEntry 8 }
+
+END

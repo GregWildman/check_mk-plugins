@@ -1,0 +1,3346 @@
+
+ICOM-WMAC-CMN-MIB DEFINITIONS ::= BEGIN
+
+-- =========================================================
+-- ICOM WMAC COMMON MIB MODULE
+-- =========================================================
+                                             
+IMPORTS                                         
+   MODULE-IDENTITY, OBJECT-TYPE,                   
+   Integer32, Counter64, Unsigned32, TimeTicks                                     
+       FROM SNMPv2-SMI                   -- [RFC2578]
+                                 
+   MacAddress, TimeStamp, TruthValue, TEXTUAL-CONVENTION, TimeInterval
+       FROM SNMPv2-TC                    -- [RFC2579] 
+                                  
+   MODULE-COMPLIANCE, OBJECT-GROUP
+       FROM SNMPv2-CONF                  -- [RFC2580]
+    
+   InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB            -- [RFC4001]
+
+   InterfaceIndexOrZero
+        FROM IF-MIB
+
+   IcomDateTimeType
+        FROM ICOM-PERFHIST-TC-MIB
+
+   intracom                                        
+       FROM ICOM-SMI;                            
+   
+
+icomWmacCmnMIB MODULE-IDENTITY
+ 
+   LAST-UPDATED "201512220000Z"  -- dtzou: December 22, 2015
+   ORGANIZATION "Intracom Wireless Group"
+   CONTACT-INFO
+   "   
+       EMail: 
+       Phone: 
+       Co-editor:
+       EMail:
+       Phone:
+   "
+
+DESCRIPTION 
+    "This MIB module defines common managed objects for the Base 
+     and Terminal Station useful for the configuration and management
+     of the Wireless MAC (WMAC)."
+
+REVISION  "201512220000Z"  -- dtzou: December 22, 2015
+ DESCRIPTION
+     "icomWmacCmnServFlowQosEntry added
+     "
+
+REVISION  "201507230900Z"  -- dtzou: July 23, 2015
+ DESCRIPTION
+     "icomWmacCmnLEDStatus added in icomWmacCmnStatusEntry 
+     "
+     
+REVISION  "201502020900Z"  -- dtzou: Feb. 02, 2015
+ DESCRIPTION
+     "icomWmacCmnServFlowMinPhyMode added in icomWmacCmnServFlowEntry 
+     "
+
+REVISION  "201501290900Z"  -- dtzou: Jan. 29, 2015
+ DESCRIPTION
+     "Counters icomWmacCmnStatsAggrDlPduBitRate and icomWmacCmnStatsAggrUlPduBitRate
+      added in icomWmacCmnStatsEntry
+     "
+
+REVISION  "201411060900Z"  -- dtzou: Nov. 06, 2014
+ DESCRIPTION
+     "Maximum number of Peers increased to 30.
+     "
+
+REVISION  "201410170900Z"  -- dtzou: Oct. 17, 2014
+ DESCRIPTION
+     "Maximum number of Peers increased to 28.
+     "
+
+REVISION  "201410080900Z"  -- dtzou: Oct. 08, 2014
+ DESCRIPTION
+     "Counters icomWmacCmnStatsAggrDlSduBitRate and icomWmacCmnStatsAggrUlSduBitRate
+      added in icomWmacCmnStatsEntry
+     "
+
+REVISION  "201407300900Z"  -- dtzou: July 30, 2014
+ DESCRIPTION
+     "Maximum number of Peers increased to 14.
+     "
+
+REVISION  "201406120900Z"  -- dtzou: June 12, 2014
+ DESCRIPTION
+     "New icomWmacCmnSfCIDStatsUlSduBytes added in icomWmacCmnSfCIDStatsEntry.
+     "
+
+REVISION  "201404300900Z"  -- manap: April 30, 2014
+ DESCRIPTION
+     "Change type of icomWmacCmnServFlowOperStatus to enumeration.
+     "
+
+REVISION  "201403210900Z"  -- dtzou: March 21, 2014
+ DESCRIPTION
+     "Updated description of icomWmacCmnServFlowOperStatus.
+     "
+
+REVISION  "201403200900Z"  -- dtzou: March 20, 2014
+ DESCRIPTION
+     "Maximum number of Peers reduced to 7.
+     "
+
+REVISION  "201312190000Z"  -- dtzou: December 19, 2013
+ DESCRIPTION
+     "
+      o New icomWmacCmnStatsResetCounter added in icomWmacCmnStatsEntry
+     
+      o Updated description of icomWmacCmnSfCIDStatsEntry
+     "
+
+REVISION  "201311200000Z"  -- dtzou: November 20, 2013
+ DESCRIPTION
+     "Updated icomWmacCmnServFlowTable. New MOs added."
+
+REVISION  "201310100000Z"
+ DESCRIPTION
+     "Initial version."
+
+::= { intracom 110 }
+
+icomWmacCmnNotifications     OBJECT IDENTIFIER ::= { icomWmacCmnMIB 0 }
+icomWmacCmnObjects           OBJECT IDENTIFIER ::= { icomWmacCmnMIB 1 }
+icomWmacCmnPerfObjects       OBJECT IDENTIFIER ::= { icomWmacCmnMIB 2 }
+icomWmacCmnConformance       OBJECT IDENTIFIER ::= { icomWmacCmnMIB 3 }
+
+icomWmacCmnCompliances       OBJECT IDENTIFIER ::= { icomWmacCmnConformance 1 }
+icomWmacCmnGroups            OBJECT IDENTIFIER ::= { icomWmacCmnConformance 2 }
+
+
+--=========================================================  
+-- Textual Conventions
+--=========================================================
+WmacIpv6FlowLabel ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+    STATUS      current
+    DESCRIPTION     
+        "The value of this field specifies the matching values for
+        the IPv6 Flow label field. As the flow label field has a
+        length of 20 bits, the first 4 bits of the most significant
+        byte shall be set to 0x0 and disregarded."
+    SYNTAX      OCTET STRING (SIZE(3))
+
+WmacClassifierBitMap ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION     
+        "A bit of of this object is set to 1 if the parameter
+        indicated by the comment was present in the classifier
+        encoding, and 0 otherwise.
+        Note: that BITS are encoded most significant bit first,
+              so that if e.g. bits 6 and 7 are set, this object is
+              encoded as the octet string '030000'H."
+    SYNTAX     BITS { destMacAddr(0),
+                      srcMacAddr(1),
+                      ethernetProtocol(2),
+                      userPriority(3),
+                      cvlanId(4),
+                      svlanId(5),
+                      ipTos(6),
+                      ipSrcAddr(7),
+                      ipDestAddr(8),
+                      ipProtocol(9),
+                      mplsExp(10),  
+                      ipv6SrcAddr(11),
+                      ipv6DestAddr(12),
+                      ipv6TrafficClass(13),
+                      ipv6FlowLabel(14),
+                      srcPort(15),
+                      destPort(16)
+                     }  
+
+--=========================================================                                      
+-- Wmac Common Status Table
+--=========================================================
+icomWmacCmnStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides the status of the WMAC common for BS and TS."    
+    ::= { icomWmacCmnObjects  1 }
+
+icomWmacCmnStatusEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacCmnComponentId } 
+    ::={ icomWmacCmnStatusTable 1 }
+
+IcomWmacCmnStatusEntry ::= SEQUENCE {
+    icomWmacCmnComponentId       Integer32,                   
+    icomWmacCmnStatusMacAddr     MacAddress,
+    icomWmacCmnStatusBsFrameNum  Integer32,
+    icomWmacCmnifIndex           InterfaceIndexOrZero,
+    icomWmacCmnLEDStatus         INTEGER
+}   
+
+icomWmacCmnComponentId  OBJECT-TYPE 
+    SYNTAX          Integer32 (1)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION  
+        "Base Station:     It is restricted to 1 instance 
+         Terminal Station: It is restricted to 1 instance."
+    ::= { icomWmacCmnStatusEntry 1 }
+   
+icomWmacCmnStatusMacAddr  OBJECT-TYPE 
+    SYNTAX                MacAddress
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "IEEE 802.3 MAC address used for the air interface."
+    ::= { icomWmacCmnStatusEntry 2 }
+
+icomWmacCmnStatusBsFrameNum OBJECT-TYPE 
+    SYNTAX                  Integer32
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "Radio frame number." 
+    ::= { icomWmacCmnStatusEntry 3 }   
+
+icomWmacCmnifIndex OBJECT-TYPE 
+    SYNTAX         InterfaceIndexOrZero
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION  
+        "Mapping of the component id in interface entry." 
+    ::= { icomWmacCmnStatusEntry 4 }        
+
+icomWmacCmnLEDStatus  OBJECT-TYPE 
+    SYNTAX            INTEGER { black(0),
+                                red(1),
+                                redBlink(2),
+                                orange(3),
+                                orangeBlink(4),
+                                green(5),
+                                greenBlink(6)
+                              }
+    MAX-ACCESS         read-only
+    STATUS             current
+    DESCRIPTION  
+        "This object indicates the LED Indications in accordance to System Status at a 
+         Streetnode PmP System.
+           For BS System:
+			  black: System not operational
+			  red: Radio and Modem Alarms are raised.
+			  redBlink: Not Used.
+			  orange: System Muted. Not Transmitting.
+			  orangeBlink: No assigned TSs is synchronized yet.
+			  green:  Not all assigned TSs are synchronized yet.
+			  greenBlink: All assigned TSs are synchronized.
+
+           For TS System:
+			  black: System not operational
+			  red: Radio, Modem and / or Antenna Alarms are raised.
+              redBlink: Antenna Alignment in Progress
+              orange: Reception OK. Not yet Invited.
+              orangeBlink: Ranging in Progress.
+              green: Not Used.
+              greenBlink: TS operates normally." 
+    ::= { icomWmacCmnStatusEntry 5 }   
+
+--=========================================================                                      
+-- Wmac Common Statistics Table
+--=========================================================
+icomWmacCmnStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides WMAC statistics common for BS and TS."    
+    ::= { icomWmacCmnObjects  2 }
+
+icomWmacCmnStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This entry is indexed by icomWmacCmnComponentId."
+    AUGMENTS  { icomWmacCmnStatusEntry } 
+    ::={ icomWmacCmnStatsTable 1 }
+
+IcomWmacCmnStatsEntry ::= SEQUENCE {
+    icomWmacCmnStatsTxPkts              Counter64,
+    icomWmacCmnStatsTxBytes             Counter64,
+    icomWmacCmnStatsRxPkts              Counter64,
+    icomWmacCmnStatsRxBytes             Counter64,
+    icomWmacCmnStatsHcsErrs             Counter64,
+    icomWmacCmnStatsCrcErrs             Counter64,
+    icomWmacCmnStatsCidRangeErrs        Counter64,
+    icomWmacCmnStatsInvalidMsgTypeErrs  Counter64,
+    icomWmacCmnStatsCidDisabledErrs     Counter64,
+    icomWmacCmnStatsDecodingErrs        Counter64,
+    icomWmacCmnStatsAggrDlSduBitRate    Counter64,
+    icomWmacCmnStatsAggrUlSduBitRate    Counter64,
+    icomWmacCmnStatsResetCounter        TruthValue,
+    icomWmacCmnStatsAggrDlPduBitRate    Counter64,
+    icomWmacCmnStatsAggrUlPduBitRate    Counter64
+}   
+
+icomWmacCmnStatsTxPkts   OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Number of transport packets transmitted over the wireless
+        interface."
+      ::= { icomWmacCmnStatsEntry 1 }
+
+icomWmacCmnStatsTxBytes OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Number of transport bytes transmitted over the wireless 
+        interface." 
+    ::= { icomWmacCmnStatsEntry 2 }   
+
+icomWmacCmnStatsRxPkts OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Number of transport packets received over the wireless
+        interface." 
+    ::= { icomWmacCmnStatsEntry 3 }
+
+icomWmacCmnStatsRxBytes OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Number of transport bytes received over the wireless 
+        interface." 
+    ::= { icomWmacCmnStatsEntry 4 }
+
+icomWmacCmnStatsHcsErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "MAC PDU header checksum errors." 
+    ::= { icomWmacCmnStatsEntry 5 }
+
+icomWmacCmnStatsCrcErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "MAC PDU CRC errors." 
+    ::= { icomWmacCmnStatsEntry 6 }
+
+icomWmacCmnStatsCidRangeErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "MAC PDU received with invalid connection ID errors." 
+    ::= { icomWmacCmnStatsEntry 7 }
+
+icomWmacCmnStatsInvalidMsgTypeErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Bad MAC management message type errors." 
+    ::= { icomWmacCmnStatsEntry 8 }
+
+icomWmacCmnStatsCidDisabledErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "MAC PDU received on a disabled connection errors." 
+    ::= { icomWmacCmnStatsEntry 9 }
+
+icomWmacCmnStatsDecodingErrs OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "MAC message decoding/parsing errors." 
+    ::= { icomWmacCmnStatsEntry 10 }
+
+icomWmacCmnStatsAggrDlSduBitRate OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Aggregate downlink SDU bit rate." 
+    ::= { icomWmacCmnStatsEntry 11 }
+
+icomWmacCmnStatsAggrUlSduBitRate OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Aggregate uplink SDU bit rate." 
+    ::= { icomWmacCmnStatsEntry 12 }
+
+icomWmacCmnStatsResetCounter   OBJECT-TYPE 
+    SYNTAX                     TruthValue
+    MAX-ACCESS                 read-write
+    STATUS                     current
+    DESCRIPTION  
+        "Reset WMAC statistics."
+    DEFVAL { false }
+    ::= { icomWmacCmnStatsEntry 13 }
+
+icomWmacCmnStatsAggrDlPduBitRate OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Aggregate downlink PDU bit rate." 
+    ::= { icomWmacCmnStatsEntry 14 }
+
+icomWmacCmnStatsAggrUlPduBitRate OBJECT-TYPE 
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "Aggregate uplink PDU bit rate." 
+    ::= { icomWmacCmnStatsEntry 15 }
+
+--=========================================================                                      
+-- Common Service Flow Table
+--=========================================================
+icomWmacCmnServFlowTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnServFlowEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the status of the service flow database. It contains
+        service flow managed objects that are common in BS and TS. It reports each 
+        service flow (established, failed, or established and failed) between BS and
+        TS. It provides one row for each created service flow for a given TSID. 
+        When this table is implemented in the BS, the icomWmacCmnPeerId object
+        contains the TSID, the reported service flow was created for. 
+        In TS, the corresponding value is 1. The icomWmacCmnServBundleProfileId 
+        object is valid on BS. In TS, this object returns 0."   
+    ::= { icomWmacCmnObjects  3 }
+
+icomWmacCmnServFlowEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnServFlowEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the componentID, peerID and SFID."
+    INDEX  { icomWmacCmnComponentId, 
+             icomWmacCmnPeerId, 
+             icomWmacCmnSfId 
+           } 
+    ::={ icomWmacCmnServFlowTable 1 }
+
+IcomWmacCmnServFlowEntry ::= SEQUENCE {
+    icomWmacCmnPeerId                    Integer32,
+    icomWmacCmnSfId                      Unsigned32,
+    icomWmacCmnServFlowCid               Integer32,      
+    icomWmacCmnServFlowDirection         INTEGER,
+    icomWmacCmnServFlowOperStatus        INTEGER,
+    icomWmacCmnServFlowAdminStatus       TruthValue,
+    icomWmacCmnServFlowFailReason        INTEGER,
+    icomWmacCmnServFlowMandatory         TruthValue,
+    icomWmacCmnServFlowTrafficPriority   Integer32,
+    icomWmacCmnServFlowMaxSustainedRate  Unsigned32,
+    icomWmacCmnServFlowMinReservedRate   Unsigned32,
+    icomWmacCmnServFlowGrantInterval     Unsigned32,
+    icomWmacCmnServFlowSchedulingType    INTEGER,
+    icomWmacCmnServFlowReqTxPolicy       BITS,
+    icomWmacCmnServFlowWeight            Integer32, 
+    icomWmacCmnServFlowEstablishedTime   TimeStamp,
+    icomWmacCmnServFlowQueueType         INTEGER,
+    icomWmacCmnServFlowQueueWeight4      Integer32,
+    icomWmacCmnServFlowQueueWeight5      Integer32,
+    icomWmacCmnServFlowQueueWeight6      Integer32,
+    icomWmacCmnServFlowQueueWeight7      Integer32,
+    icomWmacCmnServFlowMaxQueueDepth0    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth1    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth2    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth3    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth4    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth5    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth6    Integer32,
+    icomWmacCmnServFlowMaxQueueDepth7    Integer32,
+    icomWmacCmnServFlowQueueDepth0       Integer32,
+    icomWmacCmnServFlowQueueDepth1       Integer32,
+    icomWmacCmnServFlowQueueDepth2       Integer32,
+    icomWmacCmnServFlowQueueDepth3       Integer32,
+    icomWmacCmnServFlowQueueDepth4       Integer32, 
+    icomWmacCmnServFlowQueueDepth5       Integer32,
+    icomWmacCmnServFlowQueueDepth6       Integer32,
+    icomWmacCmnServFlowQueueDepth7       Integer32,
+    icomWmacCmnServFlowQueueNumBuffers0  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers1  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers2  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers3  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers4  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers5  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers6  Integer32,
+    icomWmacCmnServFlowQueueNumBuffers7  Integer32,
+    icomWmacCmnServFlowInService         TimeTicks,
+    icomWmacCmnServFlowOutService        TimeTicks,
+    icomWmacCmnServBundleProfileId       Integer32,
+    icomWmacCmnServFlowProfileId         Integer32,
+    icomWmacCmnServFlowMinPhyMode        Integer32
+}
+
+icomWmacCmnPeerId             OBJECT-TYPE 
+    SYNTAX                    Integer32 (1..30)
+    MAX-ACCESS                not-accessible
+    STATUS                    current
+    DESCRIPTION  
+        "Base Station:     PeerId = 1..30, 
+         Terminal Station: PeerId = 1."
+    ::= { icomWmacCmnServFlowEntry 1 }
+
+icomWmacCmnSfId               OBJECT-TYPE 
+    SYNTAX                    Unsigned32 (1..32768)
+    MAX-ACCESS                not-accessible
+    STATUS                    current
+    DESCRIPTION  
+        "Service flow ID (SFID). This object uniquely identifies 
+         a service flow for a TS. SFID is common in BS and TS.
+         For a Terminal Station we can have up to 15 SfIds for DL
+         and up to 15 SfIds for UL."
+    ::= { icomWmacCmnServFlowEntry 2 }
+
+icomWmacCmnServFlowCid     OBJECT-TYPE 
+    SYNTAX                 Integer32
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "WMAC Connection ID (CID)."
+    ::= { icomWmacCmnServFlowEntry 3 }
+
+icomWmacCmnServFlowDirection  OBJECT-TYPE 
+    SYNTAX                    INTEGER { uplink(1),
+        				                downlink(2) 
+                                      }
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Service flow direction (DL/UL)."
+    ::= { icomWmacCmnServFlowEntry 4 }
+
+icomWmacCmnServFlowOperStatus    OBJECT-TYPE 
+    SYNTAX                       INTEGER {
+								invalid(1),
+								init(2),
+								addreq(3),
+								addrsp(4),
+								noretries(5),
+								holdadd(6),
+								holdrem(7),
+								deleting(8),
+								remreq(9),
+								modreq(10),
+								modrsp(11),
+								established(12),
+								disabling(13)
+								}
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "The current operational state of the service flow.
+         BS SIDE: 
+           INIT: Service flow unallocated
+           ADD_REQ: SF-ADD-REQ sent
+           NO_RETRIES: SF-ADD-REQ retries exhausted
+           HOLD_ADD: Waiting for any pending messages during addition
+           DELETING: Service flow is being deleted before reaching 
+                     ESTABLISHED state
+           REM_REQ: SF-REM-REQ sent
+           HOLD_REM: Waiting for any pending messages during removal
+           MOD_REQ: SF-MOD-REQ sent
+           ESTABLISHED: Service flow established
+           INVALID: Invalid state
+         TS SIDE:
+           INIT: No service flow exists
+           ADD_RSP: Service flow addition response sent
+           HOLD_ADD: Waiting for any pending transaction messages before 
+                     closing the addition transaction
+           HOLD_REM: Waiting for any pending transaction messages before  
+                     closing the removal transaction
+           MOD_RSP: Service flow removal response sent
+           ESTABLISHED: Service flow established
+           DISABLING: Service flow about to be deleted (waiting for any 
+                      pending SDUs)
+           INVALID: Invalid state."
+    ::= { icomWmacCmnServFlowEntry 5 }
+
+icomWmacCmnServFlowAdminStatus    OBJECT-TYPE 
+    SYNTAX                        TruthValue
+    MAX-ACCESS                    read-write
+    STATUS                        current
+    DESCRIPTION  
+        "The desired state of the service flow (enabled/disabled)."
+    ::= { icomWmacCmnServFlowEntry 6 }
+
+icomWmacCmnServFlowFailReason   OBJECT-TYPE 
+    SYNTAX                      INTEGER { noFailure(0), 
+                                          minPhyModeCrossed(1),
+                                          sfResponseTimeout(2) 
+                                        }
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Reason of failure for the service flow. A service flow may fail either in
+         creation phase or operation phase."
+    ::= { icomWmacCmnServFlowEntry 7 }
+
+icomWmacCmnServFlowMandatory  OBJECT-TYPE 
+    SYNTAX                    TruthValue
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Service flow mandatory state (if true and servive flow creation 
+        fails, no other subsequent service flows are created)."
+    ::= { icomWmacCmnServFlowEntry 8 }
+
+icomWmacCmnServFlowTrafficPriority  OBJECT-TYPE 
+    SYNTAX                          Integer32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "Service flow traffic priority."
+    ::= { icomWmacCmnServFlowEntry 9 }
+
+icomWmacCmnServFlowMaxSustainedRate   OBJECT-TYPE 
+    SYNTAX                            Unsigned32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION  
+        "Maximum sustained rate in bps."
+    ::= { icomWmacCmnServFlowEntry 10 }
+
+icomWmacCmnServFlowMinReservedRate   OBJECT-TYPE 
+    SYNTAX                           Unsigned32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Minimum reserved rate in bps (all scheduling
+        types but BE)."
+    ::= { icomWmacCmnServFlowEntry 11 }
+
+icomWmacCmnServFlowGrantInterval  OBJECT-TYPE 
+    SYNTAX                        Unsigned32
+    UNITS                         "micro-seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "Grant interval (UGS UL direction only)."
+    ::= { icomWmacCmnServFlowEntry 12 }
+
+icomWmacCmnServFlowSchedulingType   OBJECT-TYPE 
+    SYNTAX                          INTEGER { bestEffort(1),
+                                              nonRealTimePollingService(2),
+                                              realTimePollingService(3),
+                                              unsolicitedGrantService(4)
+                                            }               
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "Scheduling type (BE, NRT-VR, RT-VR, UGS)."
+    ::= { icomWmacCmnServFlowEntry 13 }
+
+icomWmacCmnServFlowReqTxPolicy   OBJECT-TYPE 
+    SYNTAX                       BITS { prePacking(0),
+       				                    fragmentation(1),
+                                        phs(2)
+                                      } 
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Transmission policy. This object specifies the status of
+        the transmission policy bitmask. A '1' in a bit position 
+        indicates that a specific attribute of the service flow 
+        (i.e., pre-packing, fragmentation, PHS) is enabled. A 
+        '0' in a bit position indicates that a specific attribute 
+        of the service flow is disabled."
+    ::= { icomWmacCmnServFlowEntry 14 }
+
+icomWmacCmnServFlowWeight        OBJECT-TYPE
+    SYNTAX                       Integer32
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Proportional Fair Scheduling weight (in bytes) for BE, 
+        NRT-VR, and RT-VR."
+    ::= { icomWmacCmnServFlowEntry 15 }
+
+icomWmacCmnServFlowEstablishedTime  OBJECT-TYPE 
+    SYNTAX                          TimeStamp
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "Service flow Established Time."
+    ::= { icomWmacCmnServFlowEntry 16 }
+
+icomWmacCmnServFlowQueueType     OBJECT-TYPE 
+    SYNTAX                       INTEGER { strict(1),
+                                           mixed(2)
+                                         }
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Queue selection mode used by the dequeuing processing during transmission, 
+        used to select between transmit queues 0 to 7. Two options are available. 
+            Strict priority: Selection of queue is strict priority only, where 0 is highest. 
+            Mixed priority: Selection of queue is strict priority for queues 0 to 3, followed 
+                            by WFQ for queues 4 to 7 (DL only)."
+    ::= { icomWmacCmnServFlowEntry 17 }
+
+icomWmacCmnServFlowQueueWeight4    OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Used only when queue selection mode is mixed priority. Relative weight of 
+        transmit queue 4."
+    ::= { icomWmacCmnServFlowEntry 18 }
+
+icomWmacCmnServFlowQueueWeight5  OBJECT-TYPE 
+    SYNTAX                       Integer32
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Used only when queue selection mode is mixed priority. Relative weight of 
+        transmit queue 5."
+    ::= { icomWmacCmnServFlowEntry 19 }
+
+icomWmacCmnServFlowQueueWeight6  OBJECT-TYPE 
+    SYNTAX                       Integer32
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Used only when queue selection mode is mixed priority. Relative weight of 
+        transmit queue 6."
+    ::= { icomWmacCmnServFlowEntry 20 }
+
+icomWmacCmnServFlowQueueWeight7    OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Used only when queue selection mode is mixed priority. Relative weight of 
+        transmit queue 7."
+    ::= { icomWmacCmnServFlowEntry 21 }
+
+icomWmacCmnServFlowMaxQueueDepth0  OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 0."
+    ::= { icomWmacCmnServFlowEntry 22 }
+
+icomWmacCmnServFlowMaxQueueDepth1   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 1."
+    ::= { icomWmacCmnServFlowEntry 23 }
+
+icomWmacCmnServFlowMaxQueueDepth2   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 2."
+    ::= { icomWmacCmnServFlowEntry 24 }
+
+icomWmacCmnServFlowMaxQueueDepth3  OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for
+        transmit queue 3."
+    ::= { icomWmacCmnServFlowEntry 25 }
+
+icomWmacCmnServFlowMaxQueueDepth4   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for
+        transmit queue 4."
+    ::= { icomWmacCmnServFlowEntry 26 }
+
+icomWmacCmnServFlowMaxQueueDepth5   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for
+        transmit queue 5."
+    ::= { icomWmacCmnServFlowEntry 27 }
+
+icomWmacCmnServFlowMaxQueueDepth6   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for
+        transmit queue 6."
+    ::= { icomWmacCmnServFlowEntry 28 }
+
+icomWmacCmnServFlowMaxQueueDepth7  OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION  
+        "Maximum queue depth (discard threshold) in SDUs (packets) for
+        transmit queue 7."
+    ::= { icomWmacCmnServFlowEntry 29 }
+
+icomWmacCmnServFlowQueueDepth0  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 0."
+    ::= { icomWmacCmnServFlowEntry 30 }
+
+icomWmacCmnServFlowQueueDepth1  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 1."
+    ::= { icomWmacCmnServFlowEntry 31 }
+
+icomWmacCmnServFlowQueueDepth2  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 2."
+    ::= { icomWmacCmnServFlowEntry 32 }
+
+icomWmacCmnServFlowQueueDepth3  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 3."
+    ::= { icomWmacCmnServFlowEntry 33 }
+
+icomWmacCmnServFlowQueueDepth4  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 4."
+    ::= { icomWmacCmnServFlowEntry 34 }
+
+icomWmacCmnServFlowQueueDepth5  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 5."
+    ::= { icomWmacCmnServFlowEntry 35 }
+
+icomWmacCmnServFlowQueueDepth6  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 6."
+    ::= { icomWmacCmnServFlowEntry 36 }
+
+icomWmacCmnServFlowQueueDepth7  OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Current queue depth in SDUs (packets) for transmit queue 7."
+    ::= { icomWmacCmnServFlowEntry 37 }
+
+icomWmacCmnServFlowQueueNumBuffers0  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 0."
+    ::= { icomWmacCmnServFlowEntry 38 }
+
+icomWmacCmnServFlowQueueNumBuffers1  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 1."
+    ::= { icomWmacCmnServFlowEntry 39 }
+
+icomWmacCmnServFlowQueueNumBuffers2  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 2."
+    ::= { icomWmacCmnServFlowEntry 40 }
+
+icomWmacCmnServFlowQueueNumBuffers3  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 3."
+    ::= { icomWmacCmnServFlowEntry 41 }
+
+icomWmacCmnServFlowQueueNumBuffers4  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 4."
+    ::= { icomWmacCmnServFlowEntry 42 }
+
+icomWmacCmnServFlowQueueNumBuffers5  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 5."
+    ::= { icomWmacCmnServFlowEntry 43 }
+
+icomWmacCmnServFlowQueueNumBuffers6  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 6."
+    ::= { icomWmacCmnServFlowEntry 44 }
+
+icomWmacCmnServFlowQueueNumBuffers7  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Number of packet buffers consumed by transmit queue 7."
+    ::= { icomWmacCmnServFlowEntry 45 }
+
+icomWmacCmnServFlowInService   OBJECT-TYPE 
+    SYNTAX                     TimeTicks
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Time in service."
+    ::= { icomWmacCmnServFlowEntry 46 }
+
+icomWmacCmnServFlowOutService  OBJECT-TYPE 
+    SYNTAX                     TimeTicks
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Time out of service."
+    ::= { icomWmacCmnServFlowEntry 47 }
+
+icomWmacCmnServBundleProfileId       OBJECT-TYPE 
+    SYNTAX                     Integer32
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Service bundle profile index (BS only). Index to an entry in 
+         icomWmacBsSfProvServBundleProfTable."
+    ::= { icomWmacCmnServFlowEntry 48 }
+
+icomWmacCmnServFlowProfileId      OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "Service flow profile index (BS only). Index to an 
+         entry in icomWmacBsSfProvServFlowProfTable."
+    ::= { icomWmacCmnServFlowEntry 49 }
+
+icomWmacCmnServFlowMinPhyMode     OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "Minimum physical mode allowed for the service flow."
+    ::= { icomWmacCmnServFlowEntry 50 }
+
+--=========================================================                                      
+-- Common Classifier Criteria Table
+--=========================================================
+icomWmacCmnClsTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnClsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the status of packet classification criteria associated with 
+        created service flows. It provides one row for each packet classification rule."    
+    ::= { icomWmacCmnObjects  4 }
+
+icomWmacCmnClsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnClsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the ComponentID, PeerID, SFID, and icomWmacCmnClsRuleId."
+    INDEX  { icomWmacCmnComponentId, 
+             icomWmacCmnPeerId, 
+             icomWmacCmnSfId, 
+             icomWmacCmnClsRuleId 
+           } 
+    ::={ icomWmacCmnClsTable 1 }
+
+IcomWmacCmnClsEntry ::= SEQUENCE {
+    icomWmacCmnClsRuleId             Integer32,
+    icomWmacCmnClsDestMacAddr        MacAddress,
+    icomWmacCmnClsDestMacMask        MacAddress,
+    icomWmacCmnClsSrcMacAddr         MacAddress,
+    icomWmacCmnClsSrcMacMask         MacAddress,
+    icomWmacCmnClsEnetProtocol       Integer32,
+    icomWmacCmnClsUserPriLow         Integer32,
+    icomWmacCmnClsUserPriHigh        Integer32, 
+    icomWmacCmnClsCvlanIdLow         Unsigned32,
+    icomWmacCmnClsCvlanIdHigh        Unsigned32,
+    icomWmacCmnClsSvlanIdLow         Unsigned32, 
+    icomWmacCmnClsSvlanIdHigh        Unsigned32,
+    icomWmacCmnClsIpTosLow           Integer32,
+    icomWmacCmnClsIpTosHigh          Integer32,
+    icomWmacCmnClsIpTosMask          Integer32,
+    icomWmacCmnClsAddressType        InetAddressType,
+    icomWmacCmnClsIpSrcAddr          InetAddress, 
+    icomWmacCmnClsIpSrcMask          InetAddress,
+    icomWmacCmnClsIpDestAddr         InetAddress,
+    icomWmacCmnClsIpDestMask         InetAddress,
+    icomWmacCmnClsIpProtocol         Integer32,
+    icomWmacCmnClsMplsExp            Integer32, 
+    icomWmacCmnClsIpv6TrfClassLow    Integer32,
+    icomWmacCmnClsIpv6TrfClassHigh   Integer32,
+    icomWmacCmnClsIpv6FlowLabelLow   WmacIpv6FlowLabel,
+    icomWmacCmnClsIpv6FlowLabelHigh  WmacIpv6FlowLabel,
+    icomWmacCmnClsSrcPortStart       Integer32,   
+    icomWmacCmnClsSrcPortEnd         Integer32,
+    icomWmacCmnClsDestPortStart      Integer32,
+    icomWmacCmnClsDestPortEnd        Integer32,
+    icomWmacCmnClsBitMap             WmacClassifierBitMap,
+    icomWmacCmnClsAssociatedPhsi     Integer32
+}
+
+icomWmacCmnClsRuleId          OBJECT-TYPE 
+    SYNTAX                    Integer32 (1..32768)
+    MAX-ACCESS                not-accessible
+    STATUS                    current
+    DESCRIPTION  
+        "Classifier rule index."
+    ::= { icomWmacCmnClsEntry 1 }
+
+icomWmacCmnClsDestMacAddr   OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the Ethernet destination
+        MAC address required for packets to match this rule. An 
+        Ethernet packet matches the rule when the packet's destination 
+        MAC address bitwise ANDed with the icomWmacSfBsProvClsRuleDestMacMask 
+        value equals the icomWmacSfBsProvClsRuleDestMacAddr value." 
+    ::= { icomWmacCmnClsEntry 2 }
+
+icomWmacCmnClsDestMacMask   OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's Ethernet 
+        destination MAC address are compared to match this rule.
+        An Ethernet packet matches the rule when the packets destination
+        MAC address bitwise ANDed with the icomWmacSfBsProvClsRuleDestMacMask
+        value equals the icomWmacSfBsProvClsRuleDestMacAddr value."
+    ::= { icomWmacCmnClsEntry 3 }
+
+icomWmacCmnClsSrcMacAddr    OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the Ethernet source MAC 
+        address required for packets to match this rule. An Ethernet 
+        packet matches the rule when the packet's source MAC address 
+        bitwise ANDed with the icomWmacSfBsProvClsRuleSrcMacMask value
+        equals the icomWmacSfBsProvClsRuleSrcMacAddr value." 
+    ::= { icomWmacCmnClsEntry 4 }
+
+icomWmacCmnClsSrcMacMask      OBJECT-TYPE 
+    SYNTAX                        MacAddress
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's Ethernet 
+        source MAC address are compared to match this rule. An 
+        Ethernet packet matches the rule when the packet's source
+        MAC address bitwise ANDed with the icomWmacSfBsProvClsRuleSrcMacMask
+        value equals the icomWmacSfBsProvClsRuleSrcMacAddr value." 
+    ::= { icomWmacCmnClsEntry 5 }
+
+icomWmacCmnClsEnetProtocol    OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the 16-bit value of the EtherType that 
+        the packet must match in order to match the rule. If the 
+        Ethernet frame contains an IEEE 802.1Q tag header 
+        (i.e., EtherType 0x8100), this object applies to the 
+        embedded EtherType field within the IEEE 802.1Q header." 
+    ::= { icomWmacCmnClsEntry 6 }
+
+icomWmacCmnClsUserPriLow    OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies only to Ethernet frames using the 
+        IEEE 802.1Q tag header (indicated with EtherType 0x8100). 
+        Such frames include a 16-bit Tag that contains a 3 bit 
+        Priority field and a 12 bit VLAN number. Tagged Ethernet 
+        packets must have a 3-bit Priority field within the range
+        of icomWmacSfBsProvClsRuleUserPriLow and 
+        icomWmacSfBsProvClsRuleUserPriHigh in order to match this rule." 
+    ::= { icomWmacCmnClsEntry 7 }
+
+icomWmacCmnClsUserPriHigh   OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies only to Ethernet frames using the 
+        IEEE 802.1Q tag header (indicated with EtherType 0x8100). 
+        Such frames include a 16-bit Tag that contains a 3 bit 
+        Priority field and a 12 bit VLAN number. Tagged Ethernet 
+        packets must have a 3-bit Priority field within the range 
+        of icomWmacSfBsProvClsRuleUserPriLow and 
+        icomWmacSfBsProvClsRuleUserPriHigh in order to match this rule." 
+    ::= { icomWmacCmnClsEntry 8 }
+
+icomWmacCmnClsCvlanIdLow    OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a C-VLAN ID. 
+        Ethernet frames must have a 12-bit C-VLAN ID field within the 
+        range of icomWmacSfBsProvClsRuleCvlanIdLow and 
+        icomWmacSfBsProvClsRuleCvlanIdHigh in order to match this rule."
+    ::= { icomWmacCmnClsEntry 9 }
+
+icomWmacCmnClsCvlanIdHigh   OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a C-VLAN ID. 
+        Ethernet frames must have a 12-bit C-VLAN ID field within the range 
+        of icomWmacSfBsProvClsRuleCvlanIdLow and icomWmacSfBsProvClsRuleCvlanIdHigh
+        in order to match this rule." 
+    ::= { icomWmacCmnClsEntry 10 }
+
+icomWmacCmnClsSvlanIdLow    OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a S-VLAN ID. 
+        Ethernet frames must have a 12-bit S-VLAN ID field within the range 
+        of icomWmacSfBsProvClsRuleSvlanIdLow and icomWmacSfBsProvClsRuleSvlanIdHigh
+        in order to match this rule." 
+    ::= { icomWmacCmnClsEntry 11 }
+
+icomWmacCmnClsSvlanIdHigh   OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a S-VLAN ID. Ethernet
+        frames must have a 12-bit S-VLAN ID field within the range of 
+        icomWmacSfBsProvClsRuleSvlanIdLow and icomWmacSfBsProvClsRuleSvlanIdHigh 
+        in order to match this rule." 
+    ::= { icomWmacCmnClsEntry 12 }
+
+icomWmacCmnClsIpTosLow    OBJECT-TYPE 
+    SYNTAX                    Integer32
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "This object specifies the value of the IPv4 ToS field required for 
+        packets to match this rule. Packets must have an IPv4 ToS field within
+        the range of icomWmacSfBsProvClsRuleIpTosLow and icomWmacSfBsProvClsRuleIpTosHigh
+        in order to match this rule."
+    ::= { icomWmacCmnClsEntry 13 }
+
+icomWmacCmnClsIpTosHigh     OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the IPv4 ToS field required for packets
+        to match this rule. Packets must have an IPv4 ToS field within the range of 
+        icomWmacSfBsProvClsRuleIpTosLow and icomWmacSfBsProvClsRuleIpTosHigh in order
+        to match this rule." 
+    ::= { icomWmacCmnClsEntry 14 }
+
+icomWmacCmnClsIpTosMask   OBJECT-TYPE 
+    SYNTAX                    Integer32
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "This object specifies the ToS mask. The ToS mask bitwise ANDed with a 
+        packet's IPv4 ToS field must be in the range of icomWmacSfBsProvClsRuleIpTosLow 
+        and icomWmacSfBsProvClsRuleIpTosHigh in order to match the rule." 
+    ::= { icomWmacCmnClsEntry 15 }
+
+icomWmacCmnClsAddressType     OBJECT-TYPE 
+    SYNTAX                        InetAddressType
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "A value that represents a type of Internet address." 
+    ::= { icomWmacCmnClsEntry 16 }
+
+icomWmacCmnClsIpSrcAddr    OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies the value of the IP Source Address required for packets
+        to match this rule. An IP packet matches the rule when the packet IP source 
+        address bitwise ANDed with the icomWmacSfBsProvClsRuleIpSrcMask value equals the 
+        icomWmacSfBsProvClsRuleIpSrcAddr value." 
+    ::= { icomWmacCmnClsEntry 17 }
+
+icomWmacCmnClsIpSrcMask   OBJECT-TYPE 
+    SYNTAX                    InetAddress
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's IP Source Address that are 
+        compared to match this rule. An IP packet matches the rule when the packet 
+        source address bitwise ANDed with the icomWmacSfBsProvClsRuleIpSrcMask value 
+        equals the icomWmacSfBsProvClsRuleIpSrcAddr value." 
+    ::= { icomWmacCmnClsEntry 18 }
+
+icomWmacCmnClsIpDestAddr   OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies the value of the IP Destination Address required for 
+        packets to match this rule. An IP packet matches the rule when the packet IP 
+        destination address bitwise ANDed with the icomWmacSfBsProvClsRuleIpDestMask 
+        value equals the icomWmacSfBsProvClsRuleIpDestAddr value."
+    ::= { icomWmacCmnClsEntry 19 }
+
+icomWmacCmnClsIpDestMask   OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's IP Destination Address that are
+        compared to match this rule. An IP packet matches the rule when the packet 
+        destination address bitwise ANDed with the icomWmacSfBsProvClsRuleIpDestMask 
+        value equals the icomWmacSfBsProvClsRuleIpDestAddr value."
+    ::= { icomWmacCmnClsEntry 20 }
+
+icomWmacCmnClsIpProtocol     OBJECT-TYPE 
+    SYNTAX                       Integer32 (0..255)
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "This object specifies the IP protocol field a packet should have to match this 
+         rule." 
+    ::= { icomWmacCmnClsEntry 21 }
+
+icomWmacCmnClsMplsExp        OBJECT-TYPE 
+    SYNTAX                       Integer32
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "This object specifies the MPLS EXP field a packet should have in the outer  
+        MPLS lable to match this rule." 
+    ::= { icomWmacCmnClsEntry 22 }
+
+icomWmacCmnClsIpv6TrfClassLow   OBJECT-TYPE 
+    SYNTAX                          Integer32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 traffic class field required
+        for packets to match this rule. Packets must have an IPv6 traffic class field
+        within the range of icomWmacSfBsProvClsRuleIpv6TrfClassLow and 
+        icomWmacSfBsProvClsRuleIpv6TrfClassHigh in order to match this rule."
+    ::= { icomWmacCmnClsEntry 23 }
+
+icomWmacCmnClsIpv6TrfClassHigh  OBJECT-TYPE 
+    SYNTAX                          Integer32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 traffic class field required 
+        for packets to match this rule. Packets must have an IPv6 traffic class field
+        within the range of icomWmacSfBsProvClsRuleIpv6TrfClassLow and 
+        icomWmacSfBsProvClsRuleIpv6TrfClassHigh in order to match this rule."
+    ::= { icomWmacCmnClsEntry 24 }
+
+icomWmacCmnClsIpv6FlowLabelLow   OBJECT-TYPE 
+    SYNTAX                           WmacIpv6FlowLabel
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 flow label field required for 
+        packets to match this rule. Packets must have an IPv6 flow label field within
+        the range of icomWmacSfBsProvClsRuleIpv6FlowLabelLow and 
+        icomWmacSfBsProvClsRuleIpv6FlowLabelHigh."
+    ::= { icomWmacCmnClsEntry 25 }
+
+icomWmacCmnClsIpv6FlowLabelHigh   OBJECT-TYPE 
+    SYNTAX                            WmacIpv6FlowLabel
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 flow label field required for 
+        packets to match this rule. Packets must have an IPv6 flow label field within 
+        the range of icomWmacSfBsProvClsRuleIpv6FlowLabelLow and 
+        icomWmacSfBsProvClsRuleIpv6FlowLabelHigh."
+    ::= { icomWmacCmnClsEntry 26 }
+
+icomWmacCmnClsSrcPortStart    OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the low end inclusive range of TCP/UDP source port 
+        numbers to which a packet is compared. This object is irrelevant for non-TCP/UDP
+        IP packets. If the referenced parameter is not present in a classifier, this 
+        object reports the value of 0."
+    ::= { icomWmacCmnClsEntry 27 }
+
+icomWmacCmnClsSrcPortEnd      OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the high end inclusive range of TCP/UDP source port 
+        numbers to which a packet is compared. This object is irrelevant for non-TCP/UDP 
+        IP packets. If the referenced parameter is not present in a classifier, this 
+        object reports the value of 65535."
+    ::= { icomWmacCmnClsEntry 28 }
+
+icomWmacCmnClsDestPortStart   OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the low end inclusive range of TCP/UDP destination port 
+        numbers to which a packet is compared. If the referenced parameter is not 
+        present in a classifier, this object reports the value of 0."
+    ::= { icomWmacCmnClsEntry 29 }
+
+icomWmacCmnClsDestPortEnd     OBJECT-TYPE 
+    SYNTAX                        Integer32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the high end inclusive range of TCP/UDP destination 
+        port numbers to which a packet is compared. If the referenced parameter is 
+        not present in a classifier, this object reports the value of 65535."
+    ::= { icomWmacCmnClsEntry 30 }
+
+icomWmacCmnClsBitMap      OBJECT-TYPE 
+    SYNTAX                    WmacClassifierBitMap
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "This object indicates which parameter encodings were actually present in the
+        entry. A bit set to '1' indicates the corresponding classifier encoding is 
+        present, and '0' means otherwise."
+    ::= { icomWmacCmnClsEntry 31 } 
+
+icomWmacCmnClsAssociatedPhsi    OBJECT-TYPE 
+    SYNTAX                          Integer32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION  
+        "The Associated PHSI has a value between 1 and 8, which shall mirror the PHSI 
+        value of a PHS rule. Packets matching the Packet Classification Rule containing 
+        the Associated PHSI parameter shall undergo PHS according to the corresponding PHS 
+        rule. A value '0' indicates that no PHS rule is associated with this classifier rule."
+    ::= { icomWmacCmnClsEntry 32 }
+
+--=========================================================                                      
+-- Common PHS Rule Table
+--=========================================================
+icomWmacCmnPhsRuleTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnPhsRuleEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains PHS rule dictionary entries. This 
+        table provides one row for each PHS rule created 
+        dynamically by the BS and TS on a given service flow."    
+    ::= { icomWmacCmnObjects  5 }
+
+icomWmacCmnPhsRuleEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnPhsRuleEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the Component, Peer, SFID, and PHSI."
+    INDEX  { icomWmacCmnComponentId, 
+             icomWmacCmnPeerId, 
+             icomWmacCmnSfId, 
+             icomWmacCmnPhsRuleId 
+           } 
+    ::={ icomWmacCmnPhsRuleTable 1 }
+
+IcomWmacCmnPhsRuleEntry ::= SEQUENCE {
+    icomWmacCmnPhsRuleId                 Integer32,
+    icomWmacCmnPhsRuleField              OCTET STRING,
+    icomWmacCmnPhsRuleMask               OCTET STRING,
+    icomWmacCmnPhsRuleSize               Integer32,
+    icomWmacCmnPhsRuleVerify             TruthValue
+}
+
+icomWmacCmnPhsRuleId   OBJECT-TYPE
+    SYNTAX             Integer32 (1..32768)
+    MAX-ACCESS         not-accessible
+    STATUS             current
+    DESCRIPTION 
+        "The PHS Index (PHSI) has a value between 1 and 8, which 
+        uniquely references the suppressed byte string. The index 
+        is unique per service flow. The DL and UL PHSI values are 
+        independent of each other."
+    ::= { icomWmacCmnPhsRuleEntry 1 }
+
+icomWmacCmnPhsRuleField  OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "The PHS field (PHSF) is a string of bytes containing the header 
+        information to be suppressed by the sending CS and reconstructed 
+        by the receiving CS. The most significant byte of the string 
+        corresponds to the first byte of the CS-SDU."
+    ::= { icomWmacCmnPhsRuleEntry 2 }
+
+icomWmacCmnPhsRuleMask  OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "The PHS mask (PHSM) is an 8-bit mask that indicates which 
+        bytes in the PHSF to suppress and which bytes to not suppress. 
+        The PHSM allows fields, such as sequence numbers or checksums 
+        (which vary in value), to be excluded from suppression with
+        the constant bytes around them suppressed. It is encodded as 
+        follows: 
+            bit 0: 0 = don't suppress the 1st byte of the suppression field 
+                   1 = suppress first byte of the suppression field 
+            bit 1: 0 = don't suppress the 2nd byte of the suppression field 
+                   1 = suppress second byte of the suppression field 
+            bit x: 0 = don't suppress the (x+1) byte of the suppression field 
+                   1 = suppress (x+1) byte of the suppression field where the 
+                       length of the octet string is ceiling (icomWmacCmnPhsRuleSize/8)."             
+    ::= { icomWmacCmnPhsRuleEntry 3 }
+
+icomWmacCmnPhsRuleSize  OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "byte"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of this field (PHSS) is the total number of bytes
+        in the header to be suppressed and then restored in a service 
+        flow that uses PHS."
+    ::= { icomWmacCmnPhsRuleEntry 4 }
+
+icomWmacCmnPhsRuleVerify     OBJECT-TYPE 
+    SYNTAX                     TruthValue
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "The value of this field (PHSV) indicates to the sending 
+        entity whether or not the packet header contents are to be 
+        verified prior to performing suppression."
+    ::= { icomWmacCmnPhsRuleEntry 5 }
+
+--=========================================================                                      
+-- Service Flow CID Statistics Table
+--=========================================================
+icomWmacCmnSfCIDStatsTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnSfCIDStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the service flow CID statistics."    
+    ::= { icomWmacCmnObjects  6 }
+
+icomWmacCmnSfCIDStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnSfCIDStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the ComponentID, PeerID and SFID."
+    AUGMENTS  { icomWmacCmnServFlowEntry } 
+    ::={ icomWmacCmnSfCIDStatsTable 1 }
+
+IcomWmacCmnSfCIDStatsEntry ::= SEQUENCE {
+    icomWmacCmnSfCIDStatsDlNumPdus          Counter64,
+    icomWmacCmnSfCIDStatsDlNumSdus          Counter64,
+    icomWmacCmnSfCIDStatsDlNumPduBytes      Counter64,
+    icomWmacCmnSfCIDStatsDlNumSduBytes      Counter64,
+    icomWmacCmnSfCIDStatsUlNumPdu           Counter64, 
+    icomWmacCmnSfCIDStatsUlNumSdu           Counter64,
+    icomWmacCmnSfCIDStatsUlPduBytes         Counter64,
+    icomWmacCmnSfCIDStatsUlSduBytes         Counter64,
+    icomWmacCmnSfCIDStatsUlErrPdu           Counter64,
+    icomWmacCmnSfCIDStatsUlErrSdu           Counter64, 
+    icomWmacCmnSfCIDStatsUlErrSduFrag       Counter64,
+    icomWmacCmnSfCIDStatsUlErrSduLength     Counter64,
+    icomWmacCmnSfCIDStatsUlAllocationBytes  Counter64,
+    icomWmacCmnSfCIDStatsResetCounter       TruthValue
+}
+
+icomWmacCmnSfCIDStatsDlNumPdus OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of PDUs transferred in the 
+        DL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 1 }
+
+icomWmacCmnSfCIDStatsDlNumSdus  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDUs (packets) transferred 
+        in the DL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 2 }
+
+icomWmacCmnSfCIDStatsDlNumPduBytes  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of PDU bytes transferred in 
+        the DL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 3 }
+
+icomWmacCmnSfCIDStatsDlNumSduBytes  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDU bytes transferred in
+        the DL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 4 }
+
+icomWmacCmnSfCIDStatsUlNumPdu  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of PDUs transferred in the
+        UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 5 }
+
+icomWmacCmnSfCIDStatsUlNumSdu  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDUs (packets) received in 
+        the UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 6 }
+
+icomWmacCmnSfCIDStatsUlPduBytes  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of bytes of PDUs received in 
+        the UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 7 }
+
+icomWmacCmnSfCIDStatsUlSduBytes  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDU bytes transferred in
+        the UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 8 }
+
+icomWmacCmnSfCIDStatsUlErrPdu  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of PDUs discarded in the 
+        UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 9 }
+
+icomWmacCmnSfCIDStatsUlErrSdu  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDUs (packets) discarded 
+        in the Ul direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 10 }
+
+icomWmacCmnSfCIDStatsUlErrSduFrag  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of errored SDU fragments 
+        in the UL direction."
+    ::= { icomWmacCmnSfCIDStatsEntry 11 }
+
+icomWmacCmnSfCIDStatsUlErrSduLength  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of number of SDUs received in the UL
+        direction that have a length error."
+    ::= { icomWmacCmnSfCIDStatsEntry 12 }
+
+icomWmacCmnSfCIDStatsUlAllocationBytes  OBJECT-TYPE 
+    SYNTAX                     Counter64
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Counter of the total number of bytes allocated
+        in the ULMAP for this CID."
+    ::= { icomWmacCmnSfCIDStatsEntry 13 }
+
+icomWmacCmnSfCIDStatsResetCounter  OBJECT-TYPE 
+    SYNTAX                     TruthValue
+    MAX-ACCESS                 read-write
+    STATUS                     current
+    DESCRIPTION  
+        "Reset WMAC connection (CID) statistics."
+    DEFVAL { false }
+    ::= { icomWmacCmnSfCIDStatsEntry 14 }
+
+--=========================================================                                      
+-- Service Flow Statistics Table
+--=========================================================
+icomWmacCmnSfFlowStatsTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnSfFlowStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the service flow statistics."    
+    ::= { icomWmacCmnObjects  7 }
+
+icomWmacCmnSfFlowStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnSfFlowStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the ComponentID, PeerID and SFID."
+    AUGMENTS  { icomWmacCmnServFlowEntry } 
+    ::={ icomWmacCmnSfFlowStatsTable 1 }
+
+IcomWmacCmnSfFlowStatsEntry ::= SEQUENCE {
+    icomWmacCmnSfFlowStatsForwardPkts            Counter64,
+    icomWmacCmnSfFlowStatsFbpDropPkts            Counter64,
+    icomWmacCmnSfFlowStatsMtuDropPkts            Counter64,
+    icomWmacCmnSfFlowStatsTtlDropPkts            Counter64,
+    icomWmacCmnSfFlowStatsTxQueueDropPkts        Counter64, 
+    icomWmacCmnSfFlowStatsForwardedBytes         Counter64, 
+    icomWmacCmnSfFlowStatsPolicerNonComfPkts     Counter64,
+    icomWmacCmnSfFlowStatsDlPhsvMismatch         Counter64,
+    icomWmacCmnSfFlowStatsUlPhsiUnknown          Counter64,
+    icomWmacCmnSfFlowStatsUlPhsiZero             Counter64,
+    icomWmacCmnSfFlowStatsResetCounter           TruthValue
+}
+
+icomWmacCmnSfFlowStatsForwardPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs forwarded."
+    ::= { icomWmacCmnSfFlowStatsEntry 1 }
+
+icomWmacCmnSfFlowStatsFbpDropPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs dropped due to IW buffer congestion."
+    ::= { icomWmacCmnSfFlowStatsEntry 2 }
+
+icomWmacCmnSfFlowStatsMtuDropPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs dropped due to MTU violation."
+    ::= { icomWmacCmnSfFlowStatsEntry 3 }
+
+icomWmacCmnSfFlowStatsTtlDropPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of dropped packets due to TTL violation."
+    ::= { icomWmacCmnSfFlowStatsEntry 4 }
+
+icomWmacCmnSfFlowStatsTxQueueDropPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs dropped packets due to congestion
+        in transmit queue."
+    ::= { icomWmacCmnSfFlowStatsEntry 5 }
+
+icomWmacCmnSfFlowStatsForwardedBytes      OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of bytes forwarded."
+    ::= { icomWmacCmnSfFlowStatsEntry 6 }
+
+icomWmacCmnSfFlowStatsPolicerNonComfPkts     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs dropped by the interworking policer."
+    ::= { icomWmacCmnSfFlowStatsEntry 7 }
+
+icomWmacCmnSfFlowStatsDlPhsvMismatch     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs with PHS validation failure
+        (i.e. mismatch between packet header and PHSF)."
+    ::= { icomWmacCmnSfFlowStatsEntry 8 }
+
+icomWmacCmnSfFlowStatsUlPhsiUnknown     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs dropped due to unknown PHSI 
+        value (i.e. not associated with any established rule)."
+    ::= { icomWmacCmnSfFlowStatsEntry 9 }
+
+icomWmacCmnSfFlowStatsUlPhsiZero     OBJECT-TYPE 
+    SYNTAX                    Counter64
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Number of SDUs received with a PHSI value of 
+        zero (i.e. unsuppressed)."
+    ::= { icomWmacCmnSfFlowStatsEntry 10 }
+
+icomWmacCmnSfFlowStatsResetCounter     OBJECT-TYPE 
+    SYNTAX                    TruthValue
+    MAX-ACCESS                read-write
+    STATUS                    current
+    DESCRIPTION  
+        "Reset service flow statistics."
+    DEFVAL { false }
+    ::= { icomWmacCmnSfFlowStatsEntry 11 }
+
+--=========================================================                                      
+-- Service Flow Performance Statistics Table
+--=========================================================
+icomWmacCmnSfPmStatsTable   OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnSfPmStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the service flow performance statistics."    
+    ::= { icomWmacCmnObjects  8 }
+
+icomWmacCmnSfPmStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnSfPmStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the ComponentID, PeerID and SFID."
+    AUGMENTS  { icomWmacCmnServFlowEntry } 
+    ::={ icomWmacCmnSfPmStatsTable 1 }
+
+IcomWmacCmnSfPmStatsEntry ::= SEQUENCE {
+    icomWmacCmnSfPmStatsSduBitRate            Counter64,
+    icomWmacCmnSfPmStatsPduBitRate            Counter64,
+    icomWmacCmnSfPmStatsSduRate               Counter64,
+    icomWmacCmnSfPmStatsPduRate               Counter64,
+    icomWmacCmnSfPmStatsUlSduErrorRate        Counter64, 
+    icomWmacCmnSfPmStatsUlAllocationBitRate   Counter64,
+    icomWmacCmnSfPmStatsResetCounter          TruthValue
+}
+
+icomWmacCmnSfPmStatsSduBitRate     OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "SDU bit rate."
+    ::= { icomWmacCmnSfPmStatsEntry 1 }
+
+icomWmacCmnSfPmStatsPduBitRate  OBJECT-TYPE 
+    SYNTAX                      Counter64
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "PDU bit rate."
+    ::= { icomWmacCmnSfPmStatsEntry 2 }
+
+icomWmacCmnSfPmStatsSduRate OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "SDU rate."
+    ::= { icomWmacCmnSfPmStatsEntry 3 }
+
+icomWmacCmnSfPmStatsPduRate OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "PDU rate."
+    ::= { icomWmacCmnSfPmStatsEntry 4 }
+
+icomWmacCmnSfPmStatsUlSduErrorRate      OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "UL SDU error rate."
+    ::= { icomWmacCmnSfPmStatsEntry 5 }
+
+icomWmacCmnSfPmStatsUlAllocationBitRate      OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "UL allocation bit rate."
+    ::= { icomWmacCmnSfPmStatsEntry 6 }
+
+icomWmacCmnSfPmStatsResetCounter      OBJECT-TYPE 
+    SYNTAX                  TruthValue
+    MAX-ACCESS              read-write
+    STATUS                  current
+    DESCRIPTION  
+        "Reset service flow performance statistics."
+    DEFVAL { false }
+    ::= { icomWmacCmnSfPmStatsEntry 7 }
+
+--=========================================================                                      
+-- Classifier Rule Statistics Table
+--=========================================================
+icomWmacCmnClsRuleStatsTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnClsRuleStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains the classifier rule statistics."    
+    ::= { icomWmacCmnObjects  9 }
+
+icomWmacCmnClsRuleStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacCmnClsRuleStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "An entry is indexed by the ComponentID, PeerID and SFID."
+    AUGMENTS  { icomWmacCmnServFlowEntry } 
+    ::={ icomWmacCmnClsRuleStatsTable 1 }
+
+IcomWmacCmnClsRuleStatsEntry ::= SEQUENCE {
+    icomWmacCmnClsRuleStatsPkts             Counter64,
+    icomWmacCmnClsRuleStatsResetCounter     TruthValue
+}
+
+icomWmacCmnClsRuleStatsPkts OBJECT-TYPE 
+    SYNTAX                  Counter64
+    MAX-ACCESS              read-only
+    STATUS                  current
+    DESCRIPTION  
+        "Classifier rule packet counter."
+    ::= { icomWmacCmnClsRuleStatsEntry 1 }
+
+icomWmacCmnClsRuleStatsResetCounter      OBJECT-TYPE 
+    SYNTAX                  TruthValue
+    MAX-ACCESS              read-write
+    STATUS                  current
+    DESCRIPTION  
+        "Reset classifier rule statistics."
+    DEFVAL { false }
+    ::= { icomWmacCmnClsRuleStatsEntry 2 }
+
+--=========================================================                                      
+-- Service Flow QoS Table
+--=========================================================
+icomWmacCmnServFlowQosTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacCmnServFlowQosEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a QoS priority mapping per created
+         service flow."    
+    ::= { icomWmacCmnObjects  10 }
+
+icomWmacCmnServFlowQosEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnServFlowQosEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "Each entry corresponds to a QoS priority mapping per created
+         service flow." 
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnServFlowQosClsIndex,
+             icomWmacCmnServFlowQosClsValue }
+    ::={ icomWmacCmnServFlowQosTable 1 }
+
+IcomWmacCmnServFlowQosEntry ::= SEQUENCE {
+    icomWmacCmnServFlowQosClsIndex    Unsigned32,
+    icomWmacCmnServFlowQosClsValue    Unsigned32,
+    icomWmacCmnServFlowQosQueueNum    Unsigned32
+}
+
+icomWmacCmnServFlowQosClsIndex    OBJECT-TYPE
+    SYNTAX                        Unsigned32 (1..2)
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION    
+        "This object defines the header field (DSCP or P-bits)
+         to classify traffic types for SF QoS."
+    ::= { icomWmacCmnServFlowQosEntry 1 }
+
+icomWmacCmnServFlowQosClsValue    OBJECT-TYPE
+    SYNTAX                        Unsigned32 (1..64)
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION    
+        "This object holds a classification value in the range 1-8
+         for P-bits and 1-64 for DSCP."
+    ::= { icomWmacCmnServFlowQosEntry 2 }
+
+icomWmacCmnServFlowQosQueueNum    OBJECT-TYPE
+    SYNTAX                        Unsigned32 (0..7)
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION    
+        "This object holds the SF priority queue number (0-7).
+         Queue number 0 has the highest priority."
+    ::= { icomWmacCmnServFlowQosEntry 3 }
+
+--=========================================================
+-- icomWmacCmnPerfSfEnable
+--=========================================================
+
+icomWmacCmnPerfSfEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of coarse-grain
+        historical performance statistics for the service flows with a
+        15-minute granularity.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacCmnPerfObjects 1 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSfCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSfCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSfCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain service flow performance
+        statistics for the current 15-minute interval. All table
+        statistics are reset to zero after the completion of each
+        15-minute measurement interval.
+       "
+    ::= { icomWmacCmnPerfObjects 2 }
+
+icomWmacCmnPerfSfCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSfCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomWmacCmnPerfSfCurrentTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId
+           }
+    ::= { icomWmacCmnPerfSfCurrentTable 1 }
+
+IcomWmacCmnPerfSfCurrentEntry ::= SEQUENCE {
+    icomWmacCmnPerfSfCurrentElapsedTime     TimeInterval,
+    icomWmacCmnPerfSfCurrentSuspect         TruthValue,
+    icomWmacCmnPerfSfCurrentInService       TimeTicks,
+    icomWmacCmnPerfSfCurrentOutService      TimeTicks,
+    icomWmacCmnPerfSfCurrentTxQueueDropPkts Counter64,
+    icomWmacCmnPerfSfCurrentFbpDropPkts     Counter64,
+    icomWmacCmnPerfSfCurrentUlErrPdu        Counter64,
+    icomWmacCmnPerfSfCurrentUlErrSdu        Counter64,
+    icomWmacCmnPerfSfCurrentUlErrSduFrag    Counter64,
+    icomWmacCmnPerfSfCurrentUlErrSduLength  Counter64
+}
+
+icomWmacCmnPerfSfCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfCurrentEntry 1 }
+
+icomWmacCmnPerfSfCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfCurrentEntry 2 }
+
+icomWmacCmnPerfSfCurrentInService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 3 }
+
+icomWmacCmnPerfSfCurrentOutService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 4 }
+
+icomWmacCmnPerfSfCurrentTxQueueDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to congestion in transmit queue in
+         the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 5 }
+
+icomWmacCmnPerfSfCurrentFbpDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to IW buffer congestion in the
+         current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 6 }
+
+icomWmacCmnPerfSfCurrentUlErrPdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of PDUs discarded in the UL direction in the
+         current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 7 }
+
+icomWmacCmnPerfSfCurrentUlErrSdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) discarded in the UL direction
+         in the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 8 }
+
+icomWmacCmnPerfSfCurrentUlErrSduFrag OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of errored SDU fragments in the UL direction
+         in the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 9 }
+
+icomWmacCmnPerfSfCurrentUlErrSduLength OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs received in the UL direction that
+         have a length error in the current 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfCurrentEntry 10 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSf15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSf15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSf15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain service flow performance
+        statistics for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed
+        15-minute intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacCmnPerfObjects 3 }
+
+icomWmacCmnPerfSf15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSf15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSf15MinIntervalTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnPerfSf15MinIntervalNumber
+           }
+    ::= { icomWmacCmnPerfSf15MinIntervalTable 1 }
+
+IcomWmacCmnPerfSf15MinIntervalEntry ::= SEQUENCE {
+    icomWmacCmnPerfSf15MinIntervalNumber          Unsigned32,
+    icomWmacCmnPerfSf15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacCmnPerfSf15MinIntervalElapsedTime     TimeInterval,
+    icomWmacCmnPerfSf15MinIntervalSuspect         TruthValue,
+    icomWmacCmnPerfSf15MinIntervalInService       TimeTicks,
+    icomWmacCmnPerfSf15MinIntervalOutService      TimeTicks,
+    icomWmacCmnPerfSf15MinIntervalTxQueueDropPkts Counter64,
+    icomWmacCmnPerfSf15MinIntervalFbpDropPkts     Counter64,
+    icomWmacCmnPerfSf15MinIntervalUlErrPdu        Counter64,
+    icomWmacCmnPerfSf15MinIntervalUlErrSdu        Counter64,
+    icomWmacCmnPerfSf15MinIntervalUlErrSduFrag    Counter64,
+    icomWmacCmnPerfSf15MinIntervalUlErrSduLength  Counter64
+}
+
+icomWmacCmnPerfSf15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 1 }
+
+icomWmacCmnPerfSf15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 2 }
+
+icomWmacCmnPerfSf15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 3 }
+
+icomWmacCmnPerfSf15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 4 }
+
+icomWmacCmnPerfSf15MinIntervalInService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 5 }
+
+icomWmacCmnPerfSf15MinIntervalOutService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 6 }
+
+icomWmacCmnPerfSf15MinIntervalTxQueueDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to congestion in transmit queue in
+         this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 7 }
+
+icomWmacCmnPerfSf15MinIntervalFbpDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to IW buffer congestion in this
+         completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 8 }
+
+icomWmacCmnPerfSf15MinIntervalUlErrPdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of PDUs discarded in the UL direction in this
+         completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 9 }
+
+icomWmacCmnPerfSf15MinIntervalUlErrSdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) discarded in the UL direction
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 10 }
+
+icomWmacCmnPerfSf15MinIntervalUlErrSduFrag OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of errored SDU fragments in the UL direction
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 11 }
+
+icomWmacCmnPerfSf15MinIntervalUlErrSduLength OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs received in the UL direction that
+         have a length error in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSf15MinIntervalEntry 12 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSf1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSf1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSf1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain service flow performance
+        statistics for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed
+        1-day intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacCmnPerfObjects 4 }
+
+icomWmacCmnPerfSf1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSf1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSf1DayIntervalTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnPerfSf1DayIntervalNumber
+           }
+    ::= { icomWmacCmnPerfSf1DayIntervalTable 1 }
+
+IcomWmacCmnPerfSf1DayIntervalEntry ::= SEQUENCE {
+    icomWmacCmnPerfSf1DayIntervalNumber          Unsigned32,
+    icomWmacCmnPerfSf1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacCmnPerfSf1DayIntervalElapsedTime     TimeInterval,
+    icomWmacCmnPerfSf1DayIntervalSuspect         TruthValue,
+    icomWmacCmnPerfSf1DayIntervalInService       TimeTicks,
+    icomWmacCmnPerfSf1DayIntervalOutService      TimeTicks,
+    icomWmacCmnPerfSf1DayIntervalTxQueueDropPkts Counter64,
+    icomWmacCmnPerfSf1DayIntervalFbpDropPkts     Counter64,
+    icomWmacCmnPerfSf1DayIntervalUlErrPdu        Counter64,
+    icomWmacCmnPerfSf1DayIntervalUlErrSdu        Counter64,
+    icomWmacCmnPerfSf1DayIntervalUlErrSduFrag    Counter64,
+    icomWmacCmnPerfSf1DayIntervalUlErrSduLength  Counter64
+}
+
+icomWmacCmnPerfSf1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 1 }
+
+icomWmacCmnPerfSf1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 2 }
+
+icomWmacCmnPerfSf1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 3 }
+
+icomWmacCmnPerfSf1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 4 }
+
+icomWmacCmnPerfSf1DayIntervalInService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 5 }
+
+icomWmacCmnPerfSf1DayIntervalOutService OBJECT-TYPE
+    SYNTAX       TimeTicks
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 6 }
+
+icomWmacCmnPerfSf1DayIntervalTxQueueDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to congestion in transmit queue in
+         this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 7 }
+
+icomWmacCmnPerfSf1DayIntervalFbpDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of SDUs dropped due to IW buffer congestion in this
+         completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 8 }
+
+icomWmacCmnPerfSf1DayIntervalUlErrPdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of PDUs discarded in the UL direction in this
+         completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 9 }
+
+icomWmacCmnPerfSf1DayIntervalUlErrSdu OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) discarded in the UL direction
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 10 }
+
+icomWmacCmnPerfSf1DayIntervalUlErrSduFrag OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of errored SDU fragments in the UL direction
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 11 }
+
+icomWmacCmnPerfSf1DayIntervalUlErrSduLength OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs received in the UL direction that
+         have a length error in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSf1DayIntervalEntry 12 }
+
+--=========================================================
+-- icomWmacCmnPerfSfStatsEnable
+--=========================================================
+
+icomWmacCmnPerfSfStatsEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of fine-grain
+        historical performance statistics for the service flows with a
+        1-minute granularity.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacCmnPerfObjects 5 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSfStatsCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSfStatsCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSfStatsCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain service flow performance statistics
+        for the current 1-minute interval. All table statistics are
+        reset to zero after the completion of each 1-minute measurement
+        interval.
+       "
+    ::= { icomWmacCmnPerfObjects 6 }
+
+icomWmacCmnPerfSfStatsCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSfStatsCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSfStatsCurrentTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId
+           }
+    ::= { icomWmacCmnPerfSfStatsCurrentTable 1 }
+
+IcomWmacCmnPerfSfStatsCurrentEntry ::= SEQUENCE {
+    icomWmacCmnPerfSfStatsCurrentElapsedTime     TimeInterval,
+    icomWmacCmnPerfSfStatsCurrentSuspect         TruthValue,
+    icomWmacCmnPerfSfStatsCurrentDlNumSdus       Counter64,
+    icomWmacCmnPerfSfStatsCurrentUlNumSdus       Counter64,
+    icomWmacCmnPerfSfStatsCurrentDlSduBytes      Counter64,
+    icomWmacCmnPerfSfStatsCurrentUlSduBytes      Counter64
+}
+
+icomWmacCmnPerfSfStatsCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 1 }
+
+icomWmacCmnPerfSfStatsCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 2 }
+
+icomWmacCmnPerfSfStatsCurrentDlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) transferred in the DL
+         direction in the current 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 3 }
+
+icomWmacCmnPerfSfStatsCurrentUlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) received in the UL direction
+         in the current 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 4 }
+
+icomWmacCmnPerfSfStatsCurrentDlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the DL direction
+         in the current 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 5 }
+
+icomWmacCmnPerfSfStatsCurrentUlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the UL direction
+         in the current 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStatsCurrentEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSfStats1MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSfStats1MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSfStats1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain service flow performance statistics
+        for historical (completed) 1-minute intervals.
+
+        This table will have a maximum of 60 entries of completed 1-minute
+        intervals, to provide historical statistics for one hour.
+       "
+    ::= { icomWmacCmnPerfObjects 7 }
+
+icomWmacCmnPerfSfStats1MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSfStats1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSfStats1MinIntervalTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnPerfSfStats1MinIntervalNumber
+           }
+    ::= { icomWmacCmnPerfSfStats1MinIntervalTable 1 }
+
+IcomWmacCmnPerfSfStats1MinIntervalEntry ::= SEQUENCE {
+    icomWmacCmnPerfSfStats1MinIntervalNumber          Unsigned32,
+    icomWmacCmnPerfSfStats1MinIntervalEndTime         IcomDateTimeType,
+    icomWmacCmnPerfSfStats1MinIntervalElapsedTime     TimeInterval,
+    icomWmacCmnPerfSfStats1MinIntervalSuspect         TruthValue,
+    icomWmacCmnPerfSfStats1MinIntervalDlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats1MinIntervalUlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats1MinIntervalDlSduBytes      Counter64,
+    icomWmacCmnPerfSfStats1MinIntervalUlSduBytes      Counter64
+}
+
+icomWmacCmnPerfSfStats1MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..60)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 1 }
+
+icomWmacCmnPerfSfStats1MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 2 }
+
+icomWmacCmnPerfSfStats1MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 3 }
+
+icomWmacCmnPerfSfStats1MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 4 }
+
+icomWmacCmnPerfSfStats1MinIntervalDlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) transferred in the DL
+         direction in this completed 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 5 }
+
+icomWmacCmnPerfSfStats1MinIntervalUlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) received in the UL direction
+         in this completed 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 6 }
+
+icomWmacCmnPerfSfStats1MinIntervalDlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the DL direction
+         in this completed 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 7 }
+
+icomWmacCmnPerfSfStats1MinIntervalUlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the UL direction
+         in this completed 1-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1MinIntervalEntry 8 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSfStats15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSfStats15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSfStats15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain service flow performance statistics
+        for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed
+        15-minute intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacCmnPerfObjects 8 }
+
+icomWmacCmnPerfSfStats15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSfStats15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSfStats15MinIntervalTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnPerfSfStats15MinIntervalNumber
+           }
+    ::= { icomWmacCmnPerfSfStats15MinIntervalTable 1 }
+
+IcomWmacCmnPerfSfStats15MinIntervalEntry ::= SEQUENCE {
+    icomWmacCmnPerfSfStats15MinIntervalNumber          Unsigned32,
+    icomWmacCmnPerfSfStats15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacCmnPerfSfStats15MinIntervalElapsedTime     TimeInterval,
+    icomWmacCmnPerfSfStats15MinIntervalSuspect         TruthValue,
+    icomWmacCmnPerfSfStats15MinIntervalDlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats15MinIntervalUlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats15MinIntervalDlSduBytes      Counter64,
+    icomWmacCmnPerfSfStats15MinIntervalUlSduBytes      Counter64
+}
+
+icomWmacCmnPerfSfStats15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 1 }
+
+icomWmacCmnPerfSfStats15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 2 }
+
+icomWmacCmnPerfSfStats15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 3 }
+
+icomWmacCmnPerfSfStats15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 4 }
+
+icomWmacCmnPerfSfStats15MinIntervalDlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) transferred in the DL
+         direction in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 5 }
+
+icomWmacCmnPerfSfStats15MinIntervalUlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) received in the UL direction
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 6 }
+
+icomWmacCmnPerfSfStats15MinIntervalDlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the DL direction
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 7 }
+
+icomWmacCmnPerfSfStats15MinIntervalUlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the UL direction
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacCmnPerfSfStats15MinIntervalEntry 8 }
+
+-- -------------------------------------------------------------
+-- icomWmacCmnPerfSfStats1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacCmnPerfSfStats1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacCmnPerfSfStats1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain service flow performance statistics
+        for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacCmnPerfObjects 9 }
+
+icomWmacCmnPerfSfStats1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacCmnPerfSfStats1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacCmnPerfSfStats1DayIntervalTable.
+       "
+    INDEX  { icomWmacCmnComponentId,
+             icomWmacCmnPeerId,
+             icomWmacCmnSfId,
+             icomWmacCmnPerfSfStats1DayIntervalNumber
+           }
+    ::= { icomWmacCmnPerfSfStats1DayIntervalTable 1 }
+
+IcomWmacCmnPerfSfStats1DayIntervalEntry ::= SEQUENCE {
+    icomWmacCmnPerfSfStats1DayIntervalNumber          Unsigned32,
+    icomWmacCmnPerfSfStats1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacCmnPerfSfStats1DayIntervalElapsedTime     TimeInterval,
+    icomWmacCmnPerfSfStats1DayIntervalSuspect         TruthValue,
+    icomWmacCmnPerfSfStats1DayIntervalDlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats1DayIntervalUlNumSdus       Counter64,
+    icomWmacCmnPerfSfStats1DayIntervalDlSduBytes      Counter64,
+    icomWmacCmnPerfSfStats1DayIntervalUlSduBytes      Counter64
+}
+
+icomWmacCmnPerfSfStats1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 1 }
+
+icomWmacCmnPerfSfStats1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 2 }
+
+icomWmacCmnPerfSfStats1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 3 }
+
+icomWmacCmnPerfSfStats1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 4 }
+
+icomWmacCmnPerfSfStats1DayIntervalDlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) transferred in the DL
+         direction in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 5 }
+
+icomWmacCmnPerfSfStats1DayIntervalUlNumSdus OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDUs (packets) received in the UL direction
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 6 }
+
+icomWmacCmnPerfSfStats1DayIntervalDlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the DL direction
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 7 }
+
+icomWmacCmnPerfSfStats1DayIntervalUlSduBytes OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Counter of number of SDU bytes transferred in the UL direction
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacCmnPerfSfStats1DayIntervalEntry 8 }
+
+--=========================================================                                      
+-- Compliance statements
+--=========================================================
+
+icomWmacMIBCmnCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for common BS TS, Wireless MAC entities"
+    MODULE  -- this module
+    MANDATORY-GROUPS { icomWmacCmnGroup,
+                       icomWmacCmnPerfGroup
+                     }
+    ::= { icomWmacCmnCompliances 1 }
+   
+icomWmacCmnGroup OBJECT-GROUP
+    OBJECTS { -- Wmac Common Status
+              icomWmacCmnStatusMacAddr,
+              icomWmacCmnStatusBsFrameNum,
+              icomWmacCmnifIndex,
+              icomWmacCmnLEDStatus,
+
+              -- Wmac Common Statistics
+              icomWmacCmnStatsTxPkts,
+              icomWmacCmnStatsTxBytes,
+              icomWmacCmnStatsRxPkts,
+              icomWmacCmnStatsRxBytes,
+              icomWmacCmnStatsHcsErrs,
+              icomWmacCmnStatsCrcErrs,
+              icomWmacCmnStatsCidRangeErrs,
+              icomWmacCmnStatsInvalidMsgTypeErrs,
+              icomWmacCmnStatsCidDisabledErrs,
+              icomWmacCmnStatsDecodingErrs,
+              icomWmacCmnStatsAggrDlSduBitRate,
+              icomWmacCmnStatsAggrUlSduBitRate, 
+              icomWmacCmnStatsResetCounter,
+              icomWmacCmnStatsAggrDlPduBitRate,
+              icomWmacCmnStatsAggrUlPduBitRate, 
+
+              -- Common Service Flow
+              icomWmacCmnServFlowCid,
+              icomWmacCmnServFlowDirection,    
+              icomWmacCmnServFlowOperStatus,
+              icomWmacCmnServFlowAdminStatus,
+              icomWmacCmnServFlowFailReason,
+              icomWmacCmnServFlowMandatory,
+              icomWmacCmnServFlowTrafficPriority,
+              icomWmacCmnServFlowMaxSustainedRate,
+              icomWmacCmnServFlowMinReservedRate,
+              icomWmacCmnServFlowGrantInterval,
+              icomWmacCmnServFlowSchedulingType,
+              icomWmacCmnServFlowReqTxPolicy,
+              icomWmacCmnServFlowWeight,
+              icomWmacCmnServFlowEstablishedTime,
+              icomWmacCmnServFlowQueueType,
+              icomWmacCmnServFlowQueueWeight4,
+              icomWmacCmnServFlowQueueWeight5,
+              icomWmacCmnServFlowQueueWeight6,
+              icomWmacCmnServFlowQueueWeight7,
+              icomWmacCmnServFlowMaxQueueDepth0,
+              icomWmacCmnServFlowMaxQueueDepth1,
+              icomWmacCmnServFlowMaxQueueDepth2,
+              icomWmacCmnServFlowMaxQueueDepth3,
+              icomWmacCmnServFlowMaxQueueDepth4,
+              icomWmacCmnServFlowMaxQueueDepth5,
+              icomWmacCmnServFlowMaxQueueDepth6,
+              icomWmacCmnServFlowMaxQueueDepth7,   
+              icomWmacCmnServFlowQueueDepth0,
+              icomWmacCmnServFlowQueueDepth1,
+              icomWmacCmnServFlowQueueDepth2,
+              icomWmacCmnServFlowQueueDepth3,
+              icomWmacCmnServFlowQueueDepth4, 
+              icomWmacCmnServFlowQueueDepth5,
+              icomWmacCmnServFlowQueueDepth6,
+              icomWmacCmnServFlowQueueDepth7,
+              icomWmacCmnServFlowQueueNumBuffers0,
+              icomWmacCmnServFlowQueueNumBuffers1,
+              icomWmacCmnServFlowQueueNumBuffers2,
+              icomWmacCmnServFlowQueueNumBuffers3,
+              icomWmacCmnServFlowQueueNumBuffers4,
+              icomWmacCmnServFlowQueueNumBuffers5,
+              icomWmacCmnServFlowQueueNumBuffers6,
+              icomWmacCmnServFlowQueueNumBuffers7,        
+              icomWmacCmnServFlowInService,
+              icomWmacCmnServFlowOutService,
+              icomWmacCmnServBundleProfileId,
+              icomWmacCmnServFlowProfileId,
+              icomWmacCmnServFlowMinPhyMode,
+
+              -- Common Classifier Rule
+              icomWmacCmnClsDestMacAddr,
+              icomWmacCmnClsDestMacMask,
+              icomWmacCmnClsSrcMacAddr,
+              icomWmacCmnClsSrcMacMask,
+              icomWmacCmnClsEnetProtocol,
+              icomWmacCmnClsUserPriLow,
+              icomWmacCmnClsUserPriHigh,
+              icomWmacCmnClsCvlanIdLow,
+              icomWmacCmnClsCvlanIdHigh,
+              icomWmacCmnClsSvlanIdLow,
+              icomWmacCmnClsSvlanIdHigh,
+              icomWmacCmnClsIpTosLow,
+              icomWmacCmnClsIpTosHigh,
+              icomWmacCmnClsIpTosMask,
+              icomWmacCmnClsAddressType,
+              icomWmacCmnClsIpSrcAddr,
+              icomWmacCmnClsIpSrcMask,
+              icomWmacCmnClsIpDestAddr,
+              icomWmacCmnClsIpDestMask,
+              icomWmacCmnClsIpProtocol,
+              icomWmacCmnClsMplsExp,
+              icomWmacCmnClsIpv6TrfClassLow,
+              icomWmacCmnClsIpv6TrfClassHigh,
+              icomWmacCmnClsIpv6FlowLabelLow,
+              icomWmacCmnClsIpv6FlowLabelHigh,
+              icomWmacCmnClsSrcPortStart,
+              icomWmacCmnClsSrcPortEnd,
+              icomWmacCmnClsDestPortStart,
+              icomWmacCmnClsDestPortEnd,
+              icomWmacCmnClsBitMap,
+              icomWmacCmnClsAssociatedPhsi,
+
+              -- Common PHS Rule
+              icomWmacCmnPhsRuleField,
+              icomWmacCmnPhsRuleMask,
+              icomWmacCmnPhsRuleSize,
+              icomWmacCmnPhsRuleVerify,
+
+              -- Service Flow CID Statistics
+              icomWmacCmnSfCIDStatsDlNumPdus,
+              icomWmacCmnSfCIDStatsDlNumSdus,
+              icomWmacCmnSfCIDStatsDlNumPduBytes,
+              icomWmacCmnSfCIDStatsDlNumSduBytes,
+              icomWmacCmnSfCIDStatsUlNumPdu,
+              icomWmacCmnSfCIDStatsUlNumSdu,
+              icomWmacCmnSfCIDStatsUlPduBytes,
+              icomWmacCmnSfCIDStatsUlSduBytes,
+              icomWmacCmnSfCIDStatsUlErrPdu,
+              icomWmacCmnSfCIDStatsUlErrSdu,
+              icomWmacCmnSfCIDStatsUlErrSduFrag,
+              icomWmacCmnSfCIDStatsUlErrSduLength,
+              icomWmacCmnSfCIDStatsUlAllocationBytes,
+              icomWmacCmnSfCIDStatsResetCounter,
+
+              -- Service Flow Statistics
+              icomWmacCmnSfFlowStatsForwardPkts,
+              icomWmacCmnSfFlowStatsFbpDropPkts,
+              icomWmacCmnSfFlowStatsMtuDropPkts,
+              icomWmacCmnSfFlowStatsTtlDropPkts,
+              icomWmacCmnSfFlowStatsTxQueueDropPkts,
+              icomWmacCmnSfFlowStatsForwardedBytes, 
+              icomWmacCmnSfFlowStatsPolicerNonComfPkts,
+              icomWmacCmnSfFlowStatsDlPhsvMismatch,
+              icomWmacCmnSfFlowStatsUlPhsiUnknown,
+              icomWmacCmnSfFlowStatsUlPhsiZero,
+              icomWmacCmnSfFlowStatsResetCounter,
+
+              -- Service Flow Performance Statistics
+              icomWmacCmnSfPmStatsSduBitRate,
+              icomWmacCmnSfPmStatsPduBitRate,
+              icomWmacCmnSfPmStatsSduRate,
+              icomWmacCmnSfPmStatsPduRate,
+              icomWmacCmnSfPmStatsUlSduErrorRate,
+              icomWmacCmnSfPmStatsUlAllocationBitRate,
+              icomWmacCmnSfPmStatsResetCounter,
+
+              -- Classifier Rule Statistics
+              icomWmacCmnClsRuleStatsPkts,
+              icomWmacCmnClsRuleStatsResetCounter,
+              
+              -- Service Flow QoS
+              icomWmacCmnServFlowQosQueueNum
+            }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing common wmac parameters."
+    ::= { icomWmacCmnGroups 1 }
+
+icomWmacCmnPerfGroup OBJECT-GROUP
+    OBJECTS {
+              icomWmacCmnPerfSfEnable,
+
+              icomWmacCmnPerfSfCurrentElapsedTime,
+              icomWmacCmnPerfSfCurrentSuspect,
+              icomWmacCmnPerfSfCurrentInService,
+              icomWmacCmnPerfSfCurrentOutService,
+              icomWmacCmnPerfSfCurrentTxQueueDropPkts,
+              icomWmacCmnPerfSfCurrentFbpDropPkts,
+              icomWmacCmnPerfSfCurrentUlErrPdu,
+              icomWmacCmnPerfSfCurrentUlErrSdu,
+              icomWmacCmnPerfSfCurrentUlErrSduFrag,
+              icomWmacCmnPerfSfCurrentUlErrSduLength,
+
+              icomWmacCmnPerfSf15MinIntervalEndTime,
+              icomWmacCmnPerfSf15MinIntervalElapsedTime,
+              icomWmacCmnPerfSf15MinIntervalSuspect,
+              icomWmacCmnPerfSf15MinIntervalInService,
+              icomWmacCmnPerfSf15MinIntervalOutService,
+              icomWmacCmnPerfSf15MinIntervalTxQueueDropPkts,
+              icomWmacCmnPerfSf15MinIntervalFbpDropPkts,
+              icomWmacCmnPerfSf15MinIntervalUlErrPdu,
+              icomWmacCmnPerfSf15MinIntervalUlErrSdu,
+              icomWmacCmnPerfSf15MinIntervalUlErrSduFrag,
+              icomWmacCmnPerfSf15MinIntervalUlErrSduLength,
+
+              icomWmacCmnPerfSf1DayIntervalEndTime,
+              icomWmacCmnPerfSf1DayIntervalElapsedTime,
+              icomWmacCmnPerfSf1DayIntervalSuspect,
+              icomWmacCmnPerfSf1DayIntervalInService,
+              icomWmacCmnPerfSf1DayIntervalOutService,
+              icomWmacCmnPerfSf1DayIntervalTxQueueDropPkts,
+              icomWmacCmnPerfSf1DayIntervalFbpDropPkts,
+              icomWmacCmnPerfSf1DayIntervalUlErrPdu,
+              icomWmacCmnPerfSf1DayIntervalUlErrSdu,
+              icomWmacCmnPerfSf1DayIntervalUlErrSduFrag,
+              icomWmacCmnPerfSf1DayIntervalUlErrSduLength,
+
+              icomWmacCmnPerfSfStatsEnable,
+
+              icomWmacCmnPerfSfStatsCurrentElapsedTime,
+              icomWmacCmnPerfSfStatsCurrentSuspect,
+              icomWmacCmnPerfSfStatsCurrentDlNumSdus,
+              icomWmacCmnPerfSfStatsCurrentUlNumSdus,
+              icomWmacCmnPerfSfStatsCurrentDlSduBytes,
+              icomWmacCmnPerfSfStatsCurrentUlSduBytes,
+
+              icomWmacCmnPerfSfStats1MinIntervalEndTime,
+              icomWmacCmnPerfSfStats1MinIntervalElapsedTime,
+              icomWmacCmnPerfSfStats1MinIntervalSuspect,
+              icomWmacCmnPerfSfStats1MinIntervalDlNumSdus,
+              icomWmacCmnPerfSfStats1MinIntervalUlNumSdus,
+              icomWmacCmnPerfSfStats1MinIntervalDlSduBytes,
+              icomWmacCmnPerfSfStats1MinIntervalUlSduBytes,
+
+              icomWmacCmnPerfSfStats15MinIntervalEndTime,
+              icomWmacCmnPerfSfStats15MinIntervalElapsedTime,
+              icomWmacCmnPerfSfStats15MinIntervalSuspect,
+              icomWmacCmnPerfSfStats15MinIntervalDlNumSdus,
+              icomWmacCmnPerfSfStats15MinIntervalUlNumSdus,
+              icomWmacCmnPerfSfStats15MinIntervalDlSduBytes,
+              icomWmacCmnPerfSfStats15MinIntervalUlSduBytes,
+
+              icomWmacCmnPerfSfStats1DayIntervalEndTime,
+              icomWmacCmnPerfSfStats1DayIntervalElapsedTime,
+              icomWmacCmnPerfSfStats1DayIntervalSuspect,
+              icomWmacCmnPerfSfStats1DayIntervalDlNumSdus,
+              icomWmacCmnPerfSfStats1DayIntervalUlNumSdus,
+              icomWmacCmnPerfSfStats1DayIntervalDlSduBytes,
+              icomWmacCmnPerfSfStats1DayIntervalUlSduBytes
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of performance objects for icomWmacCmnMIB.
+        "
+    ::= { icomWmacCmnGroups 2 }
+
+--================================================================
+--================================================================
+
+END
+

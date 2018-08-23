@@ -1,0 +1,320 @@
+ICOM-PB-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION, TruthValue, RowStatus
+                FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+        IEEE8021PriorityValue
+                FROM IEEE8021-TC-MIB
+        ieee8021BridgeBaseComponentId, ieee8021BridgeBasePort,
+        ieee8021BridgeBasePortEntry
+                FROM IEEE8021-BRIDGE-MIB
+        intracom
+                FROM ICOM-SMI;
+
+icomPbMIB MODULE-IDENTITY
+    LAST-UPDATED        "201310240000Z"     -- 24 October 2013
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        bridge capabilities for provider bridged networks. The MIB
+        includes the following proprietary objects:
+
+        1. icomPbPortTable
+        2. icomPbL2cpPortTable
+       "
+
+-- Revision History
+
+    REVISION            "201310240000Z"     -- 24 October 2013
+    DESCRIPTION
+       "
+        This is the initial version of this MIB.
+       "
+
+::= { intracom 63 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+IcomPbL2cpType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates the L2CP type.
+       "
+    SYNTAX      INTEGER {
+            stp           (1), -- STP/RSTP/MSTP
+            pause         (2), -- PAUSE
+            lacpLamp      (3), -- LACP/LAMP
+            linkOam       (4), -- Link OAM
+            portAuth      (5), -- Port Authentication
+            eLmi          (6), -- E-LMI
+            lldp          (7), -- LLDP
+            ptpPeerDelay  (8), -- PTP Peer-Delay
+            esmc          (9), -- ESMC
+            garpMrp      (10), -- GARP/MRP Block
+            cdp          (11), -- Cisco Discovery Protocol
+            vtp          (12)  -- Virtual Trunking Protocol
+    }
+
+   --
+   --  The icomPbMIBObjects group
+   --
+icomPbMIBObjects   OBJECT IDENTIFIER ::= { icomPbMIB 1 }
+
+-- -------------------------------------------------------------
+-- icomPbPortTable
+-- -------------------------------------------------------------
+
+icomPbPortTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomPbPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "Augments ieee8021BridgeBasePortEntry, for port configuration
+        related to provider bridge functionality.
+       "
+    ::= { icomPbMIBObjects 1 }
+
+icomPbPortEntry    OBJECT-TYPE
+    SYNTAX      IcomPbPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomPbPortTable. The table
+        augments ieee8021BridgeBasePortEntry, i.e., rows in this table
+        are internally created/deleted by the NMS agent on bridge port
+        creation/deletion in ieee8021BridgeBasePortEntry, respectively.
+       "
+    AUGMENTS    { ieee8021BridgeBasePortEntry }
+    ::= { icomPbPortTable 1 }
+
+IcomPbPortEntry ::= SEQUENCE {
+    icomPbPortQinQEnable                        TruthValue,
+    icomPbPortEtherType                         INTEGER,
+    icomPbPortTunnelCoSMode                     INTEGER,
+    icomPbPortL2cpMode                          INTEGER,
+    icomPbPortL2cpPriority                      IEEE8021PriorityValue
+}
+
+icomPbPortQinQEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies whether QinQ functionality is enabled for
+        the particular bridge port, i.e., whether an outer metro VLAN
+        tag will be added to incoming non-L2CP Ethernet frames.
+
+        If value is set to 'true(1)', then QinQ functionality is enabled
+        for the indexed bridge port.
+
+        If value is set to 'false(2)', then QinQ functionality is disabled
+        for the indexed bridge port.
+       "
+    DEFVAL { false }
+    ::= { icomPbPortEntry 1 }
+
+icomPbPortEtherType OBJECT-TYPE
+    SYNTAX      INTEGER {
+            et0x8100    (1),
+            et0x88A8    (2),
+            et0x9100    (3),
+            et0x9200    (4)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "When the port operates in QinQ mode, this object can be used
+        to specify the EtherType (TPID) value of the outer (metro)
+        VLAN tag that is added to incoming frames.
+
+        When the port does not operate in QinQ mode, this object can
+        be used to specify the EtherType (TPID) value of the outer VLAN
+        tag of incoming tagged frames.
+       "
+    DEFVAL { et0x8100 }
+    ::= { icomPbPortEntry 2 }
+
+icomPbPortTunnelCoSMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+            defaultPrio  (1),
+            copyUserPrio (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object determines the priority (PCP) value of the outer
+        (metro) VLAN tag that is added to incoming frames when the port
+        operates in QinQ mode.
+
+        If value is set to 'defaultPrio(1)', then the port's
+        ieee8021BridgePortDefaultUserPriority value is used.
+
+        If value is set to 'copyUserPrio(2)', then the frame's inner
+        VLAN tag priority (PCP) value is used.
+       "
+    DEFVAL { defaultPrio }
+    ::= { icomPbPortEntry 3 }
+
+icomPbPortL2cpMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+            transparent  (1),
+            ciscoTunnel  (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the processing of incoming L2CP PDUs,
+        most notably in respect to preservation or modification of the
+        destination MAC address.
+
+        If value is set to 'transparent(1)', the destination MAC address
+        is preserved, and the PDU is processed according to the handling
+        specified by a matching entry in icomPbL2cpPortTable. If no such
+        matching entry is found in the latter table, then the L2CP PDU
+        is dropped.
+
+        If value is set to 'ciscoTunnel(2)', the destination MAC address
+        is overwritten with the well-known Cisco proprietary multicast
+        address (01-00-0C-CD-CD-D0), to be restored by the edge bridge on
+        the outbound side, so that L2CP PDUs are kept intact across the
+        provider network. The PDU is processed according to the handling
+        specified by a matching entry in icomPbL2cpPortTable. If no such
+        matching entry is found in the latter table, then the L2CP PDU
+        is dropped.
+       "
+    DEFVAL { transparent }
+    ::= { icomPbPortEntry 4 }
+
+icomPbPortL2cpPriority OBJECT-TYPE
+    SYNTAX      IEEE8021PriorityValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "The default L2CP PDU priority value for this port.
+       "
+    DEFVAL { 5 }
+    ::= { icomPbPortEntry 5 }
+
+-- -------------------------------------------------------------
+-- icomPbL2cpPortTable
+-- -------------------------------------------------------------
+
+icomPbL2cpPortTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomPbL2cpPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The table specifies the processing of L2CP PDUs.
+       "
+    ::= { icomPbMIBObjects 2 }
+
+icomPbL2cpPortEntry OBJECT-TYPE
+    SYNTAX      IcomPbL2cpPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomPbL2cpPortTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId,
+                  ieee8021BridgeBasePort,
+                  icomPbL2cpPortL2cpId
+                }
+    ::= { icomPbL2cpPortTable 1 }
+
+IcomPbL2cpPortEntry ::= SEQUENCE {
+    icomPbL2cpPortL2cpId                        IcomPbL2cpType,
+    icomPbL2cpPortProcType                      INTEGER,
+    icomPbL2cpPortRowStatus                     RowStatus
+}
+
+icomPbL2cpPortL2cpId OBJECT-TYPE
+    SYNTAX      IcomPbL2cpType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object identifies the L2CP.
+       "
+    ::= { icomPbL2cpPortEntry 1 }
+
+icomPbL2cpPortProcType OBJECT-TYPE
+    SYNTAX      INTEGER {
+            discard     (1),
+            tunnel      (2),
+            peer        (3)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the desired L2CP processing.
+
+        If value is set to 'discard(1)', the indicated L2CP is discarded.
+
+        If value is set to 'tunnel(2)', the indicated L2CP is tunneled
+        (passed).
+
+        If value is set to 'peer(3)', the indicated L2CP is peered.
+       "
+    DEFVAL { discard }
+    ::= { icomPbL2cpPortEntry 2 }
+
+icomPbL2cpPortRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the RowStatus. It is used for creation
+        and deletion of rows from the manager.
+       "
+    ::= { icomPbL2cpPortEntry 3 }
+
+   --
+   -- Conformance information
+   --
+
+icomPbMIBConformance OBJECT IDENTIFIER ::= { icomPbMIB 2 }
+
+icomPbMIBCompliances OBJECT IDENTIFIER ::= { icomPbMIBConformance 1 }
+
+icomPbMIBGroups      OBJECT IDENTIFIER ::= { icomPbMIBConformance 2 }
+
+   --
+   -- Compliance statements
+   --
+icomPbMIBCompliance  MODULE-COMPLIANCE
+    STATUS            current
+    DESCRIPTION
+       "The compliance statement for icomPbMIB.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS { icomPbMIBGroup }
+    ::= { icomPbMIBCompliances 1 }
+
+icomPbMIBGroup OBJECT-GROUP
+    OBJECTS {
+        icomPbPortQinQEnable,
+        icomPbPortEtherType,
+        icomPbPortTunnelCoSMode,
+        icomPbPortL2cpMode,
+        icomPbPortL2cpPriority,
+
+        icomPbL2cpPortProcType,
+        icomPbL2cpPortRowStatus
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomPbMIB."
+    ::= { icomPbMIBGroups 1 }
+
+END

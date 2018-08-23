@@ -1,0 +1,566 @@
+
+ICOM-WMAC-TS-MIB DEFINITIONS ::= BEGIN
+
+-- =========================================================
+-- ICOM WMAC TS MIB MODULE
+-- =========================================================
+                                             
+IMPORTS                                         
+   MODULE-IDENTITY, OBJECT-TYPE,                   
+   NOTIFICATION-TYPE,             
+   Integer32, Counter64                                     
+       FROM SNMPv2-SMI                   -- [RFC2578]
+                                 
+   MacAddress, TruthValue                         
+       FROM SNMPv2-TC                    -- [RFC2579] 
+                                  
+   MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP                              
+       FROM SNMPv2-CONF                  -- [RFC2580]
+
+   icomWmacCmnServFlowOperStatus,icomWmacCmnServFlowFailReason
+       FROM ICOM-WMAC-CMN-MIB
+
+   InetAddress, InetAddressType
+       FROM INET-ADDRESS-MIB             -- [RFC4001]
+    
+   intracom                                        
+       FROM ICOM-SMI;                            
+   
+
+icomWmacTsMIB MODULE-IDENTITY
+ 
+   LAST-UPDATED "201506220000Z"  -- dtzou: June 22, 2015
+   ORGANIZATION "Intracom Wireless Group"
+   CONTACT-INFO
+   "   
+       EMail: 
+       Phone: 
+       Co-editor:
+       EMail:
+       Phone:
+   "
+
+DESCRIPTION 
+    "This MIB module defines managed objects for the configuration of the 
+    Wireless MAC (WMAC) from the Terminal Station's side."
+
+REVISION  "201506220000Z"  -- dtzou: June 22, 2015
+ DESCRIPTION
+     " icomWmacTsStatusTsAssignedId added in icomWmacTsStatusEntry.
+     "
+     
+REVISION  "201506080000Z"  -- dtzou: June 08, 2015
+ DESCRIPTION
+     " icomWmacTsStatusBsAddressType and icomWmacTsStatusBsIpAddress
+       added in icomWmacTsStatusEntry.
+     "
+
+REVISION  "201405140000Z"  -- dtzou: May 14, 2014
+ DESCRIPTION
+     " New objects added in icomWmacTsCfgEntry (icomWmacTsCfgSfAckTimer,
+       icomWmacTsCfgSfHoldTimer, icomWmacTsCfgSfRspRetries).
+     "
+
+REVISION  "201404020900Z"  -- dtzou: April 2, 2014
+ DESCRIPTION
+     " Ranges for icomWmacTsCfgEntry timers added.
+     "
+
+REVISION  "201403210900Z"  -- dtzou: March 21, 2014
+ DESCRIPTION
+     " o New state for icomWmacTsStatusConnectivity.
+       o New icomWmacTsCfgEntry added
+     "
+
+REVISION  "201310100000Z"
+ DESCRIPTION
+     "Initial version."
+
+::= { intracom 111 }
+
+icomWmacTsNotifications     OBJECT IDENTIFIER ::= { icomWmacTsMIB 0 }
+icomWmacTsObjects           OBJECT IDENTIFIER ::= { icomWmacTsMIB 1 }
+icomWmacTsConformance       OBJECT IDENTIFIER ::= { icomWmacTsMIB 2 }
+
+icomWmacTsCompliances       OBJECT IDENTIFIER ::= { icomWmacTsConformance 1 }
+icomWmacTsGroups            OBJECT IDENTIFIER ::= { icomWmacTsConformance 2 }
+
+
+--=========================================================  
+-- Terminal Station SNMP Trap objects
+--=========================================================
+icomWmacTsTraps           OBJECT IDENTIFIER ::= { icomWmacTsNotifications 0 }
+icomWmacTsTrapControl     OBJECT IDENTIFIER ::= { icomWmacTsNotifications 1 }
+
+icomWmacTsStatusNotificationTrap NOTIFICATION-TYPE
+    OBJECTS {icomWmacTsStatusConnectivity, icomWmacTsStatusInfo}
+    STATUS current
+    DESCRIPTION
+        "This trap reports the status of the Terminal Station (e.g., connected, disconnected)."
+    ::= { icomWmacTsTraps 1 }
+                                     
+icomWmacTsSfOperStatusNotificationTrap NOTIFICATION-TYPE
+    OBJECTS {icomWmacCmnServFlowOperStatus, icomWmacCmnServFlowFailReason}
+    STATUS current
+    DESCRIPTION
+        "This trap reports the operational state of a service flow
+        (established/deleted/failed) and the reason of failure."
+    ::= { icomWmacTsTraps 2 }
+
+--=========================================================  
+-- Trap Control
+--=========================================================
+icomWmacTsTrapControlRegister    OBJECT-TYPE
+    SYNTAX BITS { icomWmacTsStatusNotification(0),
+				  icomWmacTsSfOperStatusNotification(1)
+                }
+	MAX-ACCESS read-write
+	STATUS current
+	DESCRIPTION
+        "The object is used to enable Terminal Station traps. From left to right, 
+        the set bit indicates the corresponding trap is enabled."
+	::= { icomWmacTsTrapControl 1 }
+
+--=========================================================                                      
+-- Wmac Ts Status Table
+--=========================================================
+icomWmacTsStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacTsStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides the status parameters of WMAC from
+        the Terminal Station."    
+    ::= { icomWmacTsObjects  1 }
+
+icomWmacTsStatusEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacTsStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacTsId } 
+    ::={ icomWmacTsStatusTable 1 }
+
+IcomWmacTsStatusEntry ::= SEQUENCE {
+    icomWmacTsId                     Integer32,
+    icomWmacTsStatusConnectivity     INTEGER,
+    icomWmacTsStatusMonitoring       INTEGER,
+    icomWmacTsStatusInfo             INTEGER,
+    icomWmacTsStatusTsMacAddress     MacAddress,    
+    icomWmacTsStatusBsMacAddress     MacAddress,
+    icomWmacTsStatusBsAddressType    InetAddressType,
+    icomWmacTsStatusBsIpAddress      InetAddress,
+    icomWmacTsStatusTsAssignedId     Integer32
+}
+
+icomWmacTsId      OBJECT-TYPE 
+    SYNTAX        Integer32 (1)
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION  
+        "Terminal Station ID. It is restricted to 1 instance." 
+    ::= { icomWmacTsStatusEntry 1 }
+
+icomWmacTsStatusConnectivity   OBJECT-TYPE 
+    SYNTAX                     INTEGER { disconnected(1),
+                                         scanning(2),
+                                         synchronized(3),
+                                         connected(4),
+                                         disabling(5),
+                                         invalid(6)
+                                       }
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Connectivity state:
+            DOWN (INIT): Terminal Station is disconnected
+            SCANNING: Terminal Station is scanning for DL transmissions
+            SYNCHRONIZED: DL synchronization achieved. DL transmissions 
+                          regularly received
+            CONNECTED: Terminal Station is connected
+            DISABLING: Terminal Station disconnection is pending.
+                       (Service flows are disabled).
+            INVALID: Invalid state. " 
+    ::= { icomWmacTsStatusEntry 2 }
+
+icomWmacTsStatusMonitoring    OBJECT-TYPE 
+    SYNTAX                    INTEGER { initialized(1),
+                                        active(2)
+                                      }
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Monitoring state:
+            INIT: Monitoring has not been started.
+            ACTIVE: Monitoring has been started. " 
+    ::= { icomWmacTsStatusEntry 3 }
+
+icomWmacTsStatusInfo     OBJECT-TYPE 
+    SYNTAX               INTEGER { disconnected(1),
+                                   connected(2)
+                                 }  
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Reason for Terminal Station connectivity state change." 
+    ::= { icomWmacTsStatusEntry 4 }
+
+icomWmacTsStatusTsMacAddress    OBJECT-TYPE 
+    SYNTAX                    MacAddress
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Terminal Station MAC Address."
+    ::= { icomWmacTsStatusEntry 5 }
+
+icomWmacTsStatusBsMacAddress OBJECT-TYPE 
+    SYNTAX                   MacAddress
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION  
+        "Base Station MAC address." 
+    ::= { icomWmacTsStatusEntry 6 }
+
+icomWmacTsStatusBsAddressType OBJECT-TYPE
+    SYNTAX                   InetAddressType
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION 
+        "A value that represents a type of Internet address."
+    ::= { icomWmacTsStatusEntry 7 }
+
+icomWmacTsStatusBsIpAddress OBJECT-TYPE
+    SYNTAX                   InetAddress
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION 
+        "Base Station IP address."
+    ::= { icomWmacTsStatusEntry 8 }
+
+icomWmacTsStatusTsAssignedId  OBJECT-TYPE
+    SYNTAX                   Integer32
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION 
+        "The Terminal Station ID that the Base Station assigns to."
+    ::= { icomWmacTsStatusEntry 9 }
+    
+--=========================================================                                      
+-- Wmac Ts Statistics Table
+--=========================================================
+icomWmacTsStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacTsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides Terminal Station WMAC statistics."    
+    ::= { icomWmacTsObjects  2 }
+
+icomWmacTsStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacTsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    AUGMENTS  { icomWmacTsStatusEntry } 
+    ::={ icomWmacTsStatsTable 1 }
+
+IcomWmacTsStatsEntry ::= SEQUENCE {
+    icomWmacTsStatsReset              TruthValue,
+    icomWmacTsStatsRngInvRcvd         Counter64,
+    icomWmacTsStatsRngChRepSent       Counter64,
+    icomWmacTsStatsBrceBrSent         Counter64,
+    icomWmacTsStatsChRepReqRcvd       Counter64,
+    icomWmacTsStatsChRepSent          Counter64,
+    icomWmacTsStatsSfAddReqRcvd       Counter64,
+    icomWmacTsStatsSfAddRspSent       Counter64,
+    icomWmacTsStatsSfRemReqRcvd       Counter64,
+    icomWmacTsStatsSfRemRspSent       Counter64,
+    icomWmacTsStatsSfModReqRcvd       Counter64,
+    icomWmacTsStatsSfModRspSent       Counter64,
+    icomWmacTsStatsSfAckRcvd          Counter64,
+    icomWmacTsStatsSfAckSent          Counter64
+}
+
+icomWmacTsStatsReset      OBJECT-TYPE 
+    SYNTAX                TruthValue
+    MAX-ACCESS            read-write
+    STATUS                current
+    DESCRIPTION  
+        "Reset Statistics."
+    DEFVAL { false } 
+    ::= { icomWmacTsStatsEntry 1 }
+
+icomWmacTsStatsRngInvRcvd  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Ranging Invitations received." 
+    ::= { icomWmacTsStatsEntry 2 }
+
+icomWmacTsStatsRngChRepSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Ranging Channel Reports sent." 
+    ::= { icomWmacTsStatsEntry 3 }
+
+icomWmacTsStatsBrceBrSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of BRCE Region Bandwidth Requests sent." 
+    ::= { icomWmacTsStatsEntry 4 }
+
+icomWmacTsStatsChRepReqRcvd   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Channel Report Request messages received." 
+    ::= { icomWmacTsStatsEntry 5 }
+
+icomWmacTsStatsChRepSent   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Channel Report messages sent." 
+    ::= { icomWmacTsStatsEntry 6 }
+
+icomWmacTsStatsSfAddReqRcvd   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow addition request 
+        messages received." 
+    ::= { icomWmacTsStatsEntry 7 }
+
+icomWmacTsStatsSfAddRspSent   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow addition response messages
+        sent." 
+    ::= { icomWmacTsStatsEntry 8 }
+
+icomWmacTsStatsSfRemReqRcvd   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow removal request messages
+        received." 
+    ::= { icomWmacTsStatsEntry 9 }
+
+icomWmacTsStatsSfRemRspSent   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow removal response messages
+        sent." 
+    ::= { icomWmacTsStatsEntry 10 }
+
+icomWmacTsStatsSfModReqRcvd   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow modification request 
+        messages received." 
+    ::= { icomWmacTsStatsEntry 11 }
+
+icomWmacTsStatsSfModRspSent   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow modification response
+        messages sent." 
+    ::= { icomWmacTsStatsEntry 12 }
+
+icomWmacTsStatsSfAckRcvd   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow acknowledgement 
+        messages received." 
+    ::= { icomWmacTsStatsEntry 13 }
+
+icomWmacTsStatsSfAckSent   OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of service flow acknowledgement 
+        messages sent." 
+    ::= { icomWmacTsStatsEntry 14 }
+
+--=========================================================                                      
+-- Wmac Ts Cfg Table
+--=========================================================
+icomWmacTsCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacTsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides the parameters to configure the
+         Terminal Station."    
+    ::= { icomWmacTsObjects  3 }
+
+icomWmacTsCfgEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacTsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    AUGMENTS  { icomWmacTsStatusEntry } 
+    ::={ icomWmacTsCfgTable 1 }
+
+IcomWmacTsCfgEntry ::= SEQUENCE {
+    icomWmacTsCfgDisableTimer     Integer32,
+    icomWmacTsCfgSfDisableTimer   Integer32,
+    icomWmacTsCfgSfAckTimer       Integer32,
+    icomWmacTsCfgSfHoldTimer      Integer32,
+    icomWmacTsCfgSfRspRetries     Integer32 
+}
+
+icomWmacTsCfgDisableTimer  OBJECT-TYPE 
+    SYNTAX                 Integer32 (12000..20000)
+    UNITS                  "milliseconds"
+    MAX-ACCESS             read-write
+    STATUS                 current
+    DESCRIPTION  
+        "Time to wait until SFs are disabled by the air scheduler." 
+    DEFVAL { 12000 }
+    ::= { icomWmacTsCfgEntry 1 }
+
+icomWmacTsCfgSfDisableTimer   OBJECT-TYPE 
+    SYNTAX                    Integer32 (10000..18000)
+    UNITS                     "milliseconds"
+    MAX-ACCESS                read-write
+    STATUS                    current
+    DESCRIPTION  
+        "Time to wait until a UL SF is disabled by the air scheduler." 
+    DEFVAL { 10000 }
+    ::= { icomWmacTsCfgEntry 2 }
+
+icomWmacTsCfgSfAckTimer   OBJECT-TYPE
+    SYNTAX                Integer32 (1000..2000)
+    UNITS                 "milliseconds"
+    MAX-ACCESS            read-write
+    STATUS                current
+    DESCRIPTION
+        "Time to wait for a SF-ACK message after sending a SF 
+        management response message."
+    DEFVAL { 1000 }
+    ::= { icomWmacTsCfgEntry 3 }
+
+icomWmacTsCfgSfHoldTimer   OBJECT-TYPE
+    SYNTAX                 Integer32 (5000..10000)
+    UNITS                  "milliseconds"
+    MAX-ACCESS              read-write
+    STATUS                 current
+    DESCRIPTION
+        "Time to wait for any pending messages to be sent, before
+        closing a transaction (add, remove, modify)."
+    DEFVAL { 5000 }
+    ::= { icomWmacTsCfgEntry 4 }
+
+icomWmacTsCfgSfRspRetries   OBJECT-TYPE
+    SYNTAX                  Integer32 (5..10)
+    MAX-ACCESS              read-write
+    STATUS                  current
+    DESCRIPTION
+        "Maximum total number of SF management response messages
+        to be sent during a SF management transaction."
+    DEFVAL { 5 }
+    ::= { icomWmacTsCfgEntry 5 } 
+
+--=========================================================                                      
+-- Compliance statements
+--=========================================================
+
+icomWmacTsMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for Wireless MAC Terminal Station's
+         entities."
+    MODULE  -- this module
+    MANDATORY-GROUPS { icomWmacTsGroup,
+                       icomWmacTsTrapGroup,
+                       icomWmacTsNotificationsGroup}
+    ::= { icomWmacTsCompliances 1 }
+   
+icomWmacTsGroup OBJECT-GROUP
+    OBJECTS { -- Wmac Ts Status
+              icomWmacTsStatusConnectivity,
+              icomWmacTsStatusMonitoring,
+              icomWmacTsStatusInfo,
+              icomWmacTsStatusTsMacAddress,
+              icomWmacTsStatusBsMacAddress,
+              icomWmacTsStatusBsAddressType,
+              icomWmacTsStatusBsIpAddress,
+              icomWmacTsStatusTsAssignedId,
+
+              -- Wmac Ts Statistics
+              icomWmacTsStatsReset,
+              icomWmacTsStatsRngInvRcvd,
+              icomWmacTsStatsRngChRepSent,
+              icomWmacTsStatsBrceBrSent,
+              icomWmacTsStatsChRepReqRcvd,
+              icomWmacTsStatsChRepSent,
+              icomWmacTsStatsSfAddReqRcvd,
+              icomWmacTsStatsSfAddRspSent,
+              icomWmacTsStatsSfRemReqRcvd,
+              icomWmacTsStatsSfRemRspSent,
+              icomWmacTsStatsSfModReqRcvd,
+              icomWmacTsStatsSfModRspSent,
+              icomWmacTsStatsSfAckRcvd,
+              icomWmacTsStatsSfAckSent,
+ 
+              -- Wmac Ts Cfg
+              icomWmacTsCfgDisableTimer,
+              icomWmacTsCfgSfDisableTimer,
+              icomWmacTsCfgSfAckTimer,
+              icomWmacTsCfgSfHoldTimer,
+              icomWmacTsCfgSfRspRetries 
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing the Terminal Station's
+        wmac parameters."
+    ::= { icomWmacTsGroups 1 }        
+
+icomWmacTsTrapGroup OBJECT-GROUP
+    OBJECTS {   -- Terninal Station Trap 
+                icomWmacTsTrapControlRegister
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing the Trap parameters."
+    ::= { icomWmacTsGroups 2 }      
+  
+icomWmacTsNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { -- Terninal Station SNMP Trap
+                    icomWmacTsStatusNotificationTrap,
+                    icomWmacTsSfOperStatusNotificationTrap
+    }
+    STATUS        current
+    DESCRIPTION
+        "The collection of notifications related to terminal station."
+    ::= { icomWmacTsGroups 3 }
+
+--================================================================
+--================================================================
+
+END
+

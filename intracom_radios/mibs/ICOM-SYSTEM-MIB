@@ -1,0 +1,608 @@
+ICOM-SYSTEM-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, Unsigned32
+                FROM SNMPv2-SMI
+        TestAndIncr, DisplayString, TruthValue
+                FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+        InetAddress, InetAddressType, InetAddressPrefixLength
+                FROM INET-ADDRESS-MIB
+        InterfaceIndex
+                FROM IF-MIB
+        VlanId, VlanIdOrNone
+                FROM Q-BRIDGE-MIB
+        IEEE8021PriorityValue
+                FROM IEEE8021-TC-MIB
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB
+        intracom
+                FROM ICOM-SMI;
+
+icomSysMIB MODULE-IDENTITY
+    LAST-UPDATED        "201312190000Z"     -- 19 December 2013
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        retrieval & configuration of basic system parameters. The MIB
+        includes the following proprietary objects:
+
+        1. icomSysInfoTable
+        2. icomSysNetSpinLock
+        3. icomSysNetTable
+        4. icomSysNetIfSpinLock
+        5. icomSysNetIfTable
+        6. icomSysSnmpSpinLock
+        7. icomSysSnmpTable
+       "
+
+-- Revision History
+
+    REVISION            "201312190000Z"     -- 19 December 2013
+    DESCRIPTION
+       "
+        This is the initial version of this MIB.
+       "
+
+::= { intracom 64 }
+
+   --
+   --  The icomSysMIBObjects group
+   --
+icomSysMIBObjects   OBJECT IDENTIFIER ::= { icomSysMIB 1 }
+
+-- -------------------------------------------------------------
+-- icomSysInfoTable
+-- -------------------------------------------------------------
+
+icomSysInfoTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSysInfoEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains generic configuration for the system.
+       "
+    ::= { icomSysMIBObjects 1 }
+
+icomSysInfoEntry    OBJECT-TYPE
+    SYNTAX      IcomSysInfoEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSysInfoTable.
+       "
+    INDEX       { icomSysInfoComponentId }
+    ::= { icomSysInfoTable 1 }
+
+IcomSysInfoEntry ::= SEQUENCE {
+    icomSysInfoComponentId                      Unsigned32,
+    icomSysInfoOwner                            DisplayString,
+    icomSysInfoLocation                         DisplayString,
+    icomSysInfoCoordinates                      DisplayString,
+    icomSysInfoNotes                            DisplayString
+}
+
+icomSysInfoComponentId OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..16)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object identifies the system component.
+       "
+    ::= { icomSysInfoEntry 1 }
+
+icomSysInfoOwner OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the owner of the current system (e.g.,
+        name of the service provider).
+       "
+    ::= { icomSysInfoEntry 2 }
+
+icomSysInfoLocation OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the physical location of the current system
+        (e.g., location address).
+       "
+    ::= { icomSysInfoEntry 3 }
+
+icomSysInfoCoordinates OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the GPS coordinates of the current system
+        (i.e., latitude, longitude and elevation).
+       "
+    ::= { icomSysInfoEntry 4 }
+
+icomSysInfoNotes OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object provides a free text area for miscellaneous notes
+        related to the current system.
+       "
+    ::= { icomSysInfoEntry 5 }
+
+-- -------------------------------------------------------------
+-- icomSysNetTable
+-- -------------------------------------------------------------
+
+icomSysNetSpinLock OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "An advisory lock used to allow cooperating SNMP managers to
+        coordinate their use of the set operation in modifying rows
+        within icomSysNetTable.
+
+        In order to use this lock to coordinate the use of set operations,
+        managers should first retrieve icomSysNetSpinLock. They should
+        then determine the appropriate row to modify. Finally, they should
+        issue the appropriate set command, including the retrieved value
+        of icomSysNetSpinLock. If another manager has altered the table
+        in the meantime, then the value of icomSysNetSpinLock will have
+        changed, and the creation will fail as it will be specifying
+        an incorrect value for icomSysNetSpinLock. It is suggested,
+        but not required, that the icomSysNetSpinLock be the first VB
+        for each set of objects representing a 'row' in a PDU.
+       "
+    ::= { icomSysMIBObjects 2 }
+
+icomSysNetTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSysNetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains system-wide network configuration.
+       "
+    ::= { icomSysMIBObjects 3 }
+
+icomSysNetEntry    OBJECT-TYPE
+    SYNTAX      IcomSysNetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSysNetTable.
+       "
+    AUGMENTS    { icomSysInfoEntry }
+    ::= { icomSysNetTable 1 }
+
+IcomSysNetEntry ::= SEQUENCE {
+    icomSysNetGwAddrType                        InetAddressType,
+    icomSysNetGwAddr                            InetAddress,
+    icomSysNetGwIfIndex                         InterfaceIndex
+}
+
+icomSysNetGwAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the address type of the default gateway.
+       "
+    ::= { icomSysNetEntry 1 }
+
+icomSysNetGwAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the address of the default gateway.
+       "
+    ::= { icomSysNetEntry 2 }
+
+icomSysNetGwIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object identifies the local interface through which the
+        default gateway should be reached. The interface identified
+        by a particular value of this object is the same interface as
+        identified by the same value of the IF-MIB's ifIndex.
+       "
+    ::= { icomSysNetEntry 3 }
+
+-- -------------------------------------------------------------
+-- icomSysNetIfTable
+-- -------------------------------------------------------------
+
+icomSysNetIfSpinLock OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "An advisory lock used to allow cooperating SNMP managers to
+        coordinate their use of the set operation in modifying rows
+        within icomSysNetIfTable.
+
+        In order to use this lock to coordinate the use of set operations,
+        managers should first retrieve icomSysNetIfSpinLock. They should
+        then determine the appropriate row to modify. Finally, they should
+        issue the appropriate set command, including the retrieved value
+        of icomSysNetIfSpinLock. If another manager has altered the table
+        in the meantime, then the value of icomSysNetIfSpinLock will have
+        changed, and the creation will fail as it will be specifying
+        an incorrect value for icomSysNetIfSpinLock. It is suggested,
+        but not required, that the icomSysNetIfSpinLock be the first VB
+        for each set of objects representing a 'row' in a PDU.
+       "
+    ::= { icomSysMIBObjects 4 }
+
+icomSysNetIfTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSysNetIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains per-interface network configuration.
+       "
+    ::= { icomSysMIBObjects 5 }
+
+icomSysNetIfEntry  OBJECT-TYPE
+    SYNTAX      IcomSysNetIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSysNetIfTable.
+       "
+    INDEX       { icomSysInfoComponentId, icomSysNetIfIndex }
+    ::= { icomSysNetIfTable 1 }
+
+IcomSysNetIfEntry ::= SEQUENCE {
+    icomSysNetIfIndex                           InterfaceIndex,
+    icomSysNetIfAddrType                        InetAddressType,
+    icomSysNetIfAddr                            InetAddress,
+    icomSysNetIfPrefixLength                    InetAddressPrefixLength,
+    icomSysNetIfEncap                           INTEGER,
+    icomSysNetIfVlanId                          VlanId,
+    icomSysNetIfInnerVlanId                     VlanIdOrNone,
+    icomSysNetIfPriority                        IEEE8021PriorityValue,
+    icomSysNetIfEtherType                       INTEGER
+}
+
+icomSysNetIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the ifIndex of the interface. The interface
+        identified by a particular value of this object is the same
+        interface as identified by the same value of the IF-MIB's ifIndex.
+       "
+    ::= { icomSysNetIfEntry 1 }
+
+icomSysNetIfAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the address type of the interface.
+       "
+    ::= { icomSysNetIfEntry 2 }
+
+icomSysNetIfAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the address of the interface.
+       "
+    ::= { icomSysNetIfEntry 3 }
+
+icomSysNetIfPrefixLength OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the address prefix length of the interface.
+       "
+    ::= { icomSysNetIfEntry 4 }
+
+icomSysNetIfEncap OBJECT-TYPE
+    SYNTAX      INTEGER {
+            normal      (1),
+            dot1Q       (2),
+            dot1ad      (3)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the data encapsulation of the interface.
+       "
+    DEFVAL { normal }
+    ::= { icomSysNetIfEntry 5 }
+
+icomSysNetIfVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the VLAN id for 802.1Q interfaces, or the
+        outer VLAN id for 802.1ad interfaces.
+       "
+    DEFVAL { 1 }
+    ::= { icomSysNetIfEntry 6 }
+
+icomSysNetIfInnerVlanId OBJECT-TYPE
+    SYNTAX      VlanIdOrNone
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the inner VLAN id for 802.1ad interfaces.
+       "
+    DEFVAL { 0 }
+    ::= { icomSysNetIfEntry 7 }
+
+icomSysNetIfPriority OBJECT-TYPE
+    SYNTAX      IEEE8021PriorityValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the priority value to be applied to all
+        VLAN tags.
+       "
+    DEFVAL { 7 }
+    ::= { icomSysNetIfEntry 8 }
+
+icomSysNetIfEtherType OBJECT-TYPE
+    SYNTAX      INTEGER {
+            et0x8100    (1),
+            et0x88A8    (2),
+            et0x9100    (3),
+            et0x9200    (4)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object can be used to specify the EtherType (TPID) value
+        of the external VLAN tag of incoming inband management frames.
+       "
+    DEFVAL { et0x8100 }
+    ::= { icomSysNetIfEntry 9 }
+
+-- -------------------------------------------------------------
+-- icomSysSnmpTable
+-- -------------------------------------------------------------
+
+icomSysSnmpSpinLock OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "An advisory lock used to allow cooperating SNMP managers to
+        coordinate their use of the set operation in modifying rows
+        within icomSysSnmpTable.
+
+        In order to use this lock to coordinate the use of set operations,
+        managers should first retrieve icomSysSnmpSpinLock. They should
+        then determine the appropriate row to modify. Finally, they should
+        issue the appropriate set command, including the retrieved value
+        of icomSysSnmpSpinLock. If another manager has altered the table
+        in the meantime, then the value of icomSysSnmpSpinLock will have
+        changed, and the creation will fail as it will be specifying
+        an incorrect value for icomSysSnmpSpinLock. It is suggested,
+        but not required, that the icomSysSnmpSpinLock be the first VB
+        for each set of objects representing a 'row' in a PDU.
+       "
+    ::= { icomSysMIBObjects 6 }
+
+icomSysSnmpTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSysSnmpEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains SNMP protocol-specific configuration for
+        the system.
+       "
+    ::= { icomSysMIBObjects 7 }
+
+icomSysSnmpEntry    OBJECT-TYPE
+    SYNTAX      IcomSysSnmpEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSysSnmpTable.
+       "
+    AUGMENTS    { icomSysInfoEntry }
+    ::= { icomSysSnmpTable 1 }
+
+IcomSysSnmpEntry ::= SEQUENCE {
+    icomSysSnmpVersion                          INTEGER,
+    icomSysSnmpCPublicRead                      SnmpAdminString,
+    icomSysSnmpCPublicWrite                     SnmpAdminString,
+    icomSysSnmpCPrivate                         SnmpAdminString
+}
+
+icomSysSnmpVersion OBJECT-TYPE
+    SYNTAX      INTEGER {
+            v1andv2     (1),
+            v2          (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the supported SNMP version.
+       "
+    DEFVAL { v1andv2 }
+    ::= { icomSysSnmpEntry 1 }
+
+icomSysSnmpCPublicRead OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "The community string for public read access. Spaces and whitespace
+        characters (\n, \t etc) are not allowed.
+       "
+    DEFVAL { "public" }
+    ::= { icomSysSnmpEntry 2 }
+
+icomSysSnmpCPublicWrite OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "The community string for public write access. Spaces and whitespace
+        characters (\n, \t etc) are not allowed.
+       "
+    DEFVAL { "public" }
+    ::= { icomSysSnmpEntry 3 }
+
+icomSysSnmpCPrivate OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "The community string for private read/write access. Spaces
+        and whitespace characters (\n, \t etc) are not allowed.
+       "
+    DEFVAL { "private" }
+    ::= { icomSysSnmpEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomSysBtIfTable
+-- -------------------------------------------------------------
+
+icomSysBtIfTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomSysBtIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains per-interface Bluetooth configuration.
+       "
+    ::= { icomSysMIBObjects 8 }
+
+icomSysBtIfEntry OBJECT-TYPE
+    SYNTAX      IcomSysBtIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomSysBtIfTable.
+       "
+    INDEX       { icomSysInfoComponentId, icomSysBtIfIndex }
+    ::= { icomSysBtIfTable 1 }
+
+IcomSysBtIfEntry ::= SEQUENCE {
+    icomSysBtIfIndex                            InterfaceIndex,
+    icomSysBtIfVisible                          TruthValue,
+    icomSysBtIfVisTimeout                       Unsigned32
+}
+
+icomSysBtIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the ifIndex of the Bluetooth interface. The
+        interface identified by a particular value of this object is the
+        same interface as identified by the same value of the IF-MIB's
+        ifIndex.
+       "
+    ::= { icomSysBtIfEntry 1 }
+
+icomSysBtIfVisible OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the visibility status of the current
+        Bluetooth interface.
+
+        If value is set to 'true(1)', then visibility is enabled for
+        the current Bluetooth interface.
+
+        If value is set to 'false(2)', then visibility is disabled for
+        the current Bluetooth interface.
+       "
+    ::= { icomSysBtIfEntry 2 }
+
+icomSysBtIfVisTimeout OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the visibility timeout of the current
+        Bluetooth interface (in seconds). Value 0 implies endless
+        visibility of the current Bluetooth interface.
+       "
+    ::= { icomSysBtIfEntry 3 }
+
+   --
+   -- Conformance information
+   --
+
+icomSysMIBConformance OBJECT IDENTIFIER ::= { icomSysMIB 2 }
+
+icomSysMIBCompliances OBJECT IDENTIFIER ::= { icomSysMIBConformance 1 }
+
+icomSysMIBGroups      OBJECT IDENTIFIER ::= { icomSysMIBConformance 2 }
+
+   --
+   -- Compliance statements
+   --
+icomSysMIBCompliance  MODULE-COMPLIANCE
+    STATUS            current
+    DESCRIPTION
+       "The compliance statement for icomSysMIB.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS { icomSysMIBGroup }
+    ::= { icomSysMIBCompliances 1 }
+
+icomSysMIBGroup OBJECT-GROUP
+    OBJECTS {
+        icomSysInfoOwner,
+        icomSysInfoLocation,
+        icomSysInfoCoordinates,
+        icomSysInfoNotes,
+
+        icomSysNetSpinLock,
+
+        icomSysNetGwAddrType,
+        icomSysNetGwAddr,
+        icomSysNetGwIfIndex,
+
+        icomSysNetIfSpinLock,
+
+        icomSysNetIfAddrType,
+        icomSysNetIfAddr,
+        icomSysNetIfPrefixLength,
+        icomSysNetIfEncap,
+        icomSysNetIfVlanId,
+        icomSysNetIfInnerVlanId,
+        icomSysNetIfPriority,
+        icomSysNetIfEtherType,
+
+        icomSysSnmpSpinLock,
+
+        icomSysSnmpVersion,
+        icomSysSnmpCPublicRead,
+        icomSysSnmpCPublicWrite,
+        icomSysSnmpCPrivate,
+
+        icomSysBtIfVisible,
+        icomSysBtIfVisTimeout
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomSysMIB."
+    ::= { icomSysMIBGroups 1 }
+
+END

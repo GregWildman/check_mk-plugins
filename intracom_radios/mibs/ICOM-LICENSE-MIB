@@ -1,0 +1,1912 @@
+
+   ICOM-LICENSE-MIB DEFINITIONS ::= BEGIN
+                                                
+   IMPORTS                                         
+   MODULE-IDENTITY, OBJECT-TYPE,                   
+   NOTIFICATION-TYPE,
+   Unsigned32, Integer32                                      
+   FROM SNMPv2-SMI                                       
+   TEXTUAL-CONVENTION, DateAndTime, TruthValue                         
+   FROM SNMPv2-TC                                  
+   MODULE-COMPLIANCE, OBJECT-GROUP,                
+   NOTIFICATION-GROUP                              
+   FROM SNMPv2-CONF                    
+   intracom                                        
+   FROM ICOM-SMI;                            
+   
+   --=========================================================
+   --license MIB MODULE
+   --=========================================================
+   icomLicMIB MODULE-IDENTITY
+   LAST-UPDATED "201509110000Z"  -- lpan: 09 11, 2015
+   ORGANIZATION "Intracom Telecom S.A."
+   CONTACT-INFO
+   "      
+          Intracom S.A.
+          Systems Software Development Dept.
+          A3 building
+          19.7Km Markopoulo Ave
+          GR-19002 Peania, Athens
+          Greece
+          tel: +30-210-6674057
+
+           emar@intracom.gr 
+  
+   "
+   DESCRIPTION
+         "This is the management information for system licensing data.
+         "
+
+   REVISION    "201509110000Z"  -- lpan: 09 11, 2015
+   DESCRIPTION "
+              Addition of new trap icomLicDefaultWarning.
+              "
+
+   REVISION    "201505270000Z"  -- lpan: 27 05, 2015
+   DESCRIPTION "
+              o   Addition of new values bc1588synchroSupport(18), lag(19), cpriv3(20), cpriv5(21)
+                  to TC IcomLicDemoBitmap.
+                  Value tcbc1588synchroSupport renamed to tc1588synchroSupport
+              o   Addition of new fields icomLicAct1588BCsynchroSupport, icomLicActLag,
+                  icomLicActCPRIv3, icomLicActCPRIv5 to icomLicActConfigEntry.
+                  Field icomLicAct1588TCBCsynchroSupport renamed to icomLicAct1588TCsynchroSupport
+                  and its description updated.
+              o   Addition of new fields icomLicUpgr1588BCsynchroSupport, icomLicUpgrLag,
+                  icomLicUpgrCPRIv3, icomLicUpgrCPRIv5, icomLicUpgrStartOperationMode to icomLicUpgrConfigEntry.
+                  Field icomLicUpgr1588TCBCsynchroSupport renamed to icomLicUpgr1588TCsynchroSupport
+                  and its description updated.
+    "
+
+   REVISION    "201501200000Z"  -- lpan: 20 01, 2015
+   DESCRIPTION "
+              Addition of new values security(16),xpic(17) to TC IcomLicDemoBitmap.
+              "
+                   
+   REVISION    "201501130000Z"  -- lpan: 13 01, 2015
+   DESCRIPTION "
+              Addition of new TC IcomLicSkTagType,
+                              field icomLicActSkTag to IcomLicActConfigEntry,
+                              field icomLicUpgrSkTag to IcomLicUpgrConfigEntry,
+                              field icomLicActXpic to IcomLicActConfModemEntry,
+                              field icomLicUpgrXpic to IcomLicUpgrConfModemEntry.
+              "
+                   
+   REVISION    "201412050000Z"  -- lpan: 05 12, 2014
+   DESCRIPTION "
+              Addition of new trap icomLicActExpWarning.
+              "
+                   
+   REVISION    "201410240000Z"  -- lpan: 24 10, 2014
+   DESCRIPTION "
+              Addition of values         
+                    upgradePendingSwChangePtp(9),
+                    upgradePendingSwChangePmp(10),
+                    upgradePendingStChangeBs(11),
+                    upgradePendingStChangeTs(12)
+              to TC IcomLicState.
+              "
+                   
+   REVISION    "201405260000Z"  -- lpan: 26 05, 2014
+   DESCRIPTION "
+              Addition of values         
+                    invalidStartModulation(10),
+                    invalidStartCapacity(11),
+                    invalidMaxModulation(12),
+                    invalidMaxCapacity(13)
+              to TC IcomLicFailureReason.
+              "
+                   
+   REVISION    "201405140000Z"  -- lpan: 14 05, 2014
+   DESCRIPTION "
+              Addition of value demopassepartout(5) to TC IcomLicType.
+              "
+              
+   REVISION    "201403140000Z"  -- lpan: 14 03, 2014
+   DESCRIPTION "
+
+              o   Mib renamed to ICOM-LICENSE-MIB and module to icomLicMIB
+              o   licenseMibObjects replaced by icomLicMIBObjects. Also icomLicMIBObjects 
+                  is cancelled and all MOs go under icomLicMIBObjects.
+              o   licNotificationObjects is replaced with icomLicMIBNotifObjects and is moved right under
+                  icomLicMIB. Similarly, licenseMibConformance is replaced by icomLicMIBConformance
+                  and goes under icomLicMIB. 
+              o   licenseMibConfGroups and licenseMibCompliances renamed to icomLicMIBConfGroups and
+                  icomLicMIBCompliances respectively
+              o   All textual convention names take the IcomLic prefix. Similarly, all the MO names take the
+                  same prefix, accoring to the following logic:
+                  - upgradeLicense, upgradeLicen, upgradeLic, upgrade name prefixes changes to icomLicUpgr
+                  - activeLicense, activeLicen, activeLic, active name prefixes changes to icomLicAct
+                  - historyLicense, historyLicen, historyLic, history name prefixes changes to icomLicHist
+              o   Objects icomLicUpgrState, icomLicUpgrFailureReason (previously named upgradelicenseState,
+                  upgradeLicenseFailureReason respectively) heve become read-only instead of read-write.
+              o   Names of tables activeLicenseCapConfTable, upgradeLicenseCapConfTable have been changed to 
+                  IcomLicActOpModeConfTable,IcomLicUpgrOpModeConfTable respectively, for being more generic and
+                  adaptive to future addition of new licensed features. The names of related objects are changed,
+                  accordingly where needed.
+              o   The following new textual conventions have been added:
+                  - IcomLicOpModeIndex for objects icomLicActOpModeIndex, icomLicActModemOpModeIndex,
+                    icomLicUpgrOpModeIndex,icomLicUpgrModemOpModeIndex 
+                  - IcomLicVersionType for objects icomLicUpgrVersion, icomLicActVersion, icomLicHistVersion
+                  - IcomLicSerialIdType for objects icomLicActSerialID, icomLicUpgrSerialID, icomLicHistSerialID
+                  - IcomLicCustomerIdType for objects icomLicActCustomerID, icomLicUpgrCustomerID, icomLicHistCustomerID
+                  - IcomLicFilenameType for objects icomLicUpgrFilename, icomLicHistFilename
+    "
+                                    
+   REVISION    "201403110000Z"  -- lpan: 11 03, 2014
+   DESCRIPTION "
+
+              o   New values have been added, replacing the previous ones,to Textual Coventions 
+                  -      LicenseType: values normal(1),demo(2),passpartout(3),nolicense(4) replacing
+                         default(1),normal(2),demo(3)
+                  -      ProductTypeValue: values osdr,strn added
+              o   New description for Textual Covention LicenseApplyTypes 
+              o   New Textual Coventions defined: 
+                  -      LicenseFailureReason: objects upgradeLicenseFailureReason,historyLicenseFailureReason
+                  -      OpModeBitmap: objects activeOperationMode, upgradeOperationMode
+                  -      DemoBitmap: objects activeLicenseDemoPerFeature, upgradeLicenseDemoPerFeature
+                  -      LicenseState: objects upgradelicenseState, historyLicenseState
+
+              o   New objects upgradelicenseState, upgradeLicenseFailureReason added to UpgradeLicenseEntry,
+                  while upgradelicenseStatusInfo is removed
+
+              o   Objects activePmPMaxCapacityAllowed, activePmPMaxCapacityStarting have been removed from
+                  ActiveLicenseConfigEntry. Similarly upgradePmPMaxCapacityAllowed, upgradePmPMaxCapacityStarting 
+                  have been removed from UpgradeLicenseConfigEntry
+
+              o   New tables activeLicenseCapConfTable, upgradeLicenseCapConfTable, historyLicenseConfigTable have been added.
+                  
+              o   New index activeLicenseModemOpModeIndex added to activeLicConfModemTable. Similarly
+                  upgradeLicenseModemOpModeIndex added to upgradeLicConfModemTable
+
+    "
+                  
+   REVISION    "201402280000Z"  -- lpan: 28 02, 2014
+   DESCRIPTION "
+
+              o   The following Textual Coventions have been defined
+                  -      ProductTypeValue for objects activeLicenSystemType, upgradeLicenSystemType
+                  -      CapacityValue for objects activePmPMaxCapacityAllowed,
+                         activePmPMaxCapacityStarting, upgradePmPMaxCapacityAllowed, upgradePmPMaxCapacityStarting
+                  -      TxModulationValue for objects activeLicenMaxTxModAllowed,
+                         activeLicenMaxTxModStart, upgradeLicenMaxTxModAllowed, upgradeLicenMaxTxModStart
+
+              o   All INTEGER enums have been changed so that not to include 0, in accordance to RFC4181 
+
+              o   Descriptions of most objects have been improved
+
+              o   FeaturesOperationMod Textual Convention is not used anymore. Has been replaced with TruthValue
+                  where true amounts to on and false to off
+                  
+              o   Objects sysInfoConfEntry, activeLicenseStorage, upgradeLicenseStorage have been removedsince they are 
+                  considered obsolete. All the other oids have been shifted accordingly.
+
+    "
+                  
+   REVISION    "201402270000Z"  -- lpan: 27 02, 2014
+   DESCRIPTION "
+
+              o   The following new objects have been added to ActiveLicenseConfigEntry
+                  -      activeLicenEthEFMOAM
+                  -      activeOperationMode
+                  -      active1588TCBCsynchroSupport 
+                  -      activeBluetoothProvSupport 
+                  -      activePmPMaxCapacityAllowed 
+                  -      activePmPMaxCapacityStarting 
+                  -      activeNetworkRedundancySupport 
+
+              o   The following new objects have been added to UpgradeLicenseConfigEntry
+                  -      upgradeLicenEthEFMOAM
+                  -      upgradeOperationMode
+                  -      upgrade1588TCBCsynchroSupport 
+                  -      upgradeBluetoothProvSupport 
+                  -      upgradePmPMaxCapacityAllowed 
+                  -      upgradePmPMaxCapacityStarting 
+                  -      upgradeNetworkRedundancySupport
+                  -      upgradeLicenseApplyType 
+
+              o   The following new objects have been added to ActiveLicConfModemEntry
+                  -      activeLicenMaxTxModAllowed
+                  -      activeLicenMaxTxModStart
+                  and the following have been removed
+                  -      activeLicenMaxBWModem 
+                  -      activeLicenACMmodem 
+                  -      activeLicenseIPoptModem 
+                  -      activeLicenseAESmodem 
+
+              o   The following new objects have been added to UpgradeLicConfModemEntry
+                  -      upgradeLicenMaxTxModAllowed
+                  -      upgradeLicenMaxTxModStart
+                  and the following have been removed
+                  -      upgradeLicenMaxBWModem 
+                  -      upgradeLicenACMmodem 
+                  -      upgradeLicenseIPoptModem 
+                  -      upgradeLicenseAESmodem 
+                  
+              o   New textual convention LicenseApplyTypes has been added in order to
+                  support new object upgradeLicenseApplyType
+    "
+
+   REVISION    "201201310000Z"  -- emar: 31 01, 2012
+   DESCRIPTION "
+
+              o   New type  obPtpFodu(6) has been added in the objects
+                  systemType, activeLicenSystemType, upgradeLicenSystemType
+
+              o   New object upgradelicenseStatusInfo has been added in UpgradeLicenseEntry
+    "
+
+   REVISION    "201112090000Z"  -- emar: 12 09, 2011
+   DESCRIPTION "
+
+              o   New types  obPtp4wHe(6), obXr(7) have been added in the objects
+                  systemType, activeLicenSystemType, upgradeLicenSystemType
+    "
+
+   REVISION    "201106070000Z"  -- emar: Jun 07, 2011
+   DESCRIPTION "
+
+              o   Added the modem licensed features
+                  to different table
+                
+               o  Added alarm 
+                  activeLicExpStatusNotification.
+    "
+
+   REVISION    "201102180000Z"  -- emar: Feb 18, 2011
+   DESCRIPTION "
+               o  First draft
+    "
+
+      ::= { intracom 101 } 
+
+   --=========================================================                                      
+   -- LICENSE OBJECTS
+   --=========================================================
+   icomLicMIBNotifObjects       OBJECT IDENTIFIER ::= { icomLicMIB 0 }
+   icomLicMIBObjects            OBJECT IDENTIFIER ::= { icomLicMIB 1 } 
+   icomLicMIBConformance        OBJECT IDENTIFIER ::= { icomLicMIB 2 }      
+   
+   ---=========================================================
+   -------------- Textual Conventions 
+   ---=========================================================
+  -- Definition of textual conventions                
+
+  IcomLicType ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " the possible types of licenses provided.
+           Normal - A full license without expiration time, produced for a specific mac address
+           Demo - A license that expires after a certain time period (Up to 3 years)
+           passpartout - A generic license designed to apply to many systems, independent to the
+                        mac address. It is supposed to be replaced at some point with a normal one.
+           nolicense - No license has been applied to the system, i.e. the factory default settings
+                       are applied"
+   SYNTAX INTEGER { 
+      normal(1),
+      demo(2),
+      passpartout(3),
+      nolicense(4),
+      demopassepartout(5)
+      }
+
+   IcomLicApplyTypes ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Types of license regarding the application level:
+           Standard - The license is full (all features) and forced, without any checks
+           Upgrade - The license may be full or partial (only some features) and checks
+                     are performed before application"
+   SYNTAX INTEGER {   
+      standard(1),
+      upgrade(2)
+      }
+      
+   IcomLicProductTypeValue ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Possible product types"
+   SYNTAX INTEGER {
+      obPtp2w(1),          
+      obPtp2we(2),
+      obPtp4w(3),
+      obPtp8w(4),
+      wibasC(5), 
+      obPtp4wHe(6),
+      obXr(7), 
+      obPtp2w16e1(8),
+      osdr(9),
+--      osdrPtP(10),
+--      osdrPmP(11),
+--      obXre(12),
+      strn(10),
+--      strnPtp(14),
+--      strnPmp(15),
+      ob4wv2(11),
+      unknown(128),
+      generator(254),
+      allSystemType(255)    
+      } 
+
+   IcomLicCapacityValue ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Possible values for Max capacity. Value maxCapacityNA means not applicable"
+   SYNTAX INTEGER {
+      maxCapacity5(5),
+      maxCapacity15(15),
+      maxCapacity100(100),
+      maxCapacity200(200),
+      maxCapacity270(270),
+      maxCapacity540(540),
+      maxCapacityNA(65535)
+      }
+
+   IcomLicTxModulationValue ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Possible values for Max Tx Modulation. Value 0 means 'not applicable'"
+   SYNTAX INTEGER { 
+                    maxTxMod256(256),
+                    maxTxMod512(512),
+                    maxTxMod1024(1024),
+                    maxTxMod2048(2048),
+                    maxTxMod4096(4096),
+                    maxTxModNA(65535)
+                  } 
+                  
+   IcomLicFailureReason ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Possible values for failure reason of a license stored in history.
+           When the event type of the license is differnet to failure, value
+           notFailed is used"
+   SYNTAX INTEGER { 
+                    noFailure(1),
+                    invalidUpgradeLicense(2),
+                    invalidVersion(3),
+                    invalidUniqueId(4),
+                    invalidSystemType(5),
+                    customerIdMismatch(6),
+                    invalidGenTime(7),
+                    invalidFeatValue(8),
+                    invalidOpMode(9),
+                    invalidStartModulation(10),
+                    invalidStartCapacity(11),
+                    invalidMaxModulation(12),
+                    invalidMaxCapacity(13),
+                    dontCare(15)
+                  } 
+   
+   IcomLicOpModeBitmap ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Operation Modes allowed."
+   SYNTAX BITS{
+                  ptP (0),
+                  hub (1),
+                  terminal (2)
+                }
+                  
+   IcomLicDemoBitmap ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Each bit indicated the demo/permanent nature of a feature in the license.
+           Value 1 relates to 'demo', 0 to 'permanent'."
+   SYNTAX BITS{
+                  operationMode (0),
+                  networkRedundancySupport (1),
+                  txModulationAllowedPtP(2),
+                  txModulationStartPtP(3),
+                  licenthCFMOAM (4),
+                  licenthEFMOAM (5),
+                  tc1588synchroSupport (6),
+                  ethernetRingSupport (7),
+                  rlaSupport (8),
+                  bluetoothProvSupport (9),
+                  txModulationAllowedPmP(10),
+                  txModulationStartPmP(11),
+                  capacityHubAllowed(12),
+                  capacityHubStart(13),
+                  capacityTerminalAllowed(14),
+                  capacityTerminalStart(15),
+                  security(16),
+                  xpic(17),
+                  bc1588synchroSupport(18),
+                  lag(19),
+                  cpriv3(20),
+                  cpriv5(21)
+                }
+                
+   IcomLicState ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Possible values for the state of the license in relation to its appliance"
+   SYNTAX INTEGER { 
+                    upgradeOK(1),
+                    upgradeFailed(2),
+                    sameLicense(3),
+                    demoExpired(4),
+                    applyDemoTimeExpired(5),
+                    noActiveLicense(6),
+                    invalidActiveLicense(7),
+                    upgradePending(8),
+                    upgradePendingSwChangePtp(9),
+                    upgradePendingSwChangePmp(10),
+                    upgradePendingStChangeBs(11),
+                    upgradePendingStChangeTs(12),
+                    noUpgrade(15)
+                  } 
+   
+   IcomLicOpModeIndex ::= TEXTUAL-CONVENTION
+   STATUS current
+   DESCRIPTION 
+         " Operation Modes related index."
+   SYNTAX INTEGER{
+                  ptP (1),
+                  hub (2),
+                  terminal (3)
+                }
+                
+   IcomLicVersionType ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
+   STATUS current
+   DESCRIPTION
+        "Type for all license version objects"
+   SYNTAX Integer32(0..255)
+                  
+   IcomLicSerialIdType ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "16a"
+   STATUS current
+   DESCRIPTION
+        "Type for all license serial id objects"
+   SYNTAX OCTET STRING (SIZE (1..16))
+                  
+   IcomLicCustomerIdType ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
+   STATUS current
+   DESCRIPTION
+        "Type for all license client id objects"
+   SYNTAX Unsigned32
+   
+   IcomLicFilenameType ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "256a"
+   STATUS current
+   DESCRIPTION
+        "Type for all filename objects"
+     SYNTAX    OCTET STRING (SIZE (1..256)) 
+                  
+   IcomLicSkTagType ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "16a"
+   STATUS current
+   DESCRIPTION
+        "Type for all license SK tag objects"
+   SYNTAX OCTET STRING (SIZE (1..32))
+                  
+  --================================================================ 
+   -- LICENSE NOTIFICATIONS OBJECTS
+   --================================================================
+   
+   icomLicActExpStatusNotification NOTIFICATION-TYPE
+      OBJECTS {icomLicActExpirationStatus}
+      STATUS current
+      DESCRIPTION "
+            A trap indicating License expiration status
+           [OmniBAS-2W, OmniBAS-4W  implementation]
+            The NMS forwards the following information to the operator:
+               varbind[0].oid = oid_sysUpTime.0 = 1.3.6.1.2.1.1.3.0
+               varbind[0].val = NMS agent time (in centiseconds)
+           
+               varbind[1].oid = oid_snmpTrapOID.0 = 1.3.6.1.6.3.1.1.4.1.0
+               varbind[1].val = icomLicActExpStatusNotification
+                              = 1.3.6.1.4.1.1807.101.0.1
+               varbind[2].oid = icomLicActExpirationStatus
+                              = 1.3.6.1.4.1.1807.101.1.2.1.17
+               varbind[2].val = icomLicActExpirationStatus value
+           
+             where
+           -- 
+                icomLicActExpirationStatus is the license server 
+                received license expiration indication.
+                The information is TruthValue with the following meaning:
+                      - 2(false): License is not expired
+                      - 1(true) : License is expired
+                            
+      "
+         ::= { icomLicMIBNotifObjects 1}
+   
+   icomLicActProtConflictNotification NOTIFICATION-TYPE
+      OBJECTS {icomLicActNetworkRedundancySupport}
+      STATUS current
+      DESCRIPTION "
+            A trap indicating a conflict caused by the value of network redundancy feature in active license.
+            This can be caused in systems supporting protection when
+                - There is only one card, so that protection has no meaning
+                - There are two cards but the communication between them is not feasible
+                - There are two cards but their licenses differ.
+            The NMS forwards the following information to the operator:
+               varbind[0].oid = oid_sysUpTime.0 = 1.3.6.1.2.1.1.3.0
+               varbind[0].val = NMS agent time (in centiseconds)
+           
+               varbind[1].oid = oid_snmpTrapOID.0 = 1.3.6.1.6.3.1.1.4.1.0
+               varbind[1].val = icomLicActProtConflictNotification
+                              = 1.3.6.1.4.1.1807.101.0.2
+               varbind[2].oid = icomLicActNetworkRedundancySupport
+                              = 1.3.6.1.4.1.1807.101.1.2.1.14
+               varbind[2].val = icomLicActNetworkRedundancySupport value
+           
+             where
+           -- 
+                icomLicActNetworkRedundancySupport is the license server 
+                received active license protection (network redundancy) feature value.
+                The information is TruthValue with the following meaning:
+                      - 2(false): Protection is not supported
+                      - 1(true) : Protection is supported
+                            
+      "
+         ::= { icomLicMIBNotifObjects 2}
+         
+   
+   icomLicActOpModeConflictNotification NOTIFICATION-TYPE
+      OBJECTS {icomLicActOperationMode}
+      STATUS current
+      DESCRIPTION "
+            A trap indicating a conflict caused by the value of Operation feature in upgrade license.
+            This conflict can be caused when the featured Operation Mode value is not compatible 
+            with the value of system type in the active license.
+            The NMS forwards the following information to the operator:
+               varbind[0].oid = oid_sysUpTime.0 = 1.3.6.1.2.1.1.3.0
+               varbind[0].val = NMS agent time (in centiseconds)
+           
+               varbind[1].oid = oid_snmpTrapOID.0 = 1.3.6.1.6.3.1.1.4.1.0
+               varbind[1].val = icomLicActOpModeConflictNotification
+                              = 1.3.6.1.4.1.1807.101.0.3
+               varbind[2].oid = icomLicUpgrOperationMode
+                              = 1.3.6.1.4.1.1807.101.1.5.1.12
+               varbind[2].val = icomLicUpgrOperationMode value
+               varbind[3].oid = icomLicActSystemType
+                              = 1.3.6.1.4.1.1807.101.1.2.1.2
+               varbind[3].val = icomLicActSystemType value
+             where
+           -- 
+                icomLicUpgrOperationMode is the license server 
+                received upgrade license operation mode feature value.
+                The information is IcomLicOpModeBitmap with the following meaning:
+                Bit0:
+                      - 0: Ptp Mode not supported
+                      - 1: Ptp Mode supported
+                Bit1:
+                      - 0: Hub Mode not supported
+                      - 1: Hub Mode supported
+                Bit2:
+                      - 0: Terminal Mode not supported
+                      - 1: Terminal Mode supported
+                Both Hub and terminal modes refer to PmP.
+                
+                icomLicActSystemType is the System type of the system as kept in active license.
+                Its value is one of these declared in IcomLicProductTypeValue TC.
+                            
+      "
+         ::= { icomLicMIBNotifObjects 3}
+   
+   icomLicActExpWarning NOTIFICATION-TYPE
+      OBJECTS {icomLicActDuration}
+      STATUS current
+      DESCRIPTION "
+            A trap indicating the time (in days) remaining till the license expiration 
+            when this time becomes less than a fixed number of days.
+            The NMS forwards the following information to the operator:
+               varbind[0].oid = oid_sysUpTime.0 = 1.3.6.1.2.1.1.3.0
+               varbind[0].val = NMS agent time (in centiseconds)
+           
+               varbind[1].oid = oid_snmpTrapOID.0 = 1.3.6.1.6.3.1.1.4.1.0
+               varbind[1].val = icomLicActExpWarning
+                              = 1.3.6.1.4.1.1807.101.0.4
+               varbind[2].oid = icomLicActDuration
+                              = 1.3.6.1.4.1.1807.101.1.2.1.16
+               varbind[2].val = icomLicActDuration value
+             where
+           -- 
+               icomLicActDuration is the active license number of days, until expiration. Maximum duration is 3 years.
+               The value 0 could be used for non-demo license, that does not actually expire.                
+                            
+      "
+         ::= { icomLicMIBNotifObjects 4}
+         
+   icomLicDefaultWarning NOTIFICATION-TYPE
+      STATUS current
+      DESCRIPTION "
+            A trap indicating that a default license has been loaded
+            due to lack of a valid license file.
+            The NMS forwards the following information to the operator:
+               varbind[0].oid = oid_sysUpTime.0 = 1.3.6.1.2.1.1.3.0
+               varbind[0].val = NMS agent time (in centiseconds)
+           
+               varbind[1].oid = oid_snmpTrapOID.0 = 1.3.6.1.6.3.1.1.4.1.0
+               varbind[1].val = icomLicDefaultWarning
+                              = 1.3.6.1.4.1.1807.101.0.5
+      "
+         ::= { icomLicMIBNotifObjects 5}
+         
+   --=========================================================                                      
+   -- UPGRADE LICENSE TABLE
+   --=========================================================
+
+   icomLicUpgrTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicUpgrEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the upgrade system license parameters.  
+                   "                                               
+      ::= { icomLicMIBObjects  1 }                                
+                                                                   
+   icomLicUpgrEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicUpgrEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicUpgrEntryIndex}                             
+      ::={icomLicUpgrTable 1 }                                   
+                                                                   
+    IcomLicUpgrEntry ::= SEQUENCE {                              
+        icomLicUpgrEntryIndex  Integer32,            
+        icomLicUpgrVersion  IcomLicVersionType,                   
+        icomLicUpgrFilename  IcomLicFilenameType,
+        icomLicUpgrState IcomLicState,
+        icomLicUpgrFailureReason IcomLicFailureReason     
+   }                                                      
+                                                          
+   icomLicUpgrEntryIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..1)                               
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicUpgrEntry.     
+                    It is restricted to 1 instance."      
+      ::= { icomLicUpgrEntry 1 }  
+                                                                                                                                                          
+   icomLicUpgrVersion OBJECT-TYPE                                      
+      SYNTAX       IcomLicVersionType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                    upgrade license version value.                   
+                   "                                                
+      ::= { icomLicUpgrEntry 2 }                                  
+                                                                    
+   icomLicUpgrFilename OBJECT-TYPE                                       
+     SYNTAX    IcomLicFilenameType                             
+     MAX-ACCESS   read-write                                         
+     STATUS       current                                           
+     DESCRIPTION  "                                                 
+                   The upgrade license filename (full path)                         
+                   provided by the system.                          
+                   The filename format is
+                        Mac_SystemType_GenerationDate.license
+                   where
+                   Mac - the mac address
+                   SystemType - the system type number as shown in IcomLicProductTypeValue textual Convention
+                   GenerationDate - in dd/mm/yy format.
+                   "                                                
+     ::= { icomLicUpgrEntry 3 }    
+
+  icomLicUpgrState OBJECT-TYPE                                      
+      SYNTAX       IcomLicState 
+     MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "    
+                     License Upgrade Status
+                   "               
+          DEFVAL {upgradeOK}                                 
+      ::= { icomLicUpgrEntry 4 }                         
+          
+
+  icomLicUpgrFailureReason OBJECT-TYPE                                      
+      SYNTAX       IcomLicFailureReason 
+     MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "    
+                     The value of this object has an actual meaning only in the case that the icomLicUpgrState
+                     object is equal to 'upgradeFailed'. In this case it contains the reason of the failure.
+                     Otherwise its value must be 'noFailure'.
+                   "               
+          DEFVAL {noFailure}                                 
+      ::= { icomLicUpgrEntry 5 }                         
+          
+   --========================================================                                      
+   -- ACTIVE LICENSE CONFIGURATION TABLE
+   --=========================================================
+
+   icomLicActConfigTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicActConfigEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the active license configuration parameters.  
+                   "                                               
+      ::= { icomLicMIBObjects  2 }                                
+                                                                   
+   icomLicActConfigEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicActConfigEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicActConfigIndex}                             
+      ::={icomLicActConfigTable 1 }                                   
+                                                                   
+    IcomLicActConfigEntry ::= SEQUENCE {                                           
+        icomLicActConfigIndex  Integer32,                
+        icomLicActSystemType   IcomLicProductTypeValue,  
+        icomLicActSerialID  IcomLicSerialIdType,
+        icomLicActCustomerID IcomLicCustomerIdType,
+        icomLicActGenDate   DateAndTime,
+        icomLicActType IcomLicType,
+        icomLicActVersion IcomLicVersionType,
+        icomLicActRlaSupport TruthValue,
+        icomLicActEthernetRingSupport TruthValue,
+        icomLicActEthCFMOAM TruthValue,
+        icomLicActEthEFMOAM TruthValue,
+        icomLicActOperationMode IcomLicOpModeBitmap,                 
+        icomLicAct1588TCsynchroSupport TruthValue,                 
+        icomLicActBluetoothProvSupport TruthValue,                 
+        icomLicActNetworkRedundancySupport TruthValue,                 
+        icomLicActDuration Integer32,
+        icomLicActDemoPerFeature IcomLicDemoBitmap,
+        icomLicActExpirationStatus TruthValue,
+        icomLicActSkTag IcomLicSkTagType,
+        icomLicActSecurity TruthValue,
+        icomLicAct1588BCsynchroSupport TruthValue,
+        icomLicActLag TruthValue,
+        icomLicActCPRIv3 TruthValue,
+        icomLicActCPRIv5 TruthValue
+        }                                                      
+                                                          
+   icomLicActConfigIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..1)                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicActConfigEntry.     
+                    It is restricted to 1 instance."      
+      ::= {icomLicActConfigEntry 1}                        
+
+  icomLicActSystemType OBJECT-TYPE                                      
+      SYNTAX       IcomLicProductTypeValue
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  " 
+                     Active license configuration System Product Type value. 
+                   "                                                
+      ::= { icomLicActConfigEntry 2 }         
+                        
+  icomLicActSerialID OBJECT-TYPE                                      
+      SYNTAX       IcomLicSerialIdType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Active license condiguration Serial system ID value.                 
+                   "                                                
+      ::= { icomLicActConfigEntry 3 } 
+              
+  icomLicActCustomerID OBJECT-TYPE                                      
+      SYNTAX       IcomLicCustomerIdType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Active license configuration customer ID value.                
+                   "                                                
+      ::= { icomLicActConfigEntry 4 } 
+
+  icomLicActGenDate OBJECT-TYPE                                      
+      SYNTAX       DateAndTime                                
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Active license generation date. 
+                   "                                                
+      ::= { icomLicActConfigEntry 5 } 
+
+   icomLicActType OBJECT-TYPE                                      
+      SYNTAX       IcomLicType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     The type of the license.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 6 } 
+
+   icomLicActVersion OBJECT-TYPE 
+      SYNTAX       IcomLicVersionType
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION  " 
+                    Active license version value.
+                   "
+      ::= { icomLicActConfigEntry 7 }                   
+
+  icomLicActRlaSupport OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     RLA support feature,  
+                     active license configuration  mode. 
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 8 } 
+
+ icomLicActEthernetRingSupport OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet Ring support feature,  
+                     active license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 9 } 
+
+  icomLicActEthCFMOAM OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet  CFM OAM feature,  
+                     active license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 10 } 
+
+  icomLicActEthEFMOAM OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet  EFM OAM feature,  
+                     active license configuration  mode. 
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 11 } 
+
+  icomLicActOperationMode OBJECT-TYPE
+      SYNTAX   IcomLicOpModeBitmap 
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Operation Modes allowed. 
+                     Applicable at FOSDR, STRN (except ATM based) and Omnibas systems.            
+                     All bits 0 means not applicable.
+                   "                                                
+      ::= { icomLicActConfigEntry 12 } 
+
+  icomLicAct1588TCsynchroSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     1588 TC synchro feature
+                     active license configuration mode.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 13 } 
+
+  icomLicActBluetoothProvSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Bluetooth provisioning feature,  
+                     active license configuration  mode.
+                     True(1) means the feature is on while false means it is off.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 14 } 
+
+  icomLicActNetworkRedundancySupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Network Redundancy (protection) feature,  
+                     active license configuration  mode.
+                     Applicable to FOSDR, STRN systems at PmP mode,
+                     Omnibas-8w, Omnibas-XR systems at Ptp mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicActConfigEntry 15 } 
+
+  icomLicActDuration OBJECT-TYPE                                      
+      SYNTAX       Integer32(0..1095)                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     active license number of days, until expiration. Maximum duration is 3 years.
+                     The value 0 could be used for non-demo license, that does not actually expire.                
+                   "                                                
+      ::= { icomLicActConfigEntry 16 } 
+        
+  icomLicActDemoPerFeature OBJECT-TYPE                                      
+      SYNTAX    IcomLicDemoBitmap
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Each bit indicated the demo/permanent nature of a feature in the license.
+                     Value 1 relates to 'demo', 0 to 'permanent'.
+                     For each feature set to demo mode the duration till expiration is the one kept in 
+                     icomLicActDuration object.
+                     In case icomLicActType value is other than demo(2), all bits are set to 0.
+                   "                                                
+      ::= { icomLicActConfigEntry 17 }
+        
+  icomLicActExpirationStatus OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     active license expiration indication 
+               
+                   "                                                
+      ::= { icomLicActConfigEntry 18 } 
+                        
+  icomLicActSkTag OBJECT-TYPE                                      
+      SYNTAX       IcomLicSkTagType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Active license condiguration Sk Tag value.                 
+                   "                                                
+      ::= { icomLicActConfigEntry 19 } 
+        
+  icomLicActSecurity OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     active license security feature value 
+               
+                   "                                                
+      ::= { icomLicActConfigEntry 20 } 
+
+  icomLicAct1588BCsynchroSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     1588 BC synchro feature
+                     active license configuration mode.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 21 } 
+
+  icomLicActLag OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     LAG feature
+                     active license configuration mode.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 22 } 
+
+  icomLicActCPRIv3 OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     CPRIv3 feature
+                     active license configuration mode.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 23 } 
+
+  icomLicActCPRIv5 OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     CPRIv5 synchro feature
+                     active license configuration mode.                   
+                   "                                                
+      ::= { icomLicActConfigEntry 24 } 
+                        
+   --========================================================                                      
+   -- ACTIVE LICENSE CAPACITY CONFIGURATION TABLE
+   --=========================================================
+
+   icomLicActOpModeConfTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicActOpModeConfEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the active license configuration parameters 
+          regarding Maximum Capacity feature. These are kept in a different table
+          because they need to be indexed by operation mode, since there might be
+          different values for a PtP, a Hub or a Terminal.
+                   "                                               
+      ::= { icomLicMIBObjects  3 }                                
+                                                                   
+   icomLicActOpModeConfEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicActOpModeConfEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicActConfigIndex, icomLicActOpModeIndex}                             
+      ::={icomLicActOpModeConfTable 1 }                                   
+                                                                   
+    IcomLicActOpModeConfEntry ::= SEQUENCE {                                           
+        icomLicActOpModeIndex  IcomLicOpModeIndex,                
+        icomLicActMaxCapacityAllowed IcomLicCapacityValue,                 
+        icomLicActMaxCapacityStarting IcomLicCapacityValue                 
+        }                                                      
+                                                          
+   icomLicActOpModeIndex   OBJECT-TYPE                  
+      SYNTAX       IcomLicOpModeIndex                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index relating to the Operation mode.     
+                    It is restricted to 3 instances.
+                    In case of DL Capacity indices 2 for Hub, 3 for Terminal are only used.
+                   "      
+      ::= {icomLicActOpModeConfEntry 1}                        
+
+  icomLicActMaxCapacityAllowed OBJECT-TYPE
+       SYNTAX IcomLicCapacityValue
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     DL Maximum Allowed Capacity feature,  
+                     active license configuration  mode.
+                     Applicable at FOSDR, STRN systems.                   
+                   "                                                
+      ::= { icomLicActOpModeConfEntry 2 } 
+
+  icomLicActMaxCapacityStarting OBJECT-TYPE
+      SYNTAX       IcomLicCapacityValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     DL Maximum Starting Capacity feature,  
+                     active license configuration  mode.
+                     Applicable at FOSDR, STRN systems.                   
+                   "                                                
+      ::= { icomLicActOpModeConfEntry 3 } 
+
+   --========================================================                                      
+   -- ACTIVE LICENSE CONFIGURATION MODEM TABLE
+   --=========================================================
+   icomLicActConfModemTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicActConfModemEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the active license configuration parameters of the modems 1..8.  
+                   "                                               
+      ::= { icomLicMIBObjects  4 }                                
+                                                                   
+   icomLicActConfModemEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicActConfModemEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicActConfModemIndex, icomLicActModemOpModeIndex}                             
+      ::={icomLicActConfModemTable 1 }                                   
+                                                                   
+    IcomLicActConfModemEntry ::= SEQUENCE {                              
+                                                                   
+        icomLicActConfModemIndex  Integer32,
+        icomLicActModemOpModeIndex IcomLicOpModeIndex, 
+        icomLicActMaxTxModAllowed IcomLicTxModulationValue,
+        icomLicActMaxTxModStart IcomLicTxModulationValue,
+        icomLicActXpic TruthValue
+      }
+
+   icomLicActConfModemIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..8)                             
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicActConfModemEntry.     
+                    Valid instances are 8, the number of modems."      
+      ::= {icomLicActConfModemEntry 1}             
+                                                          
+   icomLicActModemOpModeIndex   OBJECT-TYPE                  
+      SYNTAX       IcomLicOpModeIndex                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index relating to the Operation mode.     
+                    It is restricted to 3 instances.
+                    Index value 1 for PtP, 2 for PmP are only used for TxModulation      
+                   "      
+      ::= {icomLicActConfModemEntry 2}                        
+
+   icomLicActMaxTxModAllowed OBJECT-TYPE                                      
+      SYNTAX       IcomLicTxModulationValue    
+                            
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Allowed maximum Tx modulation per modem. 
+                     Possible values
+                     For PtP: 256, 512, 1024, 2048, 4096
+                     For PmP:256, 512, 1024
+                   "                                                
+      ::= { icomLicActConfModemEntry 3 } 
+
+   icomLicActMaxTxModStart OBJECT-TYPE                                      
+      SYNTAX       IcomLicTxModulationValue    
+                            
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Starting maximum Tx modulation per modem. 
+                     Possible values
+                     For PtP: 256, 512, 1024, 2048, 4096
+                     For PmP:256, 512, 1024
+                   "                                                
+      ::= { icomLicActConfModemEntry 4 } 
+              
+   icomLicActXpic OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Active license xpic feature feature value. The value is characteristic of a pair 
+                     of modems, i.e. 1-2, 3-4, 5-6, 7-8. For this reason only the entries with icomLicActConfModemIndex
+                     1,3,5,7 are considered valid for each one of the above pairs respectively. The values for
+                     icomLicActConfModemIndex 2,4,6,8 are only dublicates of the ones for 1,3,5,7 respectively. 
+                     The values only have meaning for icomLicActModemOpModeIndex value equal to 1 (Ptp)
+               
+                   "                                                
+      ::= { icomLicActConfModemEntry 5 } 
+                        
+
+   --========================================================                                      
+   -- UPGRADE LICENSE CONFIGURATION TABLE
+   --=========================================================
+   icomLicUpgrConfigTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicUpgrConfigEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the upgrade license configuration parameters.  
+                   "                                               
+      ::= { icomLicMIBObjects  5 }                                
+                                                                   
+   icomLicUpgrConfigEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicUpgrConfigEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicUpgrConfigIndex}                             
+      ::={icomLicUpgrConfigTable 1 }                                   
+                                                                   
+    IcomLicUpgrConfigEntry ::= SEQUENCE {                              
+                             
+        icomLicUpgrConfigIndex  Integer32,                
+        icomLicUpgrSystemType   IcomLicProductTypeValue,  
+        icomLicUpgrSerialID  IcomLicSerialIdType, 
+        icomLicUpgrCustomerID IcomLicCustomerIdType,
+        icomLicUpgrGenDate   DateAndTime,
+        icomLicUpgrType IcomLicType,
+        icomLicUpgrRlaSupport TruthValue,
+        icomLicUpgrEthernetRingSupport TruthValue,
+        icomLicUpgrEthCFMOAM TruthValue,
+        icomLicUpgrEthEFMOAM TruthValue,
+        icomLicUpgrOperationMode IcomLicOpModeBitmap,                 
+        icomLicUpgr1588TCsynchroSupport TruthValue,                 
+        icomLicUpgrBluetoothProvSupport TruthValue,                 
+        icomLicUpgrNetworkRedundancySupport TruthValue,                 
+        icomLicUpgrApplyType IcomLicApplyTypes,                 
+        icomLicUpgrDuration Integer32,
+        icomLicUpgrDemoPerFeature IcomLicDemoBitmap,
+        icomLicUpgrSkTag IcomLicSkTagType,
+        icomLicUpgrSecurity TruthValue,
+        icomLicUpgr1588BCsynchroSupport TruthValue,
+        icomLicUpgrLag TruthValue,
+        icomLicUpgrCPRIv3 TruthValue,
+        icomLicUpgrCPRIv5 TruthValue,
+        icomLicUpgrStartOperationMode IcomLicOpModeBitmap                 
+   }                                                      
+                                                          
+   icomLicUpgrConfigIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..1)                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicUpgrConfigEntry.     
+                    It is restricted to 1 instance."      
+      ::= {icomLicUpgrConfigEntry 1}                        
+                        
+  icomLicUpgrSystemType OBJECT-TYPE                                      
+      SYNTAX       IcomLicProductTypeValue
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license configuration System Product Type value.
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 2 }         
+                        
+  icomLicUpgrSerialID OBJECT-TYPE                                      
+      SYNTAX       IcomLicSerialIdType                                
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license condiguration Serial system ID value.                 
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 3 } 
+              
+  icomLicUpgrCustomerID OBJECT-TYPE                                      
+      SYNTAX       IcomLicCustomerIdType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license configuration customer ID value.                
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 4 } 
+
+  icomLicUpgrGenDate OBJECT-TYPE                                      
+      SYNTAX       DateAndTime                                 
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     upgrade license generation date. 
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 5 } 
+
+   icomLicUpgrType OBJECT-TYPE                                      
+      SYNTAX       IcomLicType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     The type of the license.                   
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 6 } 
+
+  icomLicUpgrRlaSupport OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     RLA support feature,  
+                     upgrade license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 7 } 
+
+ icomLicUpgrEthernetRingSupport OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet Ring support feature,  
+                     upgrade license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 8 } 
+
+  icomLicUpgrEthCFMOAM OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet CFM OAM feature,  
+                     upgrade license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 9 } 
+
+  icomLicUpgrEthEFMOAM OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Ethernet  EFM OAM feature,  
+                     upgrade license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 10 } 
+
+  icomLicUpgrOperationMode OBJECT-TYPE
+      SYNTAX   IcomLicOpModeBitmap 
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Operation Modes allowed. 
+                     Applicable at FOSDR, STRN (except ATM based) and Omnibas systems.            
+                     All bits 0 means not applicable.
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 11 } 
+
+  icomLicUpgr1588TCsynchroSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     1588 TC synchro feature
+                     upgrade license configuration mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 12 } 
+
+  icomLicUpgrBluetoothProvSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Bluetooth provisioning feature,  
+                     upgrade license configuration  mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 13 } 
+
+  icomLicUpgrNetworkRedundancySupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Network Redundancy (protection) feature,  
+                     upgrade license configuration  mode.
+                     Applicable to FOSDR, STRN systems at PmP mode,
+                     Omnibas-8w, Omnibas-XR systems at Ptp mode.
+                     True(1) means the feature is on while false means it is off.                  
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 14 } 
+
+  icomLicUpgrApplyType OBJECT-TYPE                                      
+      SYNTAX       IcomLicApplyTypes                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Determines the way the upgrade license is meant to be applied,
+                     i.e. if it is to be fully applied (standard license) 
+                     or partially, just to upgrade some features (upgrade license).                
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 15 }
+
+  icomLicUpgrDuration OBJECT-TYPE                                      
+      SYNTAX       Integer32                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license number of days, until expiration.                
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 16 }
+        
+  icomLicUpgrDemoPerFeature OBJECT-TYPE                                      
+      SYNTAX    IcomLicDemoBitmap
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Each bit indicated the demo/permanent nature of a feature in the license.
+                     Value 1 relates to 'demo', 0 to 'permanent'.
+                     In case icomLicUpgrType value is other than demo(2), all bits are set to 0.
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 17 }
+      
+  icomLicUpgrSkTag OBJECT-TYPE                                      
+      SYNTAX       IcomLicSkTagType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license configuration Sk Tag value.                 
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 18 } 
+              
+  icomLicUpgrSecurity OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license security feature value 
+               
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 19 } 
+
+  icomLicUpgr1588BCsynchroSupport OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     1588 BC synchro feature
+                     upgrade license configuration mode.                   
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 20 } 
+
+  icomLicUpgrLag OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     LAG feature
+                     upgrade license configuration mode.                   
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 21 } 
+
+  icomLicUpgrCPRIv3 OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     CPRIv3 feature
+                     upgrade license configuration mode.                   
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 22 } 
+
+  icomLicUpgrCPRIv5 OBJECT-TYPE
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     CPRIv5 synchro feature
+                     upgrade license configuration mode.                   
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 23 } 
+ 
+  icomLicUpgrStartOperationMode OBJECT-TYPE
+      SYNTAX   IcomLicOpModeBitmap 
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     The previous - i.e. before a failed upgrade attempt - Operation Modes allowed. 
+                   "                                                
+      ::= { icomLicUpgrConfigEntry 24 } 
+                       
+   --========================================================                                      
+   -- UPGRADE LICENSE CAPACITY CONFIGURATION TABLE
+   --=========================================================
+
+   icomLicUpgrOpModeConfTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicUpgrOpModeConfEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the upgrade license configuration parameters 
+          regarding Maximum Capacity feature. These are kept in a different table
+          because they need to be indexed by operation mode, since there might be
+          different values for a PtP, a Hub or a Terminal.
+                   "                                               
+      ::= { icomLicMIBObjects  6 }                                
+                                                                   
+   icomLicUpgrOpModeConfEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicUpgrOpModeConfEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicUpgrConfigIndex, icomLicUpgrOpModeIndex}                             
+      ::={icomLicUpgrOpModeConfTable 1 }                                   
+                                                                   
+    IcomLicUpgrOpModeConfEntry ::= SEQUENCE {                                           
+        icomLicUpgrOpModeIndex  IcomLicOpModeIndex,                
+        icomLicUpgrMaxCapacityAllowed IcomLicCapacityValue,                 
+        icomLicUpgrMaxCapacityStarting IcomLicCapacityValue                 
+        }                                                      
+                                                          
+   icomLicUpgrOpModeIndex   OBJECT-TYPE                  
+      SYNTAX       IcomLicOpModeIndex                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index relating to the Operation mode.     
+                    It is restricted to 3 instances
+                    For Capacity indices value 2 for Hub, 3 for Terminal are only used"      
+      ::= {icomLicUpgrOpModeConfEntry 1}                        
+
+  icomLicUpgrMaxCapacityAllowed OBJECT-TYPE
+       SYNTAX IcomLicCapacityValue
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     DL Maximum Allowed Capacity feature,  
+                     upgrade license configuration  mode.
+                     Applicable at FOSDR, STRN systems.                   
+                   "                                                
+      ::= { icomLicUpgrOpModeConfEntry 2 } 
+
+  icomLicUpgrMaxCapacityStarting OBJECT-TYPE
+      SYNTAX       IcomLicCapacityValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     DL Maximum Starting Capacity feature,  
+                     upgrade license configuration  mode.
+                     Applicable at FOSDR, STRN systems.                   
+                   "                                                
+      ::= { icomLicUpgrOpModeConfEntry 3 } 
+
+   --========================================================                                      
+   -- UPGRADE LICENSE CONFIGURATION MODEM TABLE
+   --=========================================================
+   icomLicUpgrConfModemTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicUpgrConfModemEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the upgrade license configuration parameters of the modems 1..8.  
+                   "                                               
+      ::= { icomLicMIBObjects  7 }                                
+                                                                   
+   icomLicUpgrConfModemEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicUpgrConfModemEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicUpgrConfModemIndex, icomLicUpgrModemOpModeIndex}                             
+      ::={icomLicUpgrConfModemTable 1 }                                   
+                                                                   
+    IcomLicUpgrConfModemEntry ::= SEQUENCE {                                  
+        icomLicUpgrConfModemIndex  Integer32,
+        icomLicUpgrModemOpModeIndex IcomLicOpModeIndex,
+        icomLicUpgrMaxTxModAllowed IcomLicTxModulationValue,
+        icomLicUpgrMaxTxModStart IcomLicTxModulationValue,
+        icomLicUpgrXpic TruthValue
+      }
+                                                                   
+  icomLicUpgrConfModemIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..8)                                
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicUpgrConfModemEntry.     
+                    Valid instances are 8, the number of modems."      
+      ::= {icomLicUpgrConfModemEntry 1}             
+                                                          
+   icomLicUpgrModemOpModeIndex   OBJECT-TYPE                  
+      SYNTAX       IcomLicOpModeIndex                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index relating to the Operation mode.     
+                    It is restricted to 3 instances
+                    Index value 1 for PtP, 2 for PmP are only used for TxModulation"      
+      ::= {icomLicUpgrConfModemEntry 2}                        
+
+   icomLicUpgrMaxTxModAllowed OBJECT-TYPE                                      
+      SYNTAX       IcomLicTxModulationValue    
+                            
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Allowed maximum Tx modulation per modem. 
+                     Possible values
+                     For PtP: 256, 512, 1024, 2048, 4096
+                     For PmP:256, 512, 1024
+                   "                                                
+      ::= { icomLicUpgrConfModemEntry 3 } 
+
+   icomLicUpgrMaxTxModStart OBJECT-TYPE                                      
+      SYNTAX       IcomLicTxModulationValue    
+                            
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Starting maximum Tx modulation per modem. 
+                     Possible values
+                     For PtP: 256, 512, 1024, 2048, 4096
+                     For PmP:256, 512, 1024
+                   "                                                
+      ::= { icomLicUpgrConfModemEntry 4 } 
+              
+  icomLicUpgrXpic OBJECT-TYPE                                      
+      SYNTAX       TruthValue                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     Upgrade license xpic feature feature value. The value is characteristic of a pair 
+                     of modems, i.e. 1-2, 3-4, 5-6, 7-8. For this reason only the entries with icomLicUpgrConfModemIndex
+                     1,3,5,7 are considered valid for each one of the above pairs respectively. The values for
+                     icomLicUpgrConfModemIndex 2,4,6,8 are only dublicates of the ones for 1,3,5,7 respectively. 
+                     The values only have meaning for icomLicUpgrModemOpModeIndex value equal to 1 (Ptp)
+               
+                   "                                                
+      ::= { icomLicUpgrConfModemEntry 5 } 
+                        
+   --========================================================                                      
+   -- HISTORY LICENSE CONFIGURATION TABLE
+   --=========================================================
+
+   icomLicHistConfigTable OBJECT-TYPE                                  
+      SYNTAX       SEQUENCE OF   IcomLicHistConfigEntry                
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  "                                               
+          This table models the history of licenses kept.  
+                   "                                               
+      ::= { icomLicMIBObjects  8 }                                
+                                                                   
+   icomLicHistConfigEntry OBJECT-TYPE                                  
+      SYNTAX       IcomLicHistConfigEntry                              
+      MAX-ACCESS   not-accessible                                  
+      STATUS       current                                         
+      DESCRIPTION  " "                                             
+      INDEX  {icomLicHistConfigIndex}                             
+      ::={icomLicHistConfigTable 1 }                                   
+                                                                   
+    IcomLicHistConfigEntry ::= SEQUENCE {                                           
+        icomLicHistConfigIndex  Integer32,                
+        icomLicHistSystemType   IcomLicProductTypeValue,  
+        icomLicHistSerialID  IcomLicSerialIdType,
+        icomLicHistCustomerID IcomLicCustomerIdType,
+        icomLicHistGenDate   DateAndTime,
+        icomLicHistType IcomLicType,
+        icomLicHistVersion IcomLicVersionType,
+        icomLicHistState IcomLicState,
+        icomLicHistFailureReason IcomLicFailureReason,
+        icomLicHistStateDate DateAndTime,
+        icomLicHistFilename IcomLicFilenameType                             
+        }                                                      
+                                                          
+   icomLicHistConfigIndex   OBJECT-TYPE                  
+      SYNTAX       Integer32(1..16)                              
+      MAX-ACCESS   not-accessible                         
+      STATUS       current                                
+      DESCRIPTION  "Index of the IcomLicHistConfigEntry.     
+                    It is restricted to 16 instances, i.e. the latest 16 licenses are kept."      
+      ::= {icomLicHistConfigEntry 1}                        
+
+  icomLicHistSystemType OBJECT-TYPE                                      
+      SYNTAX       IcomLicProductTypeValue
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  " 
+                     History license configuration System Product Type value. 
+                   "                                                
+      ::= { icomLicHistConfigEntry 2 }         
+                        
+  icomLicHistSerialID OBJECT-TYPE                                      
+      SYNTAX       IcomLicSerialIdType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     History license condiguration Serial system ID value.                 
+                   "                                                
+      ::= { icomLicHistConfigEntry 3 } 
+              
+  icomLicHistCustomerID OBJECT-TYPE                                      
+      SYNTAX       IcomLicCustomerIdType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     History license configuration customer ID value.                
+                   "                                                
+      ::= { icomLicHistConfigEntry 4 } 
+
+  icomLicHistGenDate OBJECT-TYPE                                      
+      SYNTAX       DateAndTime                                
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     History license generation date. 
+                   "                                                
+      ::= { icomLicHistConfigEntry 5 } 
+
+   icomLicHistType OBJECT-TYPE                                      
+      SYNTAX       IcomLicType                                  
+      MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "                                                
+                     The type of the license.                   
+                   "                                                
+      ::= { icomLicHistConfigEntry 6 } 
+
+   icomLicHistVersion OBJECT-TYPE 
+      SYNTAX       IcomLicVersionType
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION  " 
+                    History license version value.
+                   "
+      ::= { icomLicHistConfigEntry 7 }                   
+
+   icomLicHistState OBJECT-TYPE                                      
+      SYNTAX       IcomLicState 
+     MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "    
+                    Upgrade state of license in history.
+                    Describes the state to which ended up the license, which can be either that
+                    it was used successfully, either that its upgrade failed, either that it expired etc.
+                   "               
+      ::= { icomLicHistConfigEntry 8}                         
+          
+
+   icomLicHistFailureReason OBJECT-TYPE                                      
+      SYNTAX       IcomLicFailureReason 
+     MAX-ACCESS   read-only                                        
+      STATUS       current                                          
+      DESCRIPTION  "    
+                     The value of this object has an actual meaning only in the case that the icomLicHistState
+                     object is equal to 'upgradeFailed'. In this case it contains the reason of the failure.
+                     Otherwise its value must be 'noFailure'.
+                   "               
+      ::= { icomLicHistConfigEntry 9 }                         
+          
+   icomLicHistStateDate OBJECT-TYPE 
+      SYNTAX       DateAndTime
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION  " 
+                    The date and time that the event related to icomLicHistState took place.
+                    I.e. when the license upgrade was completed or failed or when the license expired etc.
+                    "
+      ::= { icomLicHistConfigEntry 10 }                   
+
+
+   icomLicHistFilename OBJECT-TYPE                                       
+     SYNTAX    IcomLicFilenameType                             
+     MAX-ACCESS   read-only                                         
+     STATUS       current                                           
+     DESCRIPTION  "                                                 
+                   The history license filename (full path),                         
+                   i.e. where the actual encoded file is stored.                         
+                   The filename format is
+                        Mac_SystemType_GenerationDate.license
+                   where
+                   Mac - the mac address
+                   SystemType - the system type number as shown in IcomLicProductTypeValue textual Convention
+                   GenerationDate - in dd/mm/yy format.
+                  "
+      ::= { icomLicHistConfigEntry 11 }                   
+     
+  --================================================================ 
+   -- CONFORMANCE INFORMATION
+   --================================================================
+   icomLicMIBConfGroups      OBJECT IDENTIFIER ::= { icomLicMIBConformance 1 }
+
+   icomLicMIBCompliances OBJECT IDENTIFIER ::= { icomLicMIBConformance 2 }
+
+   -- compliance statements
+   licenseMibCompliance MODULE-COMPLIANCE
+   STATUS  current
+   DESCRIPTION
+         "The compliance statement for license entities"
+      MODULE  -- this module
+      MANDATORY-GROUPS {icomLicUpgrGroup, 
+                        icomLicActConfigGroup,
+                        icomLicActOpModeConfGroup,
+                        icomLicActConfModemGroup,
+                        icomLicUpgrConfigGroup,
+                        icomLicUpgrOpModeConfGroup,
+                        icomLicUpgrConfModemGroup,
+                        icomLicHistConfigGroup,
+                        licNotificationObjectsGroup}
+      ::= { icomLicMIBCompliances 1 }
+
+   -- units of conformance   
+
+   icomLicUpgrGroup OBJECT-GROUP
+   OBJECTS { --icomLicUpgrEntryIndex,
+            icomLicUpgrVersion, 
+            icomLicUpgrFilename,
+            icomLicUpgrState,
+            icomLicUpgrFailureReason
+   }
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing upgrade license information"
+      ::= { icomLicMIBConfGroups 1 }        
+
+
+   icomLicActConfigGroup OBJECT-GROUP
+   OBJECTS {--icomLicActConfigIndex 
+            icomLicActSystemType,
+            icomLicActSerialID,
+            icomLicActCustomerID,
+            icomLicActGenDate,   
+            icomLicActType,
+            icomLicActVersion,
+            icomLicActRlaSupport,
+            icomLicActEthernetRingSupport,
+            icomLicActEthCFMOAM,
+            icomLicActEthEFMOAM,
+            icomLicActOperationMode,                 
+            icomLicAct1588TCsynchroSupport,                 
+            icomLicActBluetoothProvSupport,                 
+            icomLicActNetworkRedundancySupport,                 
+            icomLicActDuration,
+            icomLicActDemoPerFeature,
+            icomLicActExpirationStatus,
+            icomLicActSkTag,
+            icomLicActSecurity,
+            icomLicAct1588BCsynchroSupport,
+            icomLicActLag,
+            icomLicActCPRIv3,
+            icomLicActCPRIv5
+            }
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing active license configuration information"
+      ::= { icomLicMIBConfGroups 2 }
+      
+   icomLicActOpModeConfGroup OBJECT-GROUP                                           
+   OBJECTS {--icomLicActOpModeIndex,                
+            icomLicActMaxCapacityAllowed,                 
+            icomLicActMaxCapacityStarting}                                                      
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing active license capacity configuration information"
+      ::= { icomLicMIBConfGroups 3 }
+      
+   icomLicActConfModemGroup OBJECT-GROUP
+   OBJECTS {--icomLicActConfModemIndex
+            --icomLicActModemOpModeIndex  
+               icomLicActMaxTxModAllowed,
+               icomLicActMaxTxModStart,
+               icomLicActXpic}
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing active license configuration modem information"
+      ::= { icomLicMIBConfGroups 4 }        
+
+   icomLicUpgrConfigGroup OBJECT-GROUP
+   OBJECTS { --icomLicUpgrConfigIndex  
+                   icomLicUpgrSystemType,
+                   icomLicUpgrSerialID,
+                   icomLicUpgrCustomerID,
+                   icomLicUpgrGenDate, 
+                   icomLicUpgrType,
+                   icomLicUpgrRlaSupport,
+                   icomLicUpgrEthernetRingSupport, 
+                   icomLicUpgrEthCFMOAM,
+                   icomLicUpgrEthEFMOAM,
+                   icomLicUpgrOperationMode,                 
+                   icomLicUpgr1588TCsynchroSupport,                 
+                   icomLicUpgrBluetoothProvSupport,                 
+                   icomLicUpgrNetworkRedundancySupport,                 
+                   icomLicUpgrApplyType,                 
+                   icomLicUpgrDuration,
+                   icomLicUpgrDemoPerFeature,
+                   icomLicUpgrSkTag,
+                   icomLicUpgrSecurity,
+                   icomLicUpgr1588BCsynchroSupport,
+                   icomLicUpgrLag,
+                   icomLicUpgrCPRIv3,
+                   icomLicUpgrCPRIv5,
+                   icomLicUpgrStartOperationMode
+                   }
+   STATUS        current
+   DESCRIPTION
+           "A collection of objects providing upgrade license configuration information"
+   ::= { icomLicMIBConfGroups 5 }
+      
+   icomLicUpgrOpModeConfGroup OBJECT-GROUP                                           
+   OBJECTS {--icomLicUpgrOpModeIndex,                
+            icomLicUpgrMaxCapacityAllowed,                 
+            icomLicUpgrMaxCapacityStarting}                                                      
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing upgrade license capacity configuration information"
+      ::= { icomLicMIBConfGroups 6 }
+      
+   icomLicUpgrConfModemGroup OBJECT-GROUP
+   OBJECTS {--icomLicUpgrConfModemIndex
+            --icomLicUpgrModemOpModeIndex  
+               icomLicUpgrMaxTxModAllowed,
+               icomLicUpgrMaxTxModStart,
+               icomLicUpgrXpic}
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing upgrade license configuration modem information"
+      ::= { icomLicMIBConfGroups 7 }   
+      
+   icomLicHistConfigGroup OBJECT-GROUP
+   OBJECTS {--icomLicHistConfigIndex 
+            icomLicHistSystemType,
+            icomLicHistSerialID,
+            icomLicHistCustomerID,
+            icomLicHistGenDate,   
+            icomLicHistType,
+            icomLicHistVersion,
+            icomLicHistState,
+            icomLicHistFailureReason,
+            icomLicHistStateDate,
+            icomLicHistFilename}
+   STATUS  current
+   DESCRIPTION
+         "A collection of objects providing history license information"
+      ::= { icomLicMIBConfGroups 8 }
+
+   licNotificationObjectsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS { icomLicActExpStatusNotification,
+                 icomLicActProtConflictNotification,
+                 icomLicActOpModeConflictNotification,
+                 icomLicActExpWarning,
+                 icomLicDefaultWarning
+           }
+   STATUS        current
+   DESCRIPTION
+           "The collection of notifications related to License Objects"
+   ::= { icomLicMIBConfGroups 9 }
+
+   --================================================================
+   --================================================================
+   END

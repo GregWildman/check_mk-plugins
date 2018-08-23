@@ -1,0 +1,862 @@
+ICOM-BRG-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+        Integer32, Unsigned32, Counter64
+                FROM SNMPv2-SMI
+        TruthValue, TestAndIncr, MacAddress
+                FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        IEEE8021BridgePortNumber
+                FROM IEEE8021-TC-MIB
+        ieee8021BridgeBaseComponentId, ieee8021BridgeBasePort
+                FROM IEEE8021-BRIDGE-MIB
+        VlanId
+                FROM Q-BRIDGE-MIB
+        intracom
+                FROM ICOM-SMI;
+
+icomBrgMIB MODULE-IDENTITY
+    LAST-UPDATED        "201404070000Z"     -- 07 April 2014
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        bridge capabilities for bridged networks. The MIB includes the
+        following proprietary objects:
+
+        1.  icomBrgCfgTable
+        2.  icomBrgStatsTable (placeholder)
+        3.  icomBrgPortCfgTable (placeholder)
+        4.  icomBrgPortStatsTable
+        5.  icomBrgFdbResetSpinLock
+        6.  icomBrgFdbResetTable
+        7.  icomBrgSecCfgTable
+        8.  icomBrgSecStatsTable (placeholder)
+        9.  icomBrgPortSecCfgTable
+        10. icomBrgPortSecStatsTable
+        11. icomBrgSpoofingAlert
+       "
+
+-- Revision History
+
+    REVISION            "201404070000Z"     -- 07 April 2014
+    DESCRIPTION
+       "
+        This is the initial version of this MIB.
+       "
+
+::= { intracom 66 }
+
+--
+-- Object groups
+--
+icomBrgMIBObjPrefix    OBJECT IDENTIFIER ::= { icomBrgMIB 1 }
+icomBrgMIBObjects      OBJECT IDENTIFIER ::= { icomBrgMIBObjPrefix 1 }
+icomBrgMIBSecObjects   OBJECT IDENTIFIER ::= { icomBrgMIBObjPrefix 2 }
+
+-- -------------------------------------------------------------
+-- icomBrgCfgTable
+-- -------------------------------------------------------------
+
+icomBrgCfgTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains proprietary bridge configuration.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomBrgMIBObjects 1 }
+
+icomBrgCfgEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgCfgTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId }
+    ::= { icomBrgCfgTable 1 }
+
+IcomBrgCfgEntry ::= SEQUENCE {
+    icomBrgCfgMaxFrameSize                      INTEGER,
+    icomBrgCfgFdbAgingMode                      INTEGER,
+    icomBrgCfgFdbAgingTime                      Integer32
+}
+
+icomBrgCfgMaxFrameSize OBJECT-TYPE
+    SYNTAX      INTEGER {
+            standard    (1),
+            babyJumbo   (2),
+            jumbo       (3)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the maximum frame size.
+
+        If value is set to 'standard(1)', then the maximum frame size
+        is set to 1526 bytes (to cope with QinQ).
+
+        If value is set to 'babyJumbo(2)', then the maximum frame size
+        is set to 1600 bytes.
+
+        If value is set to 'jumbo(3)', then the maximum frame size is
+        set to 9600 bytes.
+       "
+    DEFVAL { babyJumbo }
+    ::= { icomBrgCfgEntry 1 }
+
+icomBrgCfgFdbAgingMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+            bridgeScope (1),
+            fdbScope    (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the FDB aging mode.
+
+        If value is set to 'bridgeScope(1)', then the timeout period for
+        aging out dynamically-learned forwarding information is specified
+        by icomBrgCfgFdbAgingTime, and applies to all filtering databases
+        of this bridge.
+
+        If value is set to 'fdbScope(2)', then the timeout period for
+        aging out dynamically-learned forwarding information is specified
+        by ieee8021QBridgeFdbAgingTime, so as to enable each filtering
+        database to use its own aging timeout value.
+       "
+    DEFVAL { bridgeScope }
+    ::= { icomBrgCfgEntry 2 }
+
+icomBrgCfgFdbAgingTime OBJECT-TYPE
+    SYNTAX      Integer32 (10..1000000)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the timeout period in seconds for aging
+        out dynamically-learned forwarding information.
+
+        The object is only applicable if the icomBrgCfgFdbAgingMode has
+        been set to the value 'bridgeScope(1)'.
+       "
+    DEFVAL { 300 }
+    ::= { icomBrgCfgEntry 3 }
+
+-- -------------------------------------------------------------
+-- icomBrgStatsTable
+-- -------------------------------------------------------------
+
+--icomBrgStatsTable      OBJECT IDENTIFIER ::= { icomBrgMIBObjects 2 }
+
+-- -------------------------------------------------------------
+-- icomBrgPortCfgTable
+-- -------------------------------------------------------------
+
+--icomBrgPortCfgTable    OBJECT IDENTIFIER ::= { icomBrgMIBObjects 3 }
+
+-- -------------------------------------------------------------
+-- icomBrgPortStatsTable
+-- -------------------------------------------------------------
+
+icomBrgPortStatsTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgPortStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table provides proprietary bridge port statistics.
+       "
+    ::= { icomBrgMIBObjects 4 }
+
+icomBrgPortStatsEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgPortStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgPortStatsTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId,
+                  ieee8021BridgeBasePort
+                }
+    ::= { icomBrgPortStatsTable 1 }
+
+IcomBrgPortStatsEntry ::= SEQUENCE {
+    icomBrgPortStatsReset                       TruthValue
+}
+
+icomBrgPortStatsReset OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enable resetting the L2 statistics of this port.
+
+        If value is set to 'true(1)', then the L2 statistics are reset.
+
+        If value is set to 'false(2)', then no action is performed.
+       "
+    ::= { icomBrgPortStatsEntry 1 }
+
+-- -------------------------------------------------------------
+-- icomBrgFdbResetTable
+-- -------------------------------------------------------------
+
+icomBrgFdbResetSpinLock OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "An advisory lock used to allow cooperating SNMP managers to
+        coordinate their use of the set operation while accessing the
+        icomBrgFdbResetTable.
+       "
+    ::= { icomBrgMIBObjects 5 }
+
+icomBrgFdbResetTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgFdbResetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table enables resetting dynamic bridge FDB entries.
+
+        The FDB reset process entails following steps:
+
+        1) SNMP GET both icomBrgFdbResetSpinLock and
+           icomBrgFdbResetStatus objects (in same SNMP PDU).
+        2) Check if the value of icomBrgFdbResetStatus is false.
+           - if not, wait for x seconds, and go to step 1 above.
+           - if yes, save the value of icomBrgFdbResetSpinLock and
+             go to step 3 below.
+        3) Change icomBrgFdbResetStatus value from false to
+           true, to ensure that no other management entity will use the
+           service. In order to not disturb a possible other NMS, do this
+           by sending an SNMP SET for both icomBrgFdbResetSpinLock and
+           icomBrgFdbResetStatus objects (in the same SNMP PDU, and make
+           sure that icomBrgFdbResetSpinLock is the first VB). For the
+           icomBrgFdbResetSpinLock VB, use the value that you obtained
+           in step 1. This ensures that two cooperating NMSes will not
+           step on each others toes.
+           If this step fails, then go back to step 1.
+        4) Setup the different criteria for the FDB entries to be
+           reset (e.g., port, VLAN, MAC address etc), except do not set
+           icomBrgFdbResetMask.
+        5) Set icomBrgFdbResetMask to indicate the applicable criteria
+           (if any) to match the FDB entries that should be
+           deleted. Return status indicates if the operation was
+           successful.
+       "
+    ::= { icomBrgMIBObjects 6 }
+
+icomBrgFdbResetEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgFdbResetEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgFdbResetTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId }
+    ::= { icomBrgFdbResetTable 1 }
+
+IcomBrgFdbResetEntry ::= SEQUENCE {
+    icomBrgFdbResetStatus                       TruthValue,
+    icomBrgFdbResetPort                         IEEE8021BridgePortNumber,
+    icomBrgFdbResetVlanId                       VlanId,
+    icomBrgFdbResetAddress                      MacAddress,
+    icomBrgFdbResetMask                         BITS
+}
+
+icomBrgFdbResetStatus OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "A boolean flag used to indicate whether the FDB reset operation
+        is currently in use.
+
+        If value is 'true(1)', then the FDB reset operation is currently
+        in use by another SNMP manager.
+
+        If value is 'false(2)', then the FDB reset operation is available
+        to be used.
+       "
+    ::= { icomBrgFdbResetEntry 1 }
+
+icomBrgFdbResetPort OBJECT-TYPE
+    SYNTAX      IEEE8021BridgePortNumber
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the bridge port to match when deleting
+        FDB entries.
+
+        The object is taken into account when matching FDB entries to
+        delete only if the corresponding bit in icomBrgFdbResetMask
+        is set.
+       "
+    ::= { icomBrgFdbResetEntry 2 }
+
+icomBrgFdbResetVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the VLAN id to match when deleting FDB
+        entries.
+
+        The object is taken into account when matching FDB entries to
+        delete only if the corresponding bit in icomBrgFdbResetMask
+        is set.
+       "
+    ::= { icomBrgFdbResetEntry 3 }
+
+icomBrgFdbResetAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object indicates the MAC address to match when deleting
+        FDB entries.
+
+        The object is taken into account when matching FDB entries to
+        delete only if the corresponding bit in icomBrgFdbResetMask
+        is set.
+       "
+    ::= { icomBrgFdbResetEntry 4 }
+
+icomBrgFdbResetMask OBJECT-TYPE
+    SYNTAX      BITS {
+            matchPort   (0),
+            matchVid    (1),
+            matchMac    (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object provides the matching criteria for an FDB reset
+        operation. Use of the BITS pseudotype enables specifying zero,
+        one, or more matching criteria for the FDB reset operation.
+
+        If bit 'matchPort(0)' is set, then FDB entries concerning the
+        bridge port specified by icomBrgFdbResetPort are to be reset.
+
+        If bit 'matchVid(1)' is set, then FDB entries concerning the
+        VLAN id specified by icomBrgFdbResetVlanId are to be reset.
+
+        If bit 'matchMac(2)' is set, then FDB entries concerning the MAC
+        address specified by icomBrgFdbResetAddress are to be reset.
+
+        Note that any bit which is not set, effectively acts as a wildcard
+        (i.e., 'any port', 'any VLAN', 'any MAC address' etc.), thus
+        enabling the deletion of multiple/all dynamic FDB entries.
+       "
+    ::= { icomBrgFdbResetEntry 5 }
+
+-- -------------------------------------------------------------
+-- icomBrgSecCfgTable
+-- -------------------------------------------------------------
+
+icomBrgSecCfgTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgSecCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains proprietary bridge security configuration.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomBrgMIBSecObjects 1 }
+
+icomBrgSecCfgEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgSecCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgSecCfgTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId }
+    ::= { icomBrgSecCfgTable 1 }
+
+IcomBrgSecCfgEntry ::= SEQUENCE {
+    icomBrgSecCfgAntispoofing                TruthValue,
+    icomBrgSecCfgSpoofingAlert               TruthValue,
+    icomBrgSecCfgSpoofingAlertInterval       Unsigned32
+}
+
+icomBrgSecCfgAntispoofing OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the anti-spoofing control for this
+        bridge. If anti-spoofing is enabled, then the bridge discards
+        incoming packets with source MAC address & VLAN id already
+        learned from another input port.
+
+        If value is set to 'true(1)', then anti-spoofing control is
+        enabled for this bridge.
+
+        If value is set to 'false(2)', then anti-spoofing control is
+        disabled for this bridge.
+       "
+    DEFVAL { true }
+    ::= { icomBrgSecCfgEntry 1 }
+
+icomBrgSecCfgSpoofingAlert OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the emission of a spoofing alert
+        notification whenever a spoofing event occurs, and assuming
+        that anti-spoofing control has been enabled for this bridge
+        (see icomBrgSecCfgAntispoofing).
+
+        If value is set to 'true(1)', then spoofing notifications are
+        enabled for this bridge.
+
+        If value is set to 'false(2)', then spoofing notifications are
+        disabled for this bridge.
+       "
+    DEFVAL { false }
+    ::= { icomBrgSecCfgEntry 2 }
+
+icomBrgSecCfgSpoofingAlertInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the shortest time interval in seconds
+        between the generation of successive icomBrgSpoofingAlert
+        notifications for this bridge.
+       "
+    DEFVAL { 0 }
+    ::= { icomBrgSecCfgEntry 3 }
+
+-- -------------------------------------------------------------
+-- icomBrgSecStatsTable
+-- -------------------------------------------------------------
+
+--icomBrgSecStatsTable   OBJECT IDENTIFIER ::= { icomBrgMIBSecObjects 2 }
+
+-- -------------------------------------------------------------
+-- icomBrgPortSecCfgEntry
+-- -------------------------------------------------------------
+
+icomBrgPortSecCfgTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgPortSecCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table contains proprietary bridge port security
+        configuration.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomBrgMIBSecObjects 3 }
+
+icomBrgPortSecCfgEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgPortSecCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgPortSecCfgTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId,
+                  ieee8021BridgeBasePort
+                }
+    ::= { icomBrgPortSecCfgTable 1 }
+
+IcomBrgPortSecCfgEntry ::= SEQUENCE {
+    icomBrgPortSecCfgStormControl               TruthValue,
+    icomBrgPortSecCfgStormControlMcRate         Unsigned32,
+    icomBrgPortSecCfgStormControlBcRate         Unsigned32,
+    icomBrgPortSecCfgSplitHorizon               TruthValue,
+    icomBrgPortSecCfgSplitHorizonGroupId        Integer32,
+    icomBrgPortSecCfgBlockFlood                 TruthValue,
+    icomBrgPortSecCfgMacSecurity                TruthValue,
+    icomBrgPortSecCfgMacSecureMaxAddr           Unsigned32,
+    icomBrgPortSecCfgFdbLearning                TruthValue
+}
+
+icomBrgPortSecCfgStormControl OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the storm control for this bridge
+        port. If enabled, then the incoming rate of multicast/broadcast
+        traffic is monitored for this port. The storm control enforces
+        rate thresholds by blocking and restoring the forwarding of
+        multicast or broadcast packets, except for BPDUs that must not
+        be blocked.
+
+        If value is set to 'true(1)', then storm control is enabled for
+        this bridge port.
+
+        If value is set to 'false(2)', then storm control is disabled
+        for this bridge port.
+       "
+    DEFVAL { false }
+    ::= { icomBrgPortSecCfgEntry 1 }
+
+icomBrgPortSecCfgStormControlMcRate OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..10000000)
+    UNITS       "kbps"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the storm control block threshold rate
+        for incoming multicast traffic of this port.
+       "
+    DEFVAL { 1000000 }
+    ::= { icomBrgPortSecCfgEntry 2 }
+
+icomBrgPortSecCfgStormControlBcRate OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..10000000)
+    UNITS       "kbps"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the storm control block threshold rate
+        for incoming broadcast traffic of this port.
+       "
+    DEFVAL { 1000000 }
+    ::= { icomBrgPortSecCfgEntry 3 }
+
+icomBrgPortSecCfgSplitHorizon OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the split horizon for this bridge
+        port, i.e., the ability to relay packets between the ports that
+        belong to the same group. If enabled, then packets are blocked
+        between the ports that belong to the same group. This feature
+        is useful to implement port isolation.
+
+        If value is set to 'true(1)', then split horizon is enabled for
+        this bridge port.
+
+        If value is set to 'false(2)', then split horizon is disabled
+        for this bridge port.
+       "
+    DEFVAL { false }
+    ::= { icomBrgPortSecCfgEntry 4 }
+
+icomBrgPortSecCfgSplitHorizonGroupId OBJECT-TYPE
+    SYNTAX      Integer32 (0..100)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the split horizon group id for this
+        bridge port.
+       "
+    DEFVAL { 0 }
+    ::= { icomBrgPortSecCfgEntry 5 }
+
+icomBrgPortSecCfgBlockFlood OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the flooding of unknown traffic. If
+        enabled, then the unknown unicast/multicast traffic received at
+        this port is blocked (dropped). If disabled, then the unknown
+        unicast/multicast traffic will be broadcast to all bridge ports
+        that are members of the specific VLAN.
+
+        If value is set to 'true(1)', then flood blocking is enabled
+        for this bridge port.
+
+        If value is set to 'false(2)', then flood blocking is disabled
+        for this bridge port.
+       "
+    DEFVAL { false }
+    ::= { icomBrgPortSecCfgEntry 6 }
+
+icomBrgPortSecCfgMacSecurity OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the MAC security feature. If
+        enabled, the number of FDB entries associated with this bridge
+        port is monitored, and if it is equal to the limit imposed by
+        icomBrgPortSecCfgMacSecureMaxAddr, then the incoming packets
+        are dropped.
+
+        If value is set to 'true(1)', then MAC security is enabled for
+        this bridge port.
+
+        If value is set to 'false(2)', then MAC security is disabled
+        for this bridge port.
+       "
+    DEFVAL { false }
+    ::= { icomBrgPortSecCfgEntry 7 }
+
+icomBrgPortSecCfgMacSecureMaxAddr OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..1024)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the MAC address limit for the MAC security
+        feature.
+       "
+    DEFVAL { 1024 }
+    ::= { icomBrgPortSecCfgEntry 8 }
+
+icomBrgPortSecCfgFdbLearning OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables/disables the learning of dynamic filtering
+        information for this bridge port.
+
+        If value is set to 'true(1)', then learning of filtering
+        information is enabled for this bridge port.
+
+        If value is set to 'false(2)', then learning of filtering
+        information is disabled for this bridge port.
+       "
+    DEFVAL { true }
+    ::= { icomBrgPortSecCfgEntry 9 }
+
+-- -------------------------------------------------------------
+-- icomBrgPortSecStatsTable
+-- -------------------------------------------------------------
+
+icomBrgPortSecStatsTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomBrgPortSecStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table provides proprietary bridge port security statistics.
+       "
+    ::= { icomBrgMIBSecObjects 4 }
+
+icomBrgPortSecStatsEntry    OBJECT-TYPE
+    SYNTAX      IcomBrgPortSecStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomBrgPortSecStatsTable.
+       "
+    INDEX       { ieee8021BridgeBaseComponentId,
+                  ieee8021BridgeBasePort
+                }
+    ::= { icomBrgPortSecStatsTable 1 }
+
+IcomBrgPortSecStatsEntry ::= SEQUENCE {
+    icomBrgPortSecStatsSpoofingAddress          MacAddress,
+    icomBrgPortSecStatsSpoofingVlanId           VlanId,
+    icomBrgPortSecStatsSpoofingEvents           Counter64,
+    icomBrgPortSecStatsStormControlMcDrops      Counter64,
+    icomBrgPortSecStatsStormControlBcDrops      Counter64,
+    icomBrgPortSecStatsSplitHorizonDrops        Counter64,
+    icomBrgPortSecStatsBlockFloodDrops          Counter64,
+    icomBrgPortSecStatsMacSecurityDrops         Counter64
+}
+
+icomBrgPortSecStatsSpoofingAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the source MAC address of the last spoofing
+        event on this port.
+       "
+    ::= { icomBrgPortSecStatsEntry 1 }
+
+icomBrgPortSecStatsSpoofingVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the VLAN id of the last spoofing event on
+        this port.
+       "
+    ::= { icomBrgPortSecStatsEntry 2 }
+
+icomBrgPortSecStatsSpoofingEvents OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Events"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of spoofing events that have
+        occurred on this port.
+       "
+    ::= { icomBrgPortSecStatsEntry 3 }
+
+icomBrgPortSecStatsStormControlMcDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of multicast packets that have
+        been dropped on this port due to storm control.
+       "
+    ::= { icomBrgPortSecStatsEntry 4 }
+
+icomBrgPortSecStatsStormControlBcDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of broadcast packets that have
+        been dropped on this port due to storm control.
+       "
+    ::= { icomBrgPortSecStatsEntry 5 }
+
+icomBrgPortSecStatsSplitHorizonDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of packets that have been dropped
+        on this port due to split horizon.
+       "
+    ::= { icomBrgPortSecStatsEntry 6 }
+
+icomBrgPortSecStatsBlockFloodDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of packets that have been dropped
+        on this port due to flood blocking of unknown packets.
+       "
+    ::= { icomBrgPortSecStatsEntry 7 }
+
+icomBrgPortSecStatsMacSecurityDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the number of packets that have been dropped
+        on this port due to MAC security.
+       "
+    ::= { icomBrgPortSecStatsEntry 8 }
+
+--
+--  Notifications groups
+--
+icomBrgMIBNotifObjects OBJECT IDENTIFIER ::= { icomBrgMIB 0 }
+
+icomBrgSpoofingAlert NOTIFICATION-TYPE
+    OBJECTS {
+        icomBrgPortSecStatsSpoofingAddress,
+        icomBrgPortSecStatsSpoofingVlanId
+    }
+    STATUS      current
+    DESCRIPTION
+       "This trap reports a spoofing event. It may be generated only
+        if icomBrgSecCfgAntispoofing and icomBrgSecCfgSpoofingAlert are
+        both enabled.
+
+        The trap provides the bridge port, source MAC address & VLAN
+        id of the last spoofing event.
+       "
+    ::= { icomBrgMIBNotifObjects 1 }
+
+--
+-- Conformance information
+--
+
+icomBrgMIBConformance OBJECT IDENTIFIER ::= { icomBrgMIB 2 }
+icomBrgMIBCompliances OBJECT IDENTIFIER ::= { icomBrgMIBConformance 1 }
+icomBrgMIBGroups      OBJECT IDENTIFIER ::= { icomBrgMIBConformance 2 }
+
+--
+-- Compliance statements
+--
+icomBrgMIBCompliance MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+       "The compliance statement for icomBrgMIB.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        icomBrgMIBGroup,
+        icomBrgMIBNotifGroup
+    }
+    ::= { icomBrgMIBCompliances 1 }
+
+icomBrgMIBGroup OBJECT-GROUP
+    OBJECTS {
+        icomBrgCfgMaxFrameSize,
+        icomBrgCfgFdbAgingMode,
+        icomBrgCfgFdbAgingTime,
+
+        icomBrgPortStatsReset,
+
+        icomBrgFdbResetSpinLock,
+
+        icomBrgFdbResetStatus,
+        icomBrgFdbResetPort,
+        icomBrgFdbResetVlanId,
+        icomBrgFdbResetAddress,
+        icomBrgFdbResetMask,
+
+        icomBrgSecCfgAntispoofing,
+        icomBrgSecCfgSpoofingAlert,
+        icomBrgSecCfgSpoofingAlertInterval,
+
+        icomBrgPortSecCfgStormControl,
+        icomBrgPortSecCfgStormControlMcRate,
+        icomBrgPortSecCfgStormControlBcRate,
+        icomBrgPortSecCfgSplitHorizon,
+        icomBrgPortSecCfgSplitHorizonGroupId,
+        icomBrgPortSecCfgBlockFlood,
+        icomBrgPortSecCfgMacSecurity,
+        icomBrgPortSecCfgMacSecureMaxAddr,
+        icomBrgPortSecCfgFdbLearning,
+
+        icomBrgPortSecStatsSpoofingAddress,
+        icomBrgPortSecStatsSpoofingVlanId,
+        icomBrgPortSecStatsSpoofingEvents,
+        icomBrgPortSecStatsStormControlMcDrops,
+        icomBrgPortSecStatsStormControlBcDrops,
+        icomBrgPortSecStatsSplitHorizonDrops,
+        icomBrgPortSecStatsBlockFloodDrops,
+        icomBrgPortSecStatsMacSecurityDrops
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomBrgMIB."
+    ::= { icomBrgMIBGroups 1 }
+
+icomBrgMIBNotifGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        icomBrgSpoofingAlert
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of notifications for icomBrgMIB.
+        "
+    ::= { icomBrgMIBGroups 2 }
+
+END

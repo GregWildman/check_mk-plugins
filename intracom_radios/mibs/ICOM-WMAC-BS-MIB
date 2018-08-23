@@ -1,0 +1,5027 @@
+
+ICOM-WMAC-BS-MIB DEFINITIONS ::= BEGIN
+
+-- =========================================================
+-- ICOM WMAC MIB MODULE
+-- =========================================================
+                                             
+IMPORTS                                         
+   MODULE-IDENTITY, OBJECT-TYPE,                   
+   NOTIFICATION-TYPE,             
+   Integer32, Counter64, Unsigned32, TimeTicks                                     
+       FROM SNMPv2-SMI                   -- [RFC2578]
+                                 
+   RowStatus, MacAddress, TimeStamp, TruthValue, TEXTUAL-CONVENTION,
+   TimeInterval
+       FROM SNMPv2-TC                    -- [RFC2579] 
+                                  
+   MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP                              
+       FROM SNMPv2-CONF                  -- [RFC2580]
+
+   SnmpAdminString                   
+       FROM SNMP-FRAMEWORK-MIB           -- [RFC3411]
+
+   InetAddress, InetAddressType
+       FROM INET-ADDRESS-MIB             -- [RFC4001]
+
+   WmacIpv6FlowLabel,icomWmacCmnServFlowOperStatus,icomWmacCmnServFlowFailReason
+       FROM ICOM-WMAC-CMN-MIB
+
+   IcomDateTimeType
+        FROM ICOM-PERFHIST-TC-MIB
+
+   intracom                                        
+       FROM ICOM-SMI;                            
+   
+
+icomWmacBsMIB MODULE-IDENTITY
+ 
+   LAST-UPDATED "201601210800Z"  -- dtzou: January 21, 2016
+   ORGANIZATION "Intracom Wireless Group"
+   CONTACT-INFO
+   "   
+       EMail: 
+       Phone: 
+       Co-editor:
+       EMail:
+       Phone:
+   "
+
+DESCRIPTION 
+    "This MIB module defines managed objects for the configuration of the 
+    Wireless MAC (WMAC) from the Base Station's side."
+
+REVISION  "201601210800Z"  -- dtzou: January 21, 2016
+ DESCRIPTION
+     "Add icomWmacBsTsStatusDistance in icomWmacBsTsStatusEntry 
+     "
+
+REVISION  "201512090800Z"  -- dtzou: December 9, 2015
+ DESCRIPTION
+     "Add icomWmacBsTsCfgDefMngSFMinRate and icomWmacBsTsCfgDefMngSFMaxRate
+      in icomWmacBsTsCfgEntry 
+     "
+     
+REVISION  "201511030800Z"  -- dtzou: November 3, 2015
+ DESCRIPTION
+     "Add icomWmacBsTsCfgDefAnySFDlMaxQueueDepth0 in icomWmacBsTsCfgEntry 
+     "
+
+REVISION  "201507140800Z"  -- dtzou: July 14, 2015
+ DESCRIPTION
+     "MaxQueueDepth0..7 default value changed 
+     "
+     
+REVISION  "201506090800Z"  -- dtzou: June 09, 2015
+ DESCRIPTION
+     "o icomWmacBsTsStatusAddressType added in icomWmacBsTsStatusEntry.
+      
+      o Move icomWmacBsTsCfgIpAddress,icomWmacBsTsCfgIpNetmask,icomWmacBsTsCfgMngVlanId
+        in icomWmacBsTsStatusEntry  
+     "
+
+REVISION  "201504170800Z"  -- dtzou: April 17, 2015
+ DESCRIPTION
+     "icomWmacBsTsCfgIpAddress, icomWmacBsTsCfgIpNetmask, icomWmacBsTsCfgMngVlanId
+      added in icomWmacBsTsCfgEntry
+     "
+     
+REVISION  "201501290900Z"  -- dtzou: Jan. 29, 2015
+ DESCRIPTION
+     "Counters icomWmacBsTsStatsAggrDlPduBitRate and icomWmacBsTsStatsAggrUlPduBitRate
+      added in icomWmacBsTsStatsEntry
+     "
+
+REVISION  "201501140900Z"  -- dtzou: Jan. 14, 2015
+ DESCRIPTION
+     "New state added in icomWmacBsTsStatusConnectivity.
+     "
+
+REVISION  "201501070900Z"  -- dtzou: Jan. 07, 2015
+ DESCRIPTION
+     "Default values for icomWmacBsTsCfgReportingInterval and
+      icomWmacBsCfgMonCheckTimer, changed.
+     "
+
+REVISION  "201411060900Z"  -- dtzou: Nov. 06, 2014
+ DESCRIPTION
+     "Maximum number of TSs increased to 30.
+     "
+
+REVISION  "201410160900Z"  -- dtzou: Oct. 16, 2014
+ DESCRIPTION
+     "o New icomWmacBsTsCfgUiucLimit added in icomWmacBsTsCfgEntry.
+
+      o Range and defval for icomWmacBsSfProvServClassTrafficPriority 
+        changed. 
+  
+      o New defvals for icomWmacBsTsCfgMaxDiuc, icomWmacBsTsCfgMinUlTxPower, 
+        icomWmacBsTsCfgMaxUlTxPower.
+
+      o Maximum number of TSs increased to 28.
+     "
+
+REVISION  "201410150900Z"  -- dtzou: Oct. 15, 2014
+ DESCRIPTION
+     "icomWmacBsTsCfgDefAnySFStatus added in icomWmacBsTsCfgEntry.      
+     "
+
+REVISION  "201410130900Z"  -- dtzou: Oct. 13, 2014
+ DESCRIPTION
+     "New icomWmacBsSfProvServFlowSfQosPrioMapProfEntry added.
+      New MOs added in icomWmacBsSfProvServFlowProfEntry
+     "
+
+REVISION  "201410080900Z"  -- dtzou: Oct. 08, 2014
+ DESCRIPTION
+     "Counters icomWmacBsTsStatsAggrDlSduBitRate and icomWmacBsTsStatsAggrUlSduBitRate
+      added in icomWmacBsTsStatsEntry
+     "
+
+REVISION  "201410020900Z"  -- dtzou: Oct. 02, 2014
+ DESCRIPTION
+     "MaxQueueDepth default values changed.
+     "
+
+REVISION  "201407300900Z"  -- dtzou: July 30, 2014
+ DESCRIPTION
+     "Maximum number of TSs increased to 14.
+     "
+
+REVISION  "201405260900Z"  -- dtzou: May 26, 2014
+ DESCRIPTION
+     "o SF Profiles reverse mapping tables added
+ 
+      o Profile names' length changed and default values removed
+     "
+
+REVISION  "201405230900Z"  -- dtzou: May 23, 2014
+ DESCRIPTION
+     "Default values for icomWmacBsSfProvServClassProfileName,icomWmacBsSfProvServClassSchedulingType,
+      icomWmacBsSfProvServFlowProfName, icomWmacBsSfProvClsRuleProfileName, icomWmacBsSfProvServFlowProfDirection
+      removed   
+     "
+
+REVISION  "201404250900Z"  -- dtzou: April 25, 2014
+ DESCRIPTION
+     "Change default values for icomWmacBsSfProvServClassSchedulingType, 
+      icomWmacBsSfProvServClassTrafficPriority, icomWmacBsSfProvServClassMinReservedRate,
+      icomWmacBsSfProvServClassMaxSustainedRate
+     "
+
+REVISION  "201404240900Z"  -- dtzou: April 24, 2014
+ DESCRIPTION
+     "icomWmacBsTsStatusDiuc, icomWmacBsTsStatusUiuc, icomWmacBsTsDlPhyDiuc 
+      and icomWmacBsTsUlPhyUiuc MOs use WmacDlPhysicalMode and WmacUlPhysicalMode 
+      textual convention 
+     "
+
+REVISION  "201404080900Z"  -- dtzou: April 8, 2014
+ DESCRIPTION
+     "New icomWmacBsTsCfgResetTs added in icomWmacBsTsCfgEntry
+     "
+
+REVISION  "201404070900Z"  -- dtzou: April 7, 2014
+ DESCRIPTION
+     "Range restriction corrected for icomWmacBsSfProvClsEntry MOs
+     "
+      
+REVISION  "201404040900Z"  -- dtzou: April 4, 2014
+ DESCRIPTION
+     "Updated description of icomWmacBsSfProvServFlowProfMandatory 
+     "
+
+REVISION  "201403210900Z"  -- dtzou: March 21, 2014
+ DESCRIPTION
+     "o Updated description of icomWmacBsTsStatusConnectivity and 
+        icomWmacBsTsStatusMonitoring
+
+      o New default values for icomWmacBsSfProvClsEntry
+     "
+
+REVISION  "201403200900Z"  -- dtzou: March 20, 2014
+ DESCRIPTION
+     "Maximum number of TSs reduced to 7.
+     "
+
+REVISION  "201402140900Z"  -- dtzou: February 14, 2014
+ DESCRIPTION
+     "Default values added for icomWmacBsTsCfgReportingInterval 
+	  New state added for icomWmacBsTsStatusMonitoring.
+     "
+
+REVISION  "201401310000Z"  -- dtzou: January 31, 2014
+ DESCRIPTION
+     "Default values added for icomWmacBsCfgEntry.
+     "
+
+REVISION  "201401270000Z"  -- dtzou: January 27, 2014
+ DESCRIPTION
+     "Default values changed for icomWmacBsSfProvServClassReqTxPolicy and 
+      icomWmacBsSfProvServClassMaxSustainedRate.
+     "
+
+REVISION  "201312180000Z"  -- dtzou: December 18, 2013
+ DESCRIPTION
+     "o Maximum length for profile names is 32 octets. Default values changed
+
+      o Value range added and description updated for icomWmacBsTsCfgMinUiuc, 
+        icomWmacBsTsCfgMaxUiuc, icomWmacBsTsCfgMinDiuc, icomWmacBsTsCfgMaxDiuc
+
+      o Default value for icomWmacBsTsCfgMacAddress removed
+
+      o icomWmacTsId renamed to icomWmacBsTsId
+
+      o icomWmacBsSfProvServProfTable renamed to icomWmacBsSfProvServBundleProfTable
+        including all the related MOs
+
+      o icomWmacBsTsDlPhyResetStats, icomWmacBsTsUlPhyResetStats MOs added
+        in icomWmacBsTsDlPhyStatsEntry and icomWmacBsTsUlPhyStatsEntry respectively
+
+      o Valid value range added and description updated for icomWmacBsTsUlPhyUiuc
+        and icomWmacBsTsDlPhyDiuc
+
+      o icomWmacBsSfProvTsEntry modified to allow 1-to-many relationship between 
+        TS and service (bundle) profile
+
+      o Default value for icomWmacBsSfProvServFlowProfMandatory changed to false
+
+      o icomWmacBsSfProvServClassTable renamed to icomWmacBsSfProvServClassProfTable
+
+      o icomWmacBsSfProvClsRuleTable renamed to icomWmacBsSfProvClsRuleProfTable
+ 
+      o Default value for icomWmacBsSfProvServFlowProfClsRuleProfId changed to 1
+
+      o Default value for icomWmacBsSfProvServFlowProfServClassProfId changed to 1  
+     "
+
+REVISION  "201311200000Z"  -- dtzou: November 20, 2013
+ DESCRIPTION
+     "Updated icomWmacBsSfProvServFlowProfTable and icomWmacBsSfProvServClassTable."
+
+REVISION  "201310140000Z"
+ DESCRIPTION
+     "Initial version."
+
+::= { intracom 112 }
+
+icomWmacBsNotifications     OBJECT IDENTIFIER ::= { icomWmacBsMIB 0 }
+icomWmacBsObjects           OBJECT IDENTIFIER ::= { icomWmacBsMIB 1 }
+icomWmacBsPerfObjects       OBJECT IDENTIFIER ::= { icomWmacBsMIB 2 }
+icomWmacBsConformance       OBJECT IDENTIFIER ::= { icomWmacBsMIB 3 }
+
+icomWmacBsCompliances       OBJECT IDENTIFIER ::= { icomWmacBsConformance 1 }
+icomWmacBsGroups            OBJECT IDENTIFIER ::= { icomWmacBsConformance 2 }
+
+
+WmacClassifierBitMap ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION     
+        "A bit of of this object is set to 1 if the parameter
+        indicated by the comment was present in the classifier
+        encoding, and 0 otherwise.
+        Note: that BITS are encoded most significant bit first,
+             so that if e.g. bits 6 and 7 are set, this object is
+             encoded as the octet string '030000'H."
+    SYNTAX     BITS { destMacAddr(0),
+                      srcMacAddr(1),
+                      ethernetProtocol(2),
+                      userPriority(3),
+                      cvlanId(4),
+                      svlanId(5),
+                      ipTos(6),
+                      ipSrcAddr(7),
+                      ipDestAddr(8),
+                      ipProtocol(9),
+                      mplsExp(10),  
+                      ipv6SrcAddr(11),
+                      ipv6DestAddr(12),
+                      ipv6TrafficClass(13),
+                      ipv6FlowLabel(14),
+                      srcPort(15),
+                      destPort(16)
+                     }  
+
+WmacSchedulingType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "The scheduling service provided by a service class 
+             for a service flow. If the parameter is omitted from
+             a QOS Parameter Set, this object takes the value of
+             bestEffort(1)."
+        SYNTAX      INTEGER { bestEffort(1),
+                              nonRealTimePollingService(2),
+                              realTimePollingService(3),
+                              unsolicitedGrantService(4)}
+
+WmacDlPhysicalMode::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "The allowed value of downlink physical modes."
+        SYNTAX      INTEGER { mode4qamlow(1),
+                              mode4qammed(2),
+                              mode4qamhigh(3),
+                              mode16qamlow(4),
+                              mode16qamhigh(5),
+                              mode64qam(6),
+                              mode128qam(7),
+                              mode256qam(8),
+                              mode512qam(9),
+                              mode1024qamlow(10),
+                              mode1024qamhigh(11)  
+                            }
+
+WmacUlPhysicalMode::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "The allowed value of uplink physical modes."
+        SYNTAX      INTEGER { mode4qamlow(1),
+                              mode4qammed(2),
+                              mode4qamhigh(3),
+                              mode16qamlow(4),
+                              mode16qamhigh(5),
+                              mode64qam(6),
+                              mode128qam(7),
+                              mode256qam(8)
+                            }
+--=========================================================  
+-- Base Station SNMP Trap objects
+--=========================================================
+icomWmacBsTraps        OBJECT IDENTIFIER ::= { icomWmacBsNotifications 0 }
+icomWmacBsTrapControl  OBJECT IDENTIFIER ::= { icomWmacBsNotifications 1 }
+
+icomWmacBsTsStatusNotificationTrap NOTIFICATION-TYPE
+    OBJECTS {icomWmacBsTsStatusConnectivity, icomWmacBsTsStatusInfo}
+    STATUS current
+    DESCRIPTION
+        "This trap reports the status of a Terminal Station (e.g. connected, disconnected)."
+    ::= { icomWmacBsTraps 1 }
+
+icomWmacBsTsPhyModeChangeTrap  NOTIFICATION-TYPE
+    OBJECTS {icomWmacBsTsStatusDiuc, icomWmacBsTsStatusUiuc}
+    STATUS current
+    DESCRIPTION
+        "This trap reports the PHY mode change of a Terminal Station."
+    ::= { icomWmacBsTraps 2 }
+
+icomWmacBsSfOperStatusNotificationTrap  NOTIFICATION-TYPE
+    OBJECTS {icomWmacCmnServFlowOperStatus, icomWmacCmnServFlowFailReason}
+    STATUS current
+    DESCRIPTION
+        "This trap reports the operational state of a service flow
+        (as described in the state machine of icomWmacCmnServFlowOperStatus) and 
+		the reason of change."
+    ::= { icomWmacBsTraps 3 }
+
+--=========================================================  
+-- Trap Control
+--=========================================================
+icomWmacBsTrapControlRegister    OBJECT-TYPE
+    SYNTAX BITS { icomWmacBsTsStatusNotification(0),
+                  icomWmacBsTsPhyModeChange(1),
+                  icomWmacBsSfOperStatusNotification(2)
+                }
+	MAX-ACCESS read-write
+	STATUS current
+	DESCRIPTION
+        "The object is used to enable Base Station traps. From left to right, the 
+         set bit indicates the corresponding trap is enabled."
+	::= { icomWmacBsTrapControl 1 }
+
+--=========================================================                                      
+-- Wmac Bs Configuration Table
+--=========================================================
+icomWmacBsCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides the parameters to configure the 
+        Base Station."    
+    ::= { icomWmacBsObjects  1 }
+
+icomWmacBsCfgEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacBsId } 
+    ::={ icomWmacBsCfgTable 1 }
+
+IcomWmacBsCfgEntry ::= SEQUENCE { 
+    icomWmacBsId                            Integer32,                  
+    icomWmacBsCfgMaximumRange               Integer32,
+    icomWmacBsCfgRngInvTimer                Unsigned32,
+    icomWmacBsCfgRngChRepTimer              Unsigned32,
+    icomWmacBsCfgRngInvRetries              Unsigned32,
+    icomWmacBsCfgRngAdjustRetries           Unsigned32,
+    icomWmacBsCfgRngInvSuccessRetries       Unsigned32,
+    icomWmacBsCfgMonChRepReqRetries         Unsigned32,
+    icomWmacBsCfgMonChRepTimer              Unsigned32,
+    icomWmacBsCfgMonCheckTimer              Unsigned32,
+    icomWmacBsCfgRngReceivedPowerTarget     Integer32,
+    icomWmacBsCfgRngReceivedPowerThres      Integer32,
+    icomWmacBsCfgRngTimingThres             Integer32, 
+    icomWmacBsCfgRngFrequencyThres          Integer32,
+    icomWmacBsCfgSfRspTimer                 Unsigned32,
+    icomWmacBsCfgSfReqRetries               Unsigned32, 
+    icomWmacBsCfgSfHoldTimer                Unsigned32
+}
+
+icomWmacBsId   OBJECT-TYPE 
+    SYNTAX       Integer32 (1)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Base Station ID. It is restricted to 1 instance." 
+    ::= { icomWmacBsCfgEntry 1 }
+
+icomWmacBsCfgMaximumRange  OBJECT-TYPE 
+    SYNTAX       Integer32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum coverage range of the BS." 
+    ::= { icomWmacBsCfgEntry 2 }
+
+icomWmacBsCfgRngInvTimer   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    UNITS        "milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Time to wait after an unanswered Ranging Invitation, before sending
+        the next one." 
+    DEFVAL {500}
+    ::= { icomWmacBsCfgEntry 3 }
+
+icomWmacBsCfgRngChRepTimer    OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    UNITS        "milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Time to wait for a Channel Report message, after the ranging
+        procedure succeeds." 
+    DEFVAL {1000}
+    ::= { icomWmacBsCfgEntry 4 }
+
+icomWmacBsCfgRngInvRetries   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum number of unanswered Ranging Invitations (ranging retries)."
+    DEFVAL {10} 
+    ::= { icomWmacBsCfgEntry 5 }
+
+icomWmacBsCfgRngAdjustRetries   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum number of adjustments sent to a TS during ranging."
+    DEFVAL {10} 
+    ::= { icomWmacBsCfgEntry 6 }
+
+icomWmacBsCfgRngInvSuccessRetries   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum number of Ranging Invitations with status success
+        sent to the TS after ranging succeeds." 
+    DEFVAL {5}
+    ::= { icomWmacBsCfgEntry 7 }
+
+icomWmacBsCfgMonChRepReqRetries   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum Number of Channel Report Request messages sent to the TS
+        during monitoring operations." 
+    DEFVAL {5}
+    ::= { icomWmacBsCfgEntry 8 }
+
+icomWmacBsCfgMonChRepTimer    OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    UNITS        "milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Time to wait for a Channel Report as a response to a Channel Report
+        Request during monitoring operations."
+    DEFVAL {5000} 
+    ::= { icomWmacBsCfgEntry 9 }
+
+icomWmacBsCfgMonCheckTimer    OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "When monitoring is enabled, the BS will check for received Channel
+        Reports at T5 x RI."
+    DEFVAL {5} 
+    ::= { icomWmacBsCfgEntry 10 }
+
+icomWmacBsCfgRngReceivedPowerTarget   OBJECT-TYPE 
+    SYNTAX       Integer32
+    UNITS        "0.5 dBm"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Received power target during ranging."
+    DEFVAL {10} 
+    ::= { icomWmacBsCfgEntry 11 }
+
+icomWmacBsCfgRngReceivedPowerThres   OBJECT-TYPE 
+    SYNTAX       Integer32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "If the difference between the measured received power of a ranging burst 
+        (RNG Channel Report) and the Ranging Receive Power Target is less 
+        (in absolute value) than this threshold, the burst is considered acceptable 
+        in terms of power (i.e. no further power adjustments will be announced)." 
+    DEFVAL {4}
+    ::= { icomWmacBsCfgEntry 12 }
+
+icomWmacBsCfgRngTimingThres   OBJECT-TYPE 
+    SYNTAX       Integer32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "If the measured timing offset of a ranging burst (RNG Channel Report)
+        is less (in absolute value) than this threshold, the burst is considered 
+        acceptable in terms of timing (i.e. no further timing adjustments will be 
+        announced)."
+    DEFVAL {2} 
+    ::= { icomWmacBsCfgEntry 13 }
+
+icomWmacBsCfgRngFrequencyThres   OBJECT-TYPE 
+    SYNTAX       Integer32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "If the measured frequency offset of a ranging burst (RNG Channel
+        Report) is less (in absolute value) than this threshold, the
+        burst is considered acceptable in terms of frequency (i.e. no
+        frequency adjustment will be announced)." 
+    DEFVAL {50}
+    ::= { icomWmacBsCfgEntry 14 }
+
+icomWmacBsCfgSfRspTimer    OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    UNITS        "milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Time to wait for an SF management response message after sending a
+        corresponding request message."
+    DEFVAL {1000} 
+    ::= { icomWmacBsCfgEntry 15 }
+
+icomWmacBsCfgSfReqRetries    OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Maximum number of unanswered SF management request messages sent
+        to the TS."
+    DEFVAL {5} 
+    ::= { icomWmacBsCfgEntry 16 }
+
+icomWmacBsCfgSfHoldTimer   OBJECT-TYPE 
+    SYNTAX       Unsigned32
+    UNITS        "milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Time to wait for any pending messages to be sent, before closing 
+        an SF transaction (add, remove, modify)." 
+    DEFVAL {5000}
+    ::= { icomWmacBsCfgEntry 17 }
+
+--=========================================================                                      
+-- Wmac Bs Statistics Table
+--=========================================================
+icomWmacBsStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table models the Base Station statistics."    
+    ::= { icomWmacBsObjects  2 }
+
+icomWmacBsStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    AUGMENTS  { icomWmacBsCfgEntry } 
+    ::={ icomWmacBsStatsTable 1 }
+
+IcomWmacBsStatsEntry ::= SEQUENCE {
+    icomWmacBsStatsReset     TruthValue,
+    icomWmacBsStatsGbiSent   OCTET STRING
+}
+
+icomWmacBsStatsReset    OBJECT-TYPE 
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION  
+        "Reset BS statistics." 
+    DEFVAL { false }
+    ::= { icomWmacBsStatsEntry 1 }
+
+icomWmacBsStatsGbiSent OBJECT-TYPE 
+    SYNTAX       OCTET STRING
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  
+        "General Broadcast Information messages sent." 
+    ::= { icomWmacBsStatsEntry 2 }
+
+--=========================================================                                      
+-- Wmac BsTs Configuration Table
+--=========================================================
+icomWmacBsTsCfgTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsTsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides BS-side TS-specific configuration
+        parameters."    
+    ::= { icomWmacBsObjects  3 }
+
+icomWmacBsTsCfgEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsTsCfgEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacBsId, icomWmacBsTsId } 
+    ::={ icomWmacBsTsCfgTable 1 }
+
+IcomWmacBsTsCfgEntry ::= SEQUENCE {                   
+    icomWmacBsTsId                          Integer32,
+    icomWmacBsTsCfgAdminStatus              INTEGER,
+    icomWmacBsTsCfgMacAddress               MacAddress,
+    icomWmacBsTsCfgMinDiuc                  WmacDlPhysicalMode,     
+    icomWmacBsTsCfgMaxDiuc                  WmacDlPhysicalMode,
+    icomWmacBsTsCfgMinUiuc                  WmacUlPhysicalMode,
+    icomWmacBsTsCfgMaxUiuc                  WmacUlPhysicalMode,
+    icomWmacBsTsCfgMinUlTxPower             Integer32,
+    icomWmacBsTsCfgMaxUlTxPower             Integer32, 
+    icomWmacBsTsCfgReportingInterval        Integer32,
+    icomWmacBsTsCfgResetTs                  TruthValue,
+    icomWmacBsTsCfgDefAnySFStatus           TruthValue,
+    icomWmacBsTsCfgUiucLimit                TruthValue,
+    icomWmacBsTsCfgRowStatus                RowStatus,
+    icomWmacBsTsCfgDefAnySFDlMaxQueueDepth0 Integer32,
+    icomWmacBsTsCfgDefMngSFMinRate          Integer32,
+    icomWmacBsTsCfgDefMngSFMaxRate          Integer32
+}
+
+icomWmacBsTsId   OBJECT-TYPE 
+    SYNTAX       Integer32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Terminal Station ID." 
+    ::= { icomWmacBsTsCfgEntry 1 }
+
+icomWmacBsTsCfgAdminStatus    OBJECT-TYPE 
+    SYNTAX                    INTEGER { down(1),
+                                        up(2) }
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION  
+        "TS administration status (values UP/DOWN). Changing status to DOWN for
+        a connected TS, also disconnects the TS." 
+    DEFVAL { down }
+    ::= { icomWmacBsTsCfgEntry 2 }
+
+icomWmacBsTsCfgMacAddress  OBJECT-TYPE 
+    SYNTAX                 MacAddress
+    MAX-ACCESS             read-create
+    STATUS                 current
+    DESCRIPTION  
+        "TS IEEE 802.3 MAC address used for its air interface."
+    ::= { icomWmacBsTsCfgEntry 3 }
+
+icomWmacBsTsCfgMinDiuc  OBJECT-TYPE 
+    SYNTAX              WmacDlPhysicalMode
+    MAX-ACCESS          read-create
+    STATUS              current
+    DESCRIPTION  
+        "Minimum allowed DL physical mode." 
+    DEFVAL { mode4qamlow } 
+    ::= { icomWmacBsTsCfgEntry 4 }
+
+icomWmacBsTsCfgMaxDiuc  OBJECT-TYPE 
+    SYNTAX              WmacDlPhysicalMode
+    MAX-ACCESS          read-create
+    STATUS              current
+    DESCRIPTION  
+        "Maximum allowed DL physical mode."  
+    DEFVAL { mode1024qamhigh }
+    ::= { icomWmacBsTsCfgEntry 5 }
+
+icomWmacBsTsCfgMinUiuc  OBJECT-TYPE 
+    SYNTAX              WmacUlPhysicalMode
+    MAX-ACCESS          read-create
+    STATUS              current
+    DESCRIPTION  
+        "Minimum allowed UL physical mode." 
+    DEFVAL { mode4qamlow }
+    ::= { icomWmacBsTsCfgEntry 6 }
+
+icomWmacBsTsCfgMaxUiuc  OBJECT-TYPE 
+    SYNTAX              WmacUlPhysicalMode
+    MAX-ACCESS          read-create
+    STATUS              current
+    DESCRIPTION  
+        "Maximum allowed UL physical mode." 
+    DEFVAL { mode256qam }
+    ::= { icomWmacBsTsCfgEntry 7 }
+
+icomWmacBsTsCfgMinUlTxPower  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    UNITS                    "0.01 dBm"
+    MAX-ACCESS               read-create
+    STATUS                   current
+    DESCRIPTION  
+        "Minimum allowed UL Tx power."
+    DEFVAL { -6000 } 
+    ::= { icomWmacBsTsCfgEntry 8 }
+
+icomWmacBsTsCfgMaxUlTxPower  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    UNITS                    "0.01 dBm"
+    MAX-ACCESS               read-create
+    STATUS                   current
+    DESCRIPTION  
+        "Maximum allowed UL Tx power."
+    DEFVAL { 3000 } 
+    ::= { icomWmacBsTsCfgEntry 9 }
+
+icomWmacBsTsCfgReportingInterval OBJECT-TYPE 
+    SYNTAX                       Integer32
+    UNITS                        "milliseconds"
+    MAX-ACCESS                   read-create
+    STATUS                       current
+    DESCRIPTION  
+        "Reporting Interval (RI) is announced to the TS within a Channel Report
+        Request message. RI may be altered per user request."
+    DEFVAL { 500 } 
+    ::= { icomWmacBsTsCfgEntry 10 }
+
+icomWmacBsTsCfgResetTs          OBJECT-TYPE 
+    SYNTAX                      TruthValue
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object is used to reset the Terminal Station remotely from
+        the Base Station."
+    DEFVAL { false }
+    ::= { icomWmacBsTsCfgEntry 11 }
+
+icomWmacBsTsCfgDefAnySFStatus     OBJECT-TYPE 
+    SYNTAX                      TruthValue
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object enables/disables the administrative status of the 
+         default service flows def-any-sf-ul and def-any-sf-dl of the TS."
+    DEFVAL { true }
+    ::= { icomWmacBsTsCfgEntry 12 }
+
+icomWmacBsTsCfgUiucLimit        OBJECT-TYPE 
+    SYNTAX                      TruthValue
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object enables/disables limiting the UIUC based on the 
+         DIUC of the TS."
+    DEFVAL { false }
+    ::= { icomWmacBsTsCfgEntry 13 }
+
+icomWmacBsTsCfgRowStatus        OBJECT-TYPE 
+    SYNTAX                      RowStatus
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table."
+    ::= { icomWmacBsTsCfgEntry 14 }
+
+icomWmacBsTsCfgDefAnySFDlMaxQueueDepth0 OBJECT-TYPE
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs 
+        (packets) for transmit queue 0 of the default service flow 
+        def-any-sf-dl."
+    DEFVAL { 256 }
+    ::= { icomWmacBsTsCfgEntry 15 }
+
+icomWmacBsTsCfgDefMngSFMinRate  OBJECT-TYPE    
+    SYNTAX                      Integer32 (512000..4000000)
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION
+        "Sets minimum reserved rate in bps for default MNG service
+         flows def-mng-sf-dl and def-mng-sf-ul."
+    DEFVAL { 512000 }
+    ::= { icomWmacBsTsCfgEntry 16 }
+
+icomWmacBsTsCfgDefMngSFMaxRate OBJECT-TYPE
+    SYNTAX                     Integer32 (512000..4000000)
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION
+        "Sets maximum sustained rate in bps for default MNG service
+        flows def-mng-sf-dl and def-mng-sf-ul." 
+    DEFVAL { 2000000 }
+    ::= { icomWmacBsTsCfgEntry 17 }
+    
+--=========================================================                                      
+-- Wmac BsTs Status Table
+--=========================================================
+icomWmacBsTsStatusTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsTsStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides BS-side TS-specific current 
+        status parameters."    
+    ::= { icomWmacBsObjects  4 }
+
+icomWmacBsTsStatusEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsTsStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    AUGMENTS  { icomWmacBsTsCfgEntry } 
+    ::={ icomWmacBsTsStatusTable 1 }
+
+IcomWmacBsTsStatusEntry ::= SEQUENCE {                   
+    icomWmacBsTsStatusConnectivity        INTEGER,
+    icomWmacBsTsStatusMonitoring          INTEGER,
+    icomWmacBsTsStatusUpTime              TimeTicks,     
+    icomWmacBsTsStatusLastEntryTime       TimeStamp,
+    icomWmacBsTsStatusDiuc                WmacDlPhysicalMode,
+    icomWmacBsTsStatusUiuc                WmacUlPhysicalMode,
+    icomWmacBsTsStatusUlTxPower           Integer32,
+    icomWmacBsTsStatusUlTxPowerHeadroom   Integer32, 
+    icomWmacBsTsStatusDlRssi              Integer32,
+    icomWmacBsTsStatusDlSnr               Integer32,
+    icomWmacBsTsStatusDlFecStress         Integer32,
+    icomWmacBsTsStatusUlRssi              Integer32,
+    icomWmacBsTsStatusUlSnr               Integer32,
+    icomWmacBsTsStatusUlFecStress         Integer32,
+    icomWmacBsTsStatusInfo                INTEGER,
+    icomWmacBsTsStatusAddressType         InetAddressType, 
+    icomWmacBsTsStatusIpAddress           InetAddress,
+    icomWmacBsTsStatusIpNetmask           InetAddress,
+    icomWmacBsTsStatusMngVlanId           Unsigned32,
+    icomWmacBsTsStatusDistance            Integer32
+}
+
+icomWmacBsTsStatusConnectivity   OBJECT-TYPE 
+    SYNTAX                       INTEGER { initialization(1),
+                                           ranging(2),
+                                           rangingSuccess(3),
+                                           removeReq(4),
+                                           connected(5),
+                                           ranged(6),
+                                           invalid(7)        
+                                         }
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Connectivity state. Valid values are:
+            DOWN (INIT): TS is disconnected
+            RANGING: TS is being ranged
+            RANGING SUCCESS: Ranging procedure successful
+            REM_REQ: A TS remove procedure is under way
+            CONNECTED: TS is connected
+            STATE_RANGED: TS is connected but has not reached
+                          specified PHY modulations
+            STATE_INVALID: Invalid state." 
+    ::= { icomWmacBsTsStatusEntry 1 }
+
+icomWmacBsTsStatusMonitoring   OBJECT-TYPE 
+    SYNTAX                     INTEGER { initialization(1),
+                                         startReq(2),
+                                         stopReq(3), 
+                                         active(4),
+                                         monitoringFail(5),
+                                         invalidState(6)
+                                       }
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "When icomWmacBsTsCfgReportingInterval is non-zero, the BS will establish monitoring
+        with the TS. Note that if monitoring fails for any reason, the BS will drop
+        the TS. In the standard case were the TS remains in the BS client (TS) list,
+        the TS will be re-ranged. Monitoring states are:
+            INIT: Monitoring disabled.
+            START_REQ: BS has requested monitoring from the TS
+            STOP_REQ: The BS has requested from the TS to stop sending monitoring messages.
+            ACTIVE: BS is regularly receiving monitoring messages from the TS.
+            MONITORING_FAIL: Monitoring fails. 
+            STATE_INVALID: Invalid state. " 
+    ::= { icomWmacBsTsStatusEntry 2 }
+
+icomWmacBsTsStatusUpTime   OBJECT-TYPE 
+    SYNTAX                 TimeTicks
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Up time since the last time the TS entered the network. Available only in
+        CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 3 }
+
+icomWmacBsTsStatusLastEntryTime  OBJECT-TYPE 
+    SYNTAX                       TimeStamp
+    MAX-ACCESS                   read-only
+    STATUS                       current
+    DESCRIPTION  
+        "Last time the TS entered the network." 
+    ::= { icomWmacBsTsStatusEntry 4 }
+
+icomWmacBsTsStatusDiuc   OBJECT-TYPE 
+    SYNTAX               WmacDlPhysicalMode
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Currently used DL physical mode. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 5 }
+
+icomWmacBsTsStatusUiuc   OBJECT-TYPE 
+    SYNTAX               WmacUlPhysicalMode
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Currently used UL physical mode. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 6 }
+
+icomWmacBsTsStatusUlTxPower   OBJECT-TYPE 
+    SYNTAX                    Integer32
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Current UL Tx power as reported by the TS. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 7 }
+
+icomWmacBsTsStatusUlTxPowerHeadroom  OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Current UL Tx power headroom as reported by the TS. Available only in
+        CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 8 }
+
+icomWmacBsTsStatusDlRssi OBJECT-TYPE 
+    SYNTAX               Integer32
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Current DL RSSI as reported by the TS. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 9 }
+
+icomWmacBsTsStatusDlSnr  OBJECT-TYPE 
+    SYNTAX               Integer32
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Current DL SNR as reported by the TS. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 10 }
+
+icomWmacBsTsStatusDlFecStress  OBJECT-TYPE 
+    SYNTAX                     Integer32
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Current DL FEC stress as reported by the TS. Available only in CONNECTED
+        state." 
+    ::= { icomWmacBsTsStatusEntry 11 }
+
+icomWmacBsTsStatusUlRssi OBJECT-TYPE 
+    SYNTAX               Integer32
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Current UL RSSI. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 12 }
+
+icomWmacBsTsStatusUlSnr  OBJECT-TYPE 
+    SYNTAX               Integer32
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Current UL SNR. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 13 }
+
+icomWmacBsTsStatusUlFecStress  OBJECT-TYPE 
+    SYNTAX                     Integer32
+    MAX-ACCESS                 read-only
+    STATUS                     current
+    DESCRIPTION  
+        "Current UL FEC stress. Available only in CONNECTED state." 
+    ::= { icomWmacBsTsStatusEntry 14 }
+
+icomWmacBsTsStatusInfo     OBJECT-TYPE 
+    SYNTAX                 INTEGER { disconnected (1),
+                                     connected (2)
+                                   }
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Reason for TS connectivity state change." 
+    ::= { icomWmacBsTsStatusEntry 15 }
+
+icomWmacBsTsStatusAddressType   OBJECT-TYPE 
+    SYNTAX                      InetAddressType
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "A value that represents a type of Internet address" 
+    ::= { icomWmacBsTsStatusEntry 16 }
+
+icomWmacBsTsStatusIpAddress     OBJECT-TYPE 
+    SYNTAX                      InetAddress
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Inband IP Address of the Terminal Station."
+    ::= { icomWmacBsTsStatusEntry 17 }
+    
+icomWmacBsTsStatusIpNetmask     OBJECT-TYPE 
+    SYNTAX                      InetAddress
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Inband IP Netmask of the Terminal Station."
+    ::= { icomWmacBsTsStatusEntry 18 }
+    
+icomWmacBsTsStatusMngVlanId     OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Inband management vlan of the Terminal Station." 
+    ::= { icomWmacBsTsStatusEntry 19 }
+
+icomWmacBsTsStatusDistance      OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-only
+    STATUS                      current
+    DESCRIPTION  
+        "Distance in meters between BS and TS." 
+    ::= { icomWmacBsTsStatusEntry 20 }
+
+--=========================================================                                      
+-- Wmac BsTs Statistics Table
+--=========================================================
+icomWmacBsTsStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsTsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides BS-side TS-specific 
+        statistics parameters."    
+    ::= { icomWmacBsObjects  5 }
+
+icomWmacBsTsStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsTsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    AUGMENTS  { icomWmacBsTsCfgEntry }
+    ::={ icomWmacBsTsStatsTable 1 }
+
+IcomWmacBsTsStatsEntry ::= SEQUENCE {
+    icomWmacBsTsStatsReset               TruthValue,
+    icomWmacBsTsStatsEntries             Counter64,
+    icomWmacBsTsStatsExits               Counter64,     
+    icomWmacBsTsStatsInService           Counter64,
+    icomWmacBsTsStatsOutOfService        Counter64,
+    icomWmacBsTsStatsRngInvSent          Counter64,
+    icomWmacBsTsStatsRngChRepRcvd        Counter64,
+    icomWmacBsTsStatsBrceBrRcvd          Counter64, 
+    icomWmacBsTsStatsChRepReqSent        Counter64,
+    icomWmacBsTsStatsChRepRcvd           Counter64,
+    icomWmacBsTsStatsSfAddReqSent        Counter64,
+    icomWmacBsTsStatsSfAddRspRcvd        Counter64,
+    icomWmacBsTsStatsSfRemReqSent        Counter64,
+    icomWmacBsTsStatsSfRemRspRcvd        Counter64,
+    icomWmacBsTsStatsSfModReqSent        Counter64,
+    icomWmacBsTsStatsSfModRspRcvd        Counter64,
+    icomWmacBsTsStatsSfAckSent           Counter64,
+    icomWmacBsTsStatsAggrDlSduBitRate    Counter64,
+    icomWmacBsTsStatsAggrUlSduBitRate    Counter64,
+    icomWmacBsTsStatsAggrDlPduBitRate    Counter64,
+    icomWmacBsTsStatsAggrUlPduBitRate    Counter64
+}
+
+icomWmacBsTsStatsReset OBJECT-TYPE 
+    SYNTAX             TruthValue
+    MAX-ACCESS         read-write
+    STATUS             current
+    DESCRIPTION  
+        "Reset PhyMode Statistics (DL/UL)." 
+    DEFVAL { false }
+    ::= { icomWmacBsTsStatsEntry 1 }
+
+icomWmacBsTsStatsEntries OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Times the TS has entered the network." 
+    ::= { icomWmacBsTsStatsEntry 2 }
+
+icomWmacBsTsStatsExits     OBJECT-TYPE 
+    SYNTAX             Counter64
+    MAX-ACCESS         read-only
+    STATUS             current
+    DESCRIPTION  
+        "Times the TS has exited the network." 
+    ::= { icomWmacBsTsStatsEntry 3 }
+
+icomWmacBsTsStatsInService   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Time in service (sec)." 
+    ::= { icomWmacBsTsStatsEntry 4 }
+
+icomWmacBsTsStatsOutOfService  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Time out of service (sec)." 
+    ::= { icomWmacBsTsStatsEntry 5 }
+
+icomWmacBsTsStatsRngInvSent  OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Number of Ranging Invitations sent." 
+    ::= { icomWmacBsTsStatsEntry 6 }
+
+icomWmacBsTsStatsRngChRepRcvd  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Ranging Channel Reports received." 
+    ::= { icomWmacBsTsStatsEntry 7 }
+
+icomWmacBsTsStatsBrceBrRcvd  OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Number of BRCE region bandwidth requests received." 
+    ::= { icomWmacBsTsStatsEntry 8 }
+
+icomWmacBsTsStatsChRepReqSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of Channel Report Request messages sent." 
+    ::= { icomWmacBsTsStatsEntry 9 }
+
+icomWmacBsTsStatsChRepRcvd   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Number of Channel Report messages received." 
+    ::= { icomWmacBsTsStatsEntry 10 }
+
+icomWmacBsTsStatsSfAddReqSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF addition request messages sent." 
+    ::= { icomWmacBsTsStatsEntry 11 }
+
+icomWmacBsTsStatsSfAddRspRcvd  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF addition response messages received." 
+    ::= { icomWmacBsTsStatsEntry 12 }
+
+icomWmacBsTsStatsSfRemReqSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF removal request messages sent." 
+    ::= { icomWmacBsTsStatsEntry 13 }
+
+icomWmacBsTsStatsSfRemRspRcvd  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF removal response messages received." 
+    ::= { icomWmacBsTsStatsEntry 14 }
+
+icomWmacBsTsStatsSfModReqSent  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF modification request messages sent." 
+    ::= { icomWmacBsTsStatsEntry 15 }
+
+icomWmacBsTsStatsSfModRspRcvd  OBJECT-TYPE 
+    SYNTAX                 Counter64
+    MAX-ACCESS             read-only
+    STATUS                 current
+    DESCRIPTION  
+        "Number of SF modification response messages received." 
+    ::= { icomWmacBsTsStatsEntry 16 }
+
+icomWmacBsTsStatsSfAckSent   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Number of SF acknowledgement messages." 
+    ::= { icomWmacBsTsStatsEntry 17 }
+
+icomWmacBsTsStatsAggrDlSduBitRate   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Aggregate downlink SDU bit rate counter." 
+    ::= { icomWmacBsTsStatsEntry 18 }
+
+icomWmacBsTsStatsAggrUlSduBitRate   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Aggregate uplink SDU bit rate counter." 
+    ::= { icomWmacBsTsStatsEntry 19 }
+
+icomWmacBsTsStatsAggrDlPduBitRate   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Aggregate downlink PDU bit rate counter." 
+    ::= { icomWmacBsTsStatsEntry 20 }
+
+icomWmacBsTsStatsAggrUlPduBitRate   OBJECT-TYPE 
+    SYNTAX               Counter64
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION  
+        "Aggregate uplink PDU bit rate counter." 
+    ::= { icomWmacBsTsStatsEntry 21 }
+
+--=========================================================                                      
+-- Wmac BsTs DL PHY Statistics Table
+--=========================================================
+icomWmacBsTsDlPhyStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsTsDlPhyStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides BS-side TS-specific DL PHY statistics parameters."    
+    ::= { icomWmacBsObjects  6 }
+
+icomWmacBsTsDlPhyStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsTsDlPhyStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacBsId, 
+             icomWmacBsTsId, 
+             icomWmacBsTsDlPhyDiuc } 
+    ::={ icomWmacBsTsDlPhyStatsTable 1 }
+
+IcomWmacBsTsDlPhyStatsEntry ::= SEQUENCE {
+    icomWmacBsTsDlPhyDiuc            WmacDlPhysicalMode,
+    icomWmacBsTsDlPhyActiveTime      Integer32,
+    icomWmacBsTsDlPhyNumEntries      Integer32,
+    icomWmacBsTsDlPhyResetStats      TruthValue     
+}
+
+icomWmacBsTsDlPhyDiuc  OBJECT-TYPE 
+    SYNTAX             WmacDlPhysicalMode
+    MAX-ACCESS         not-accessible
+    STATUS             current
+    DESCRIPTION  
+        "Downlink PHY Diuc. The phymod parameters values correspond
+        to the values of the Downlink Interval Usage Code objects 
+        (see icomWmacBsTsCfgMinDiuc object)." 
+    ::= { icomWmacBsTsDlPhyStatsEntry 1 }
+
+icomWmacBsTsDlPhyActiveTime  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    UNITS                    "seconds"
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION  
+        "Time the TS has spent connected in the selected DIUC." 
+    ::= { icomWmacBsTsDlPhyStatsEntry 2 }
+ 
+icomWmacBsTsDlPhyNumEntries  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION  
+        "Number of times the TS has been switched to the selected DIUC." 
+    ::= { icomWmacBsTsDlPhyStatsEntry 3 }
+
+icomWmacBsTsDlPhyResetStats  OBJECT-TYPE 
+    SYNTAX                   TruthValue
+    MAX-ACCESS               read-write
+    STATUS                   current
+    DESCRIPTION  
+        "Reset DL PHY statistics parameters."
+    DEFVAL { false } 
+    ::= { icomWmacBsTsDlPhyStatsEntry 4 }
+
+--=========================================================                                      
+-- Wmac BsTs UL PHY Statistics Table
+--=========================================================
+icomWmacBsTsUlPhyStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsTsUlPhyStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table provides BS-side TS-specific UL PHY statistics parameters."    
+    ::= { icomWmacBsObjects  7 }
+
+icomWmacBsTsUlPhyStatsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsTsUlPhyStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        " "
+    INDEX  { icomWmacBsId, 
+             icomWmacBsTsId, 
+             icomWmacBsTsUlPhyUiuc } 
+    ::={ icomWmacBsTsUlPhyStatsTable 1 }
+
+IcomWmacBsTsUlPhyStatsEntry ::= SEQUENCE {
+    icomWmacBsTsUlPhyUiuc            WmacUlPhysicalMode,
+    icomWmacBsTsUlPhyActiveTime      Integer32,
+    icomWmacBsTsUlPhyNumEntries      Integer32,
+    icomWmacBsTsUlPhyResetStats      TruthValue  
+}
+
+icomWmacBsTsUlPhyUiuc  OBJECT-TYPE 
+    SYNTAX             WmacUlPhysicalMode
+    MAX-ACCESS         not-accessible
+    STATUS             current
+    DESCRIPTION  
+        "Uplink PHY Uiuc. The phymod parameters values correspond
+        to the values of the Uplink Interval Usage Code objects 
+        (see icomWmacBsTsCfgMinUiuc object)." 
+    ::= { icomWmacBsTsUlPhyStatsEntry 1 }
+
+icomWmacBsTsUlPhyActiveTime  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    UNITS                    "seconds"
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION  
+        "Time the TS has spent connected in the selected UIUC." 
+    ::= { icomWmacBsTsUlPhyStatsEntry 2 }
+
+icomWmacBsTsUlPhyNumEntries  OBJECT-TYPE 
+    SYNTAX                   Integer32
+    MAX-ACCESS               read-only
+    STATUS                   current
+    DESCRIPTION  
+        "Number of times the TS has been switched to the selected UIUC." 
+    ::= { icomWmacBsTsUlPhyStatsEntry 3 }
+
+icomWmacBsTsUlPhyResetStats  OBJECT-TYPE 
+    SYNTAX                   TruthValue
+    MAX-ACCESS               read-write
+    STATUS                   current
+    DESCRIPTION  
+        "Reset UL PHY statistics parameters."
+    DEFVAL { false } 
+    ::= { icomWmacBsTsUlPhyStatsEntry 4 }
+
+--=========================================================                                      
+-- TS Pre-provisioning Table
+--=========================================================
+icomWmacBsSfProvTsTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvTsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains Terminal Station provisioning objects (service
+        bundle profiles associated to Terminal Stations). One Terminal Station
+        can be associated with up to 5 service bundle profiles."    
+    ::= { icomWmacBsObjects  8 }
+
+icomWmacBsSfProvTsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvTsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry holds the association between a Terminal Station and a 
+         service bundle profile."
+    INDEX  { icomWmacBsId, 
+             icomWmacBsTsId, 
+             icomWmacBsSfProvTsSrvBundleProfId } 
+    ::={ icomWmacBsSfProvTsTable 1 }
+
+IcomWmacBsSfProvTsEntry ::= SEQUENCE {
+    icomWmacBsSfProvTsSrvBundleProfId    Unsigned32,
+    icomWmacBsSfProvTsRowStatus          RowStatus
+}
+
+icomWmacBsSfProvTsSrvBundleProfId   OBJECT-TYPE 
+    SYNTAX                          Unsigned32 (1..32768)
+    MAX-ACCESS                      not-accessible
+    STATUS                          current
+    DESCRIPTION  
+        "Service bundle profile index. This index uniquely identifies 
+        an entry in icomWmacBsSfProvServBundleProfTable. The default 
+        service bundle profile index equals to 1."
+    ::= { icomWmacBsSfProvTsEntry 1 }
+
+icomWmacBsSfProvTsRowStatus  OBJECT-TYPE 
+    SYNTAX                   RowStatus
+    MAX-ACCESS               read-create
+    STATUS                   current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table." 
+    ::= { icomWmacBsSfProvTsEntry 2 }
+
+--=========================================================                                      
+-- Service Bundle Profile Table
+--=========================================================
+icomWmacBsSfProvServBundleProfIndexNext OBJECT-TYPE
+    SYNTAX      Unsigned32 (0|2..32768)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object contains an unused value for icomWmacBsSfProvServBundleProfIndex in
+        the icomWmacBsSfProvServBundleProfEntry, or a zero to indicate that none exist."
+    ::= { icomWmacBsObjects  9 }
+
+icomWmacBsSfProvServBundleProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvServBundleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service bundle profiles. One service bundle profile contains 
+         many service flow profiles (up to 15 in the DL direction and up to 15 in the
+         UL direction)."    
+    ::= { icomWmacBsObjects  10 }
+
+icomWmacBsSfProvServBundleProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvServBundleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service bundle profile."
+    INDEX  { icomWmacBsSfProvServBundleProfIndex, icomWmacBsSfProvServBundleProfSfProfId } 
+    ::={ icomWmacBsSfProvServBundleProfTable 1 }
+
+IcomWmacBsSfProvServBundleProfEntry ::= SEQUENCE {
+    icomWmacBsSfProvServBundleProfIndex       Unsigned32,
+    icomWmacBsSfProvServBundleProfSfProfId    Unsigned32,
+    icomWmacBsSfProvServBundleProfName        SnmpAdminString,
+    icomWmacBsSfProvServBundleProfRowStatus   RowStatus
+}
+
+icomWmacBsSfProvServBundleProfIndex   OBJECT-TYPE 
+    SYNTAX                    Unsigned32 (1..32768)
+    MAX-ACCESS                not-accessible
+    STATUS                    current
+    DESCRIPTION  
+        "Service bundle profile index.
+
+        icomWmacBsSfProvServBundleProfIndexNext needs to be inspected to find an 
+        available index for row-creation."
+    ::= { icomWmacBsSfProvServBundleProfEntry 1 }
+  
+icomWmacBsSfProvServBundleProfSfProfId   OBJECT-TYPE 
+    SYNTAX                         Unsigned32(1..32768)
+    MAX-ACCESS                     not-accessible
+    STATUS                         current
+    DESCRIPTION  
+        "Service flow profile index. This index uniquely identifies 
+         an entry in icomWmacBsSfProvServFlowProfTable. One service 
+         profile index contain up to 30 service flow profiles indeces."
+    ::= { icomWmacBsSfProvServBundleProfEntry 2 }
+
+icomWmacBsSfProvServBundleProfName  OBJECT-TYPE 
+    SYNTAX                          SnmpAdminString (SIZE (2..32))
+    MAX-ACCESS                      read-create
+    STATUS                          current
+    DESCRIPTION  
+        "Service bundle profile name." 
+    ::= { icomWmacBsSfProvServBundleProfEntry 3 }
+
+icomWmacBsSfProvServBundleProfRowStatus  OBJECT-TYPE 
+    SYNTAX                               RowStatus
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table." 
+    ::= { icomWmacBsSfProvServBundleProfEntry 4 }
+
+--=========================================================                                      
+-- Service Flow Profile Table
+--=========================================================
+icomWmacBsSfProvServFlowProfSfIndexNext OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..32768)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object contains an unused value for icomWmacBsSfProvServFlowProfSfIndex in
+        the icomWmacBsSfProvServFlowProfEntry, or a zero to indicate that none exist."
+    ::= { icomWmacBsObjects  11 }
+
+icomWmacBsSfProvServFlowProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvServFlowProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service flow profiles. A service flow profile is associated 
+         to a service class (QoS parameter set) profile and a classifier rule profile."    
+    ::= { icomWmacBsObjects  12 }
+
+icomWmacBsSfProvServFlowProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvServFlowProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service flow profile."
+    INDEX  { icomWmacBsSfProvServFlowProfSfIndex } 
+    ::={ icomWmacBsSfProvServFlowProfTable 1 }
+
+IcomWmacBsSfProvServFlowProfEntry ::= SEQUENCE {
+    icomWmacBsSfProvServFlowProfSfIndex           Unsigned32,
+    icomWmacBsSfProvServFlowProfName              SnmpAdminString, 
+    icomWmacBsSfProvServFlowProfServClassProfId   Integer32,
+    icomWmacBsSfProvServFlowProfClsRuleProfId     Unsigned32,
+    icomWmacBsSfProvServFlowProfDirection         INTEGER,
+    icomWmacBsSfProvServFlowProfMandatory         TruthValue,
+    icomWmacBsSfProvServFlowProfAdminStatus       TruthValue,
+    icomWmacBsSfProvServFlowProfQueueType         INTEGER,
+    icomWmacBsSfProvServFlowProfQueueWeight4      Integer32,
+    icomWmacBsSfProvServFlowProfQueueWeight5      Integer32,
+    icomWmacBsSfProvServFlowProfQueueWeight6      Integer32,
+    icomWmacBsSfProvServFlowProfQueueWeight7      Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth0    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth1    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth2    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth3    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth4    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth5    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth6    Integer32,
+    icomWmacBsSfProvServFlowProfMaxQueueDepth7    Integer32,
+    icomWmacBsSfProvServFlowProfMinPhyMode        Integer32,
+    icomWmacBsSfProvServFlowProfSfQosEnable       TruthValue, 
+    icomWmacBsSfProvServFlowProfSfQosCls          INTEGER, 
+    icomWmacBsSfProvServFlowProfRowStatus         RowStatus
+}
+
+icomWmacBsSfProvServFlowProfSfIndex   OBJECT-TYPE 
+    SYNTAX                            Unsigned32 (1..32768)
+    MAX-ACCESS                        not-accessible
+    STATUS                            current
+    DESCRIPTION  
+        "Service flow profile index.
+
+        icomWmacBsSfProvServFlowProfSfIndexNext needs to be inspected to find an 
+        available index for row-creation." 
+    ::= { icomWmacBsSfProvServFlowProfEntry 1 }
+
+icomWmacBsSfProvServFlowProfName  OBJECT-TYPE 
+    SYNTAX                        SnmpAdminString (SIZE (2..16))
+    MAX-ACCESS                    read-create
+    STATUS                        current
+    DESCRIPTION  
+        "Service flow profile name." 
+    ::= { icomWmacBsSfProvServFlowProfEntry 2 }
+
+icomWmacBsSfProvServFlowProfServClassProfId   OBJECT-TYPE 
+    SYNTAX                         Integer32
+    MAX-ACCESS                     read-create
+    STATUS                         current
+    DESCRIPTION  
+        "Service class (QoS set) profile index. This index uniquely identifies 
+        an entry in icomWmacBsSfProvServClassProfTable." 
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 3 }
+
+icomWmacBsSfProvServFlowProfClsRuleProfId  OBJECT-TYPE 
+    SYNTAX                             Unsigned32
+    MAX-ACCESS                         read-create
+    STATUS                             current
+    DESCRIPTION  
+        "Classifier rule profile index. This index uniquely identifies an entry 
+        in icomWmacBsSfProvClsRuleProfTable." 
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 4 }
+
+icomWmacBsSfProvServFlowProfDirection    OBJECT-TYPE 
+    SYNTAX                               INTEGER { uplink(1),
+        					                       downlink(2) }
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "Service flow direction (DL/UL)."
+    ::= { icomWmacBsSfProvServFlowProfEntry 5 }
+
+icomWmacBsSfProvServFlowProfMandatory   OBJECT-TYPE 
+    SYNTAX                              TruthValue
+    MAX-ACCESS                          read-create
+    STATUS                              current
+    DESCRIPTION  
+        "Service flow mandatory state. If this object is true and 
+         service flow addition fails then terminal station is ranged 
+         out/in in order to establish connection. For 
+        the default service flow profiles this object is true."
+    DEFVAL { false } 
+    ::= { icomWmacBsSfProvServFlowProfEntry 6 }
+
+icomWmacBsSfProvServFlowProfAdminStatus  OBJECT-TYPE 
+    SYNTAX                               TruthValue
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "The desired state for the service flow (enabled/disabled)." 
+    DEFVAL { true }
+    ::= { icomWmacBsSfProvServFlowProfEntry 7 }
+
+icomWmacBsSfProvServFlowProfQueueType   OBJECT-TYPE
+    SYNTAX                              INTEGER { strict(1),
+                                                  mixed(2)
+                                                } 
+    MAX-ACCESS                          read-create
+    STATUS                              current
+    DESCRIPTION
+        "Queue selection mode (DL only for BS, UL only for TS) used by the dequeuing processing, 
+         during transmission used to select between transmit queues 0 to 7. Two options are available. 
+            Strict priority: Selection of queue is strict priority only, where 0 is highest. 
+            Mixed priority: Selection of queue is strict priority for queues 0 to 3, followed by
+                            WFQ for queues 4 to 7."
+    DEFVAL { strict }
+    ::= { icomWmacBsSfProvServFlowProfEntry 8 }
+
+icomWmacBsSfProvServFlowProfQueueWeight4   OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Used only when queue selection mode is mixed priority. Sets the relative weight of 
+        transmit queue 4."
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 9 }
+
+icomWmacBsSfProvServFlowProfQueueWeight5   OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Used only when queue selection mode is mixed priority. Sets the relative weight of 
+        transmit queue 5."
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 10 }
+
+icomWmacBsSfProvServFlowProfQueueWeight6   OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Used only when queue selection mode is mixed priority. Sets the relative weight of 
+        transmit queue 6."
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 11 }
+
+icomWmacBsSfProvServFlowProfQueueWeight7   OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Used only when queue selection mode is mixed priority. Sets the relative weight of 
+        transmit queue 7."
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 12 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth0  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 0."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 13 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth1  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 1."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 14 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth2  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 2."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 15 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth3  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 3."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 16 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth4  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 4."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 17 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth5  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 5."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 18 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth6  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 6."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 19 }
+
+icomWmacBsSfProvServFlowProfMaxQueueDepth7  OBJECT-TYPE
+    SYNTAX                                 Integer32 
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Sets the maximum queue depth (discard threshold) in SDUs (packets) for 
+        transmit queue 7."
+    DEFVAL { 256 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 20 }
+
+icomWmacBsSfProvServFlowProfMinPhyMode   OBJECT-TYPE     
+    SYNTAX                               Integer32
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "Minimum physical mode allowed for the service flow." 
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServFlowProfEntry 21 }
+
+icomWmacBsSfProvServFlowProfSfQosEnable  OBJECT-TYPE 
+    SYNTAX                               TruthValue
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "This object enables or disables the SF QoS." 
+    DEFVAL { false }
+    ::= { icomWmacBsSfProvServFlowProfEntry 22 }
+
+icomWmacBsSfProvServFlowProfSfQosCls     OBJECT-TYPE 
+    SYNTAX                               INTEGER { pbits(1),
+                                                   dscp(2)
+                                                 }
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION  
+        "This object defines the header field (DSCP or P-bits)
+         to classify traffic types for SF QoS." 
+    DEFVAL { pbits }
+    ::= { icomWmacBsSfProvServFlowProfEntry 23 }
+
+icomWmacBsSfProvServFlowProfRowStatus  OBJECT-TYPE 
+    SYNTAX                         RowStatus
+    MAX-ACCESS                     read-create
+    STATUS                         current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table." 
+    ::= { icomWmacBsSfProvServFlowProfEntry 24 }
+
+--=========================================================                                      
+-- Service Class Profile Table
+--=========================================================
+icomWmacBsSfProvServClassProfIndexNext OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..32768)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object contains an unused value for icomWmacBsSfProvServClassProfileIndex in
+        the icomWmacBsSfProvServClassProfEntry, or a zero to indicate that none exist."
+    ::= { icomWmacBsObjects  13 }
+
+icomWmacBsSfProvServClassProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvServClassProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service class profiles (QoS parameter sets) associated to 
+         service flows. One service flow profile contains one service class profile."    
+    ::= { icomWmacBsObjects  14 }
+
+icomWmacBsSfProvServClassProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvServClassProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service class profile."
+    INDEX  { icomWmacBsSfProvServClassProfileIndex } 
+    ::={ icomWmacBsSfProvServClassProfTable 1 }
+
+IcomWmacBsSfProvServClassProfEntry ::= SEQUENCE {
+    icomWmacBsSfProvServClassProfileIndex        Unsigned32,
+    icomWmacBsSfProvServClassProfileName         SnmpAdminString,
+    icomWmacBsSfProvServClassTrafficPriority     Integer32,
+    icomWmacBsSfProvServClassMaxSustainedRate    Unsigned32,
+    icomWmacBsSfProvServClassMinReservedRate     Unsigned32,
+    icomWmacBsSfProvServClassGrantInterval       Unsigned32,
+    icomWmacBsSfProvServClassSchedulingType      WmacSchedulingType,
+    icomWmacBsSfProvServClassReqTxPolicy         BITS,
+    icomWmacBsSfProvServClassWeight              Integer32,
+    icomWmacBsSfProvServClassRowStatus           RowStatus
+}
+
+icomWmacBsSfProvServClassProfileIndex   OBJECT-TYPE 
+    SYNTAX                              Unsigned32 (1 .. 32768)
+    MAX-ACCESS                          not-accessible
+    STATUS                              current
+    DESCRIPTION  
+        "Service class (QoS set) profile index.
+
+        icomWmacBsSfProvServClassProfIndexNext needs to be inspected to find an 
+        available index for row-creation." 
+    ::= { icomWmacBsSfProvServClassProfEntry 1 }
+
+icomWmacBsSfProvServClassProfileName  OBJECT-TYPE
+    SYNTAX                            SnmpAdminString (SIZE(2..16))
+    MAX-ACCESS                        read-create
+    STATUS                            current
+    DESCRIPTION    
+        "Service class profile name."
+    ::= { icomWmacBsSfProvServClassProfEntry 2 }
+
+icomWmacBsSfProvServClassTrafficPriority  OBJECT-TYPE
+    SYNTAX                                Integer32 (1..4)
+    MAX-ACCESS                            read-create
+    STATUS                                current
+    DESCRIPTION
+        "Service flow traffic priority of excess bandwidth 
+         (RTVR, NRTVR, BE only)."
+    DEFVAL { 4 }
+    ::= { icomWmacBsSfProvServClassProfEntry 3 }
+
+icomWmacBsSfProvServClassMaxSustainedRate  OBJECT-TYPE
+    SYNTAX                                 Unsigned32
+    UNITS                                  "b/s"
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Maximum sustained rate in bps."
+    DEFVAL { 500000000 }
+    ::= { icomWmacBsSfProvServClassProfEntry 4 }
+
+icomWmacBsSfProvServClassMinReservedRate   OBJECT-TYPE
+    SYNTAX                                 Unsigned32
+    UNITS                                  "b/s"
+    MAX-ACCESS                             read-create
+    STATUS                                 current
+    DESCRIPTION
+        "Minimum reserved rate in bps (all scheduling types but BE)."
+    DEFVAL { 1000000 } 
+    ::= { icomWmacBsSfProvServClassProfEntry 5 }
+
+icomWmacBsSfProvServClassGrantInterval   OBJECT-TYPE
+    SYNTAX                               Unsigned32
+    UNITS                                "micro-second"
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION
+        "Interval between succesive data grant opportunities for the SF 
+        (UGS UL direction only)."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvServClassProfEntry 6 }
+
+icomWmacBsSfProvServClassSchedulingType  OBJECT-TYPE
+    SYNTAX                               WmacSchedulingType
+    MAX-ACCESS                           read-create
+    STATUS                               current
+    DESCRIPTION
+        "Scheduling type (BE, NRT-VR, RT-VR, UGS)."
+    ::= { icomWmacBsSfProvServClassProfEntry 7 }
+
+icomWmacBsSfProvServClassReqTxPolicy  OBJECT-TYPE
+    SYNTAX      BITS { prePacking(0),
+                       fragmentation(1),
+       				   phs(2)
+                     }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Transmission policy. This object specifies a bitmask to enable/disable 
+        specific attributes for the service flow (i.e., pre-packing, 
+        fragmentation, PHS)."
+    DEFVAL { {prePacking,fragmentation} }
+    ::= { icomWmacBsSfProvServClassProfEntry 8 }
+
+icomWmacBsSfProvServClassWeight     OBJECT-TYPE
+    SYNTAX                          Integer32
+    MAX-ACCESS                      read-create
+    STATUS                          current
+    DESCRIPTION
+        "Proportional Fair Scheduling weight (in bytes) for BE, NRT-VR
+        and RT-VR."
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvServClassProfEntry 9 }
+
+icomWmacBsSfProvServClassRowStatus  OBJECT-TYPE 
+    SYNTAX                         RowStatus
+    MAX-ACCESS                     read-create
+    STATUS                         current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table." 
+    ::= { icomWmacBsSfProvServClassProfEntry 10 }
+
+--=========================================================                                      
+-- Classifier Rule Profile
+--=========================================================
+icomWmacBsSfProvClsRuleProfIndexNext OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..32768)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object contains an unused value for icomWmacBsSfProvClsRuleProfileIndex in
+        the icomWmacBsSfProvClsRuleProfEntry, or a zero to indicate that none exist."
+    ::= { icomWmacBsObjects  15 }
+
+icomWmacBsSfProvClsRuleProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvClsRuleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains packet classifier rule profiles associated to service flows. 
+         One service flow profile contains one classifier rule profile."    
+    ::= { icomWmacBsObjects  16 }
+
+icomWmacBsSfProvClsRuleProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvClsRuleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a classifier rule profile."
+    INDEX  { icomWmacBsSfProvClsRuleProfileIndex } 
+    ::={ icomWmacBsSfProvClsRuleProfTable 1 }
+
+IcomWmacBsSfProvClsRuleProfEntry ::= SEQUENCE {
+    icomWmacBsSfProvClsRuleProfileIndex  Unsigned32,
+    icomWmacBsSfProvClsRuleProfileName   SnmpAdminString,
+    icomWmacBsSfProvClsRuleRowStatus     RowStatus
+}
+
+icomWmacBsSfProvClsRuleProfileIndex  OBJECT-TYPE 
+    SYNTAX                           Unsigned32 (1..32768)
+    MAX-ACCESS                       not-accessible
+    STATUS                           current
+    DESCRIPTION  
+        "Classifier rule profile index.    
+
+        icomWmacBsSfProvClsRuleProfIndexNext needs to be inspected to find an 
+        available index for row-creation." 
+    ::= { icomWmacBsSfProvClsRuleProfEntry 1 }
+
+icomWmacBsSfProvClsRuleProfileName   OBJECT-TYPE
+    SYNTAX                           SnmpAdminString (SIZE(2..16))
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION    
+        "Classifier rule profile name."
+    ::= { icomWmacBsSfProvClsRuleProfEntry 2 }
+
+icomWmacBsSfProvClsRuleRowStatus   OBJECT-TYPE 
+    SYNTAX                         RowStatus
+    MAX-ACCESS                     read-create
+    STATUS                         current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table."
+    ::= { icomWmacBsSfProvClsRuleProfEntry 3 }
+
+--=========================================================                                      
+-- Classification Criteria
+--=========================================================
+icomWmacBsSfProvClsTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvClsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains classification criteria (header fields) associated to 
+         a classifier rule profile. One classifier rule profile contains many 
+         classification criteria. Ethernet, VLAN, MPLS, IPv4 and IPv6 header fields
+         are supported."    
+    ::= { icomWmacBsObjects  17 }
+
+icomWmacBsSfProvClsEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvClsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a classification criterion (uniquely identified by
+         icomWmacBsSfProvClsPriority) per classifier rule profile."
+    INDEX  { icomWmacBsSfProvClsRuleProfileIndex, icomWmacBsSfProvClsPriority } 
+    ::={ icomWmacBsSfProvClsTable 1 }
+
+IcomWmacBsSfProvClsEntry ::= SEQUENCE {
+    icomWmacBsSfProvClsPriority             Integer32,
+    icomWmacBsSfProvClsDestMacAddr          MacAddress,
+    icomWmacBsSfProvClsDestMacMask          MacAddress,
+    icomWmacBsSfProvClsSrcMacAddr           MacAddress,
+    icomWmacBsSfProvClsSrcMacMask           MacAddress,
+    icomWmacBsSfProvClsEnetProtocol         Integer32,
+    icomWmacBsSfProvClsUserPriLow           Integer32,
+    icomWmacBsSfProvClsUserPriHigh          Integer32,
+    icomWmacBsSfProvClsCvlanIdLow           Unsigned32,
+    icomWmacBsSfProvClsCvlanIdHigh          Unsigned32,
+    icomWmacBsSfProvClsSvlanIdLow           Unsigned32,
+    icomWmacBsSfProvClsSvlanIdHigh          Unsigned32,
+    icomWmacBsSfProvClsIpTosLow             Integer32,
+    icomWmacBsSfProvClsIpTosHigh            Integer32,
+    icomWmacBsSfProvClsIpTosMask            Integer32,
+    icomWmacBsSfProvClsAddressType          InetAddressType,
+    icomWmacBsSfProvClsIpSrcAddr            InetAddress,
+    icomWmacBsSfProvClsIpSrcMask            InetAddress,
+    icomWmacBsSfProvClsIpDestAddr           InetAddress,
+    icomWmacBsSfProvClsIpDestMask           InetAddress,
+    icomWmacBsSfProvClsIpProtocol           Integer32,
+    icomWmacBsSfProvClsMplsExp              Integer32,
+    icomWmacBsSfProvClsIpv6TrfClassLow      Integer32,
+    icomWmacBsSfProvClsIpv6TrfClassHigh     Integer32,
+    icomWmacBsSfProvClsIpv6FlowLabelLow     WmacIpv6FlowLabel,
+    icomWmacBsSfProvClsIpv6FlowLabelHigh    WmacIpv6FlowLabel,
+    icomWmacBsSfProvClsSrcPortStart         Integer32,
+    icomWmacBsSfProvClsSrcPortEnd           Integer32,
+    icomWmacBsSfProvClsDestPortStart        Integer32,
+    icomWmacBsSfProvClsDestPortEnd          Integer32,
+    icomWmacBsSfProvClsBitMap               WmacClassifierBitMap,
+    icomWmacBsSfProvClsPhsField             OCTET STRING,
+    icomWmacBsSfProvClsPhsMask              OCTET STRING,
+    icomWmacBsSfProvClsPhsSize              Integer32,
+    icomWmacBsSfProvClsPhsVerify            TruthValue,
+    icomWmacBsSfProvClsRowStatus            RowStatus
+}
+
+icomWmacBsSfProvClsPriority     OBJECT-TYPE 
+    SYNTAX                      Integer32 (1..32768)
+    MAX-ACCESS                  not-accessible
+    STATUS                      current
+    DESCRIPTION  
+        "Index and priority of the classification criterion (1-8)."
+    ::= { icomWmacBsSfProvClsEntry 1 }
+
+icomWmacBsSfProvClsDestMacAddr    OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the Ethernet destination MAC 
+        address required for packets to match this rule. An Ethernet packet 
+        matches the rule when the packet's destination MAC address bitwise 
+        ANDed with the icomWmacBsSfProvClsDestMacMask value equals the 
+        icomWmacBsSfProvClsDestMacAddr value." 
+    DEFVAL { '000000000000'H }
+    ::= { icomWmacBsSfProvClsEntry 2 }
+
+icomWmacBsSfProvClsDestMacMask    OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's Ethernet destination MAC 
+        address are compared to match this rule. An Ethernet packet matches the 
+        rule when the packet's destination MAC address bitwise ANDed with the
+        icomWmacBsSfProvClsDestMacMask value equals the 
+        icomWmacBsSfProvClsDestMacAddr value."
+    DEFVAL { '000000000000'H }
+    ::= { icomWmacBsSfProvClsEntry 3 }
+
+icomWmacBsSfProvClsSrcMacAddr     OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the Ethernet source MAC address required for
+        packets to match this rule. An Ethernet packet matches the rule when the packet's 
+        source MAC address bitwise ANDed with the icomWmacBsSfProvClsSrcMacMask value 
+        equals the icomWmacBsSfProvClsSrcMacAddr value." 
+    DEFVAL { '000000000000'H }
+    ::= { icomWmacBsSfProvClsEntry 4 }
+
+icomWmacBsSfProvClsSrcMacMask     OBJECT-TYPE 
+    SYNTAX                      MacAddress
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's Ethernet source MAC address are 
+        compared to match this rule. An Ethernet packet matches the rule when the packet's 
+        source MAC address bitwise ANDed with the icomWmacBsSfProvClsSrcMacMask value 
+        equals the icomWmacBsSfProvClsSrcMacAddr value." 
+    DEFVAL { '000000000000'H }
+    ::= { icomWmacBsSfProvClsEntry 5 }
+
+icomWmacBsSfProvClsEnetProtocol       OBJECT-TYPE 
+    SYNTAX                      Integer32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the 16-bit value of the EtherType that the packet must match 
+        in order to match the rule. If the Ethernet frame contains an IEEE 802.1Q tag header 
+        (i.e., EtherType 0x8100), this object applies to the embedded EtherType field within 
+        the IEEE 802.1Q header."
+    DEFVAL { 0 } 
+    ::= { icomWmacBsSfProvClsEntry 6 }
+
+icomWmacBsSfProvClsUserPriLow        OBJECT-TYPE 
+    SYNTAX                      Integer32 (0..7 | 9999)
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies only to Ethernet frames using the IEEE 802.1Q tag header (indicated
+        with EtherType 0x8100). Such frames include a 16-bit Tag that contains a 3 bit Priority 
+        field and a 12 bit VLAN number. Tagged Ethernet packets must have a 3-bit Priority field 
+        within the range of icomWmacBsSfProvClsUserPriLow and icomWmacBsSfProvClsUserPriHigh
+        in order to match this rule. Value 9999 means unused criterion."
+    DEFVAL { 9999 }  
+    ::= { icomWmacBsSfProvClsEntry 7 }
+
+icomWmacBsSfProvClsUserPriHigh        OBJECT-TYPE 
+    SYNTAX                      Integer32 (0..7 | 9999)
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies only to Ethernet frames using the IEEE 802.1Q tag header (indicated 
+        with EtherType 0x8100). Such frames include a 16-bit Tag that contains a 3 bit Priority 
+        field and a 12 bit VLAN number. Tagged Ethernet packets must have a 3-bit Priority field 
+        within the range of icomWmacBsSfProvClsUserPriLow and icomWmacBsSfProvClsUserPriHigh 
+        in order to match this rule. Value 9999 means unused criterion."
+    DEFVAL { 9999 }  
+    ::= { icomWmacBsSfProvClsEntry 8 }
+
+icomWmacBsSfProvClsCvlanIdLow         OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a C-VLAN ID. Ethernet frames must have a 
+        12-bit C-VLAN ID field within the range of icomWmacBsSfProvClsCvlanIdLow and 
+        icomWmacBsSfProvClsCvlanIdHigh in order to match this rule." 
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 9 }
+
+icomWmacBsSfProvClsCvlanIdHigh         OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a C-VLAN ID. Ethernet frames must have a 
+        12-bit C-VLAN ID field within the range of icomWmacBsSfProvClsCvlanIdLow and 
+        icomWmacBsSfProvClsCvlanIdHigh in order to match this rule." 
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 10 }
+
+icomWmacBsSfProvClsSvlanIdLow         OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a S-VLAN ID. Ethernet frames must have a 
+        12-bit S-VLAN ID field within the range of icomWmacBsSfProvClsSvlanIdLow and 
+        icomWmacBsSfProvClsSvlanIdHigh in order to match this rule. Value 9999 means 
+        unused criterion." 
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 11 }
+
+icomWmacBsSfProvClsSvlanIdHigh         OBJECT-TYPE 
+    SYNTAX                      Unsigned32
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object applies to Ethernet frames that carry a S-VLAN ID. Ethernet frames must have a 
+        12-bit S-VLAN ID field within the range of icomWmacBsSfProvClsSvlanIdLow and 
+        icomWmacBsSfProvClsSvlanIdHigh in order to match this rule. Value 9999 means  
+        unused criterion." 
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 12 }
+
+icomWmacBsSfProvClsIpTosLow   OBJECT-TYPE 
+    SYNTAX                    Integer32 (0 .. 255 | 9999)
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION  
+        "This object specifies the value of the IPv4 ToS field required for packets to match this rule. 
+        Packets must have an IPv4 ToS field within the range of icomWmacBsSfProvClsIpTosLow and 
+        icomWmacBsSfProvClsIpTosHigh in order to match this rule. Value 9999 means 
+        unused criterion." 
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 13 }
+
+icomWmacBsSfProvClsIpTosHigh    OBJECT-TYPE 
+    SYNTAX                      Integer32 (0 .. 255 | 9999)
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the value of the IPv4 ToS field required for packets to match this rule. 
+        Packets must have an IPv4 ToS field within the range of icomWmacBsSfProvClsIpTosLow and 
+        icomWmacBsSfProvClsIpTosHigh in order to match this rule. Value 9999 means 
+        unused criterion." 
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 14 }
+
+icomWmacBsSfProvClsIpTosMask    OBJECT-TYPE 
+    SYNTAX                      Integer32 (0 .. 255)
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object specifies the ToS mask. The ToS mask bitwise ANDed with a packet's IPv4 ToS field 
+        must be in the range of icomWmacBsSfProvClsIpTosLow and icomWmacBsSfProvClsIpTosHigh in 
+        order to match the rule." 
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 15 }
+
+icomWmacBsSfProvClsAddressType  OBJECT-TYPE 
+    SYNTAX                      InetAddressType
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "A value that represents a type of Internet address. Default value is ipv4" 
+    DEFVAL { 1 }
+    ::= { icomWmacBsSfProvClsEntry 16 }
+
+icomWmacBsSfProvClsIpSrcAddr   OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies the value of the IP Source Address required for packets to match this rule.
+        An IP packet matches the rule when the packet IP source address bitwise ANDed with the 
+        icomWmacBsSfProvClsIpSrcMask value equals the icomWmacBsSfProvClsIpSrcAddr value." 
+    DEFVAL { '00000000'H } -- 0.0.0.0
+    ::= { icomWmacBsSfProvClsEntry 17 }
+
+icomWmacBsSfProvClsIpSrcMask   OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's IP Source Address that are compared to match this 
+        rule. An IP packet matches the rule when the packet source address bitwise ANDed with the 
+        icomWmacBsSfProvClsIpSrcMask value equals the icomWmacBsSfProvClsIpSrcAddr value." 
+    DEFVAL { '00000000'H } -- 0.0.0.0
+    ::= { icomWmacBsSfProvClsEntry 18 }
+
+icomWmacBsSfProvClsIpDestAddr  OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies the value of the IP Destination Address required for packets to match this 
+        rule. An IP packet matches the rule when the packet IP destination address bitwise ANDed with the 
+        icomWmacBsSfProvClsIpDestMask value equals the icomWmacBsSfProvClsIpDestAddr value."
+    DEFVAL { '00000000'H } -- 0.0.0.0
+    ::= { icomWmacBsSfProvClsEntry 19 }
+
+icomWmacBsSfProvClsIpDestMask  OBJECT-TYPE 
+    SYNTAX                     InetAddress
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies which bits of a packet's IP Destination Address that are compared to match 
+        this rule. An IP packet matches the rule when the packet destination address bitwise ANDed with the
+        icomWmacBsSfProvClsIpDestMask value equals the icomWmacBsSfProvClsIpDestAddr value."
+    DEFVAL { '00000000'H } -- 0.0.0.0
+    ::= { icomWmacBsSfProvClsEntry 20 }
+
+icomWmacBsSfProvClsIpProtocol    OBJECT-TYPE 
+    SYNTAX                       Integer32 (0..255)
+    MAX-ACCESS                   read-create
+    STATUS                       current
+    DESCRIPTION  
+        "This object specifies the IP protocol field a packet should have to match this rule." 
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 21 }
+
+icomWmacBsSfProvClsMplsExp     OBJECT-TYPE 
+    SYNTAX                     Integer32
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION  
+        "This object specifies the MPLS EXP field a packet should have in the outer MPLS lable to match  
+        this rule." 
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 22 }
+
+icomWmacBsSfProvClsIpv6TrfClassLow   OBJECT-TYPE 
+    SYNTAX                           Integer32
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 traffic class field required for packets to match this rule.
+        Packets must have an IPv6 traffic class field within the range of icomWmacBsSfProvClsIpv6TrfClassLow 
+        and icomWmacBsSfProvClsIpv6TrfClassHigh in order to match this rule."
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 23 }
+
+icomWmacBsSfProvClsIpv6TrfClassHigh   OBJECT-TYPE 
+    SYNTAX                            Integer32
+    MAX-ACCESS                        read-create
+    STATUS                            current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 traffic class field required for packets to match this rule. 
+        Packets must have an IPv6 traffic class field within the range of icomWmacBsSfProvClsIpv6TrfClassLow 
+        and icomWmacBsSfProvClsIpv6TrfClassHigh in order to match this rule."
+    DEFVAL { 9999 }
+    ::= { icomWmacBsSfProvClsEntry 24 }
+
+icomWmacBsSfProvClsIpv6FlowLabelLow   OBJECT-TYPE 
+    SYNTAX                            WmacIpv6FlowLabel
+    MAX-ACCESS                        read-create
+    STATUS                            current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 flow label field required for packets to match this rule. 
+        Packets must have an IPv6 flow label field within the range of icomWmacBsSfProvClsIpv6FlowLabelLow 
+        and icomWmacBsSfProvClsIpv6FlowLabelHigh."
+    DEFVAL { '000000'H }
+    ::= { icomWmacBsSfProvClsEntry 25 }
+
+icomWmacBsSfProvClsIpv6FlowLabelHigh    OBJECT-TYPE 
+    SYNTAX                              WmacIpv6FlowLabel
+    MAX-ACCESS                          read-create
+    STATUS                              current
+    DESCRIPTION  
+        "This object specifies the value of the IPv6 flow label field required for packets to match this rule. 
+        Packets must have an IPv6 flow label field within the range of icomWmacBsSfProvClsIpv6FlowLabelLow 
+        and icomWmacBsSfProvClsIpv6FlowLabelHigh."
+    DEFVAL { '000000'H }
+    ::= { icomWmacBsSfProvClsEntry 26 }
+
+icomWmacBsSfProvClsSrcPortStart     OBJECT-TYPE 
+    SYNTAX                          Integer32 (0..65535)
+    MAX-ACCESS                      read-create
+    STATUS                          current
+    DESCRIPTION  
+        "This object specifies the low end inclusive range of TCP/UDP source port numbers to which a packet
+        is compared. This object is irrelevant for non-TCP/UDP IP packets. If the referenced parameter is not 
+        present in a classifier, this object reports the value of 0."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 27 }
+
+icomWmacBsSfProvClsSrcPortEnd     OBJECT-TYPE 
+    SYNTAX                        Integer32 (0..65535)
+    MAX-ACCESS                    read-create
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the high end inclusive range of TCP/UDP source port numbers to which a packet 
+        is compared. This object is irrelevant for non-TCP/UDP IP packets. If the referenced parameter is not 
+        present in a classifier, this object reports the value of 65535."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 28 }
+
+icomWmacBsSfProvClsDestPortStart    OBJECT-TYPE 
+    SYNTAX                          Integer32 (0..65535)
+    MAX-ACCESS                      read-create
+    STATUS                          current
+    DESCRIPTION  
+        "This object specifies the low end inclusive range of TCP/UDP destination port numbers to which a packet
+        is compared. If the referenced parameter is not present in a classifier, this object reports the value 
+        of 0."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 29 }
+
+icomWmacBsSfProvClsDestPortEnd    OBJECT-TYPE 
+    SYNTAX                        Integer32 (0..65535)
+    MAX-ACCESS                    read-create
+    STATUS                        current
+    DESCRIPTION  
+        "This object specifies the high end inclusive range of TCP/UDP destination port numbers to which a packet 
+        is compared. If the referenced parameter is not present in a classifier, this object reports the value 
+        of 65535."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 30 }
+
+icomWmacBsSfProvClsBitMap     OBJECT-TYPE 
+    SYNTAX                    WmacClassifierBitMap
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION  
+        "This object indicates which parameter encodings were actually present in the entry. A bit set to '1' 
+        indicates the corresponding classifier encoding is present, and '0' means otherwise."
+    ::= { icomWmacBsSfProvClsEntry 31 } 
+
+icomWmacBsSfProvClsPhsField   OBJECT-TYPE
+    SYNTAX                    OCTET STRING (SIZE(0..255))
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION 
+        "The PHS field (PHSF) is a string of bytes containing the header information to be suppressed by the 
+         sending WMAC and reconstructed by the receiving WMAC. The most significant byte of the string corresponds
+         to the first byte of the SDU."
+    DEFVAL {""}
+    ::= { icomWmacBsSfProvClsEntry 32 }
+
+icomWmacBsSfProvClsPhsMask  OBJECT-TYPE
+    SYNTAX                  OCTET STRING (SIZE(0..255))
+    MAX-ACCESS              read-create
+    STATUS                  current
+    DESCRIPTION 
+        "The PHS mask (PHSM) is an 8-bit mask that indicates which bytes in the
+        PHSF to suppress and which bytes to not suppress. The PHSM allows fields, 
+        such as sequence numbers or checksums (which vary in value), to be excluded
+        from suppression with the constant bytes around them suppressed. It is encodded
+        as follows: 
+            bit 0: 0 = don't suppress the 1st byte of the suppression field 
+                   1 = suppress first byte of the suppression field 
+            bit 1: 0 = don't suppress the 2nd byte of the suppression field 
+                   1 = suppress second byte of the suppression field 
+            bit x: 0 = don't suppress the (x+1) byte of the suppression field 
+                   1 = suppress (x+1) byte of the suppression field where the length of 
+                       the octet string is ceiling (icomWmacBsSfProvClsPhsSize/8)."
+    DEFVAL { '0000'H }
+    ::= { icomWmacBsSfProvClsEntry 33 }
+
+icomWmacBsSfProvClsPhsSize    OBJECT-TYPE
+    SYNTAX                    Integer32 (0..255)
+    UNITS                     "byte"
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION
+        "The value of this field (PHSS) is the total number of bytes in the header to be
+        suppressed and then restored in a service flow that uses PHS."
+    DEFVAL { 0 }
+    ::= { icomWmacBsSfProvClsEntry 34 }
+
+icomWmacBsSfProvClsPhsVerify    OBJECT-TYPE 
+    SYNTAX                      TruthValue
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "The value of this field (PHSV) indicates to the sending entity whether or not the 
+        packet header contents are to be verified prior  to performing suppression."
+    DEFVAL { true }
+    ::= { icomWmacBsSfProvClsEntry 35 }
+
+icomWmacBsSfProvClsRowStatus    OBJECT-TYPE 
+    SYNTAX                      RowStatus
+    MAX-ACCESS                  read-create
+    STATUS                      current
+    DESCRIPTION  
+        "This object is used to create a new row or modify or delete
+        an existing row in this table."
+    ::= { icomWmacBsSfProvClsEntry 36 }
+
+--=========================================================                                      
+-- Reverted Service Bundle Profile Table
+--=========================================================
+icomWmacBsSfReverseProvServBundleProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfReverseProvServBundleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service bundle profiles identifiers indexed 
+        by the service bundle profile names."
+    ::= { icomWmacBsObjects  18 }
+
+icomWmacBsSfReverseProvServBundleProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfReverseProvServBundleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service bundle profile."
+    INDEX  { icomWmacBsSfReverseProvServBundleProfName } 
+    ::={ icomWmacBsSfReverseProvServBundleProfTable 1 }
+
+IcomWmacBsSfReverseProvServBundleProfEntry ::= SEQUENCE {
+    icomWmacBsSfReverseProvServBundleProfName        SnmpAdminString,
+    icomWmacBsSfReverseProvServBundleProfIndex       Unsigned32
+}
+
+icomWmacBsSfReverseProvServBundleProfName  OBJECT-TYPE 
+    SYNTAX                          SnmpAdminString (SIZE (2..32))
+    MAX-ACCESS                      not-accessible
+    STATUS                          current
+    DESCRIPTION  
+        "Service bundle profile name." 
+    ::= { icomWmacBsSfReverseProvServBundleProfEntry 1 }
+
+icomWmacBsSfReverseProvServBundleProfIndex   OBJECT-TYPE 
+    SYNTAX                    Unsigned32 (1..32768)
+    MAX-ACCESS                read-only
+    STATUS                    current
+    DESCRIPTION  
+        "Service bundle profile index."
+    ::= { icomWmacBsSfReverseProvServBundleProfEntry 2 }
+
+--=========================================================                                      
+-- Reverted Service Flow Profile Table
+--=========================================================
+icomWmacBsSfReverseProvServFlowProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfReverseProvServFlowProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service flow profiles ids indexed by 
+        their corresponding service flow profile names."    
+    ::= { icomWmacBsObjects  19 }
+
+icomWmacBsSfReverseProvServFlowProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfReverseProvServFlowProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service flow profile."
+    INDEX  { icomWmacBsSfReverseProvServFlowProfName } 
+    ::={ icomWmacBsSfReverseProvServFlowProfTable 1 }
+
+IcomWmacBsSfReverseProvServFlowProfEntry ::= SEQUENCE {
+    icomWmacBsSfReverseProvServFlowProfName              SnmpAdminString, 
+    icomWmacBsSfReverseProvServFlowProfSfIndex           Unsigned32
+}
+
+icomWmacBsSfReverseProvServFlowProfName  OBJECT-TYPE 
+    SYNTAX                        SnmpAdminString (SIZE (2..16))
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION  
+        "Service flow profile name." 
+    ::= { icomWmacBsSfReverseProvServFlowProfEntry 1}
+
+icomWmacBsSfReverseProvServFlowProfSfIndex   OBJECT-TYPE 
+    SYNTAX                            Unsigned32 (1..32768)
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION  
+        "Service flow profile index."
+    ::= { icomWmacBsSfReverseProvServFlowProfEntry 2 }
+
+
+--=========================================================                                      
+-- Reverted Service Class Profile Table
+--=========================================================
+icomWmacBsSfReverseProvServClassProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfReverseProvServClassProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains service class profiles ids indexed 
+        by service class profile names."
+    ::= { icomWmacBsObjects  20 }
+
+icomWmacBsSfReverseProvServClassProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfReverseProvServClassProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a service class profile."
+    INDEX  { icomWmacBsSfReverseProvServClassProfileName } 
+    ::={ icomWmacBsSfReverseProvServClassProfTable 1 }
+
+IcomWmacBsSfReverseProvServClassProfEntry ::= SEQUENCE {
+    icomWmacBsSfReverseProvServClassProfileName         SnmpAdminString,
+    icomWmacBsSfReverseProvServClassProfileIndex        Unsigned32
+}
+
+icomWmacBsSfReverseProvServClassProfileName  OBJECT-TYPE
+    SYNTAX                            SnmpAdminString (SIZE(2..16))
+    MAX-ACCESS                        not-accessible
+    STATUS                            current
+    DESCRIPTION    
+        "Service class profile name."
+    ::= { icomWmacBsSfReverseProvServClassProfEntry 1 }
+
+icomWmacBsSfReverseProvServClassProfileIndex   OBJECT-TYPE 
+    SYNTAX                              Unsigned32 (1 .. 32768)
+    MAX-ACCESS                          read-only
+    STATUS                              current
+    DESCRIPTION  
+        "Service class (QoS set) profile index." 
+    ::= { icomWmacBsSfReverseProvServClassProfEntry 2 }
+
+--=========================================================                                      
+-- Reverted Classifier Rule Profile Table
+--=========================================================
+icomWmacBsSfReverseProvClsRuleProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfReverseProvClsRuleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table contains packet classifier rule profile ids 
+        indexed by profile names."
+    ::= { icomWmacBsObjects  21 }
+
+icomWmacBsSfReverseProvClsRuleProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfReverseProvClsRuleProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a classifier rule profile."
+    INDEX  { icomWmacBsSfReverseProvClsRuleProfileName } 
+    ::={ icomWmacBsSfReverseProvClsRuleProfTable 1 }
+
+IcomWmacBsSfReverseProvClsRuleProfEntry ::= SEQUENCE {
+    icomWmacBsSfReverseProvClsRuleProfileName   SnmpAdminString,
+    icomWmacBsSfReverseProvClsRuleProfileIndex  Unsigned32
+}
+
+icomWmacBsSfReverseProvClsRuleProfileName   OBJECT-TYPE
+    SYNTAX                           SnmpAdminString (SIZE(2..16))
+    MAX-ACCESS                       not-accessible
+    STATUS                           current
+    DESCRIPTION    
+        "Classifier rule profile name."
+    ::= { icomWmacBsSfReverseProvClsRuleProfEntry 1 }
+
+icomWmacBsSfReverseProvClsRuleProfileIndex  OBJECT-TYPE 
+    SYNTAX                           Unsigned32 (1..32768)
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION  
+        "Classifier rule profile index."  
+    ::= { icomWmacBsSfReverseProvClsRuleProfEntry 2 }
+
+--=========================================================                                      
+-- Wmac Sf QoS Priority Mapping Table
+--=========================================================
+icomWmacBsSfProvServFlowSfQosPrioMapProfTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF   IcomWmacBsSfProvServFlowSfQosPrioMapProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "This table holds SF QoS priority mapping entries."
+    ::= { icomWmacBsObjects  22 }
+
+icomWmacBsSfProvServFlowSfQosPrioMapProfEntry OBJECT-TYPE 
+    SYNTAX       IcomWmacBsSfProvServFlowSfQosPrioMapProfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  
+        "Each entry corresponds to a QoS priority mapping per service 
+         flow."
+    INDEX  { icomWmacBsSfProvServFlowProfSfIndex,
+             icomWmacBsSfProvServFlowSfQosPrioMapProfClsIndex,
+             icomWmacBsSfProvServFlowSfQosPrioMapProfClsValue } 
+    ::={ icomWmacBsSfProvServFlowSfQosPrioMapProfTable 1 }
+
+IcomWmacBsSfProvServFlowSfQosPrioMapProfEntry ::= SEQUENCE {
+    icomWmacBsSfProvServFlowSfQosPrioMapProfClsIndex   Unsigned32,
+    icomWmacBsSfProvServFlowSfQosPrioMapProfClsValue   Unsigned32,
+    icomWmacBsSfProvServFlowSfQosPrioMapProfQueueNum   Unsigned32
+}
+
+icomWmacBsSfProvServFlowSfQosPrioMapProfClsIndex    OBJECT-TYPE
+    SYNTAX                                          Unsigned32 (1..2)
+    MAX-ACCESS                                      not-accessible
+    STATUS                                          current
+    DESCRIPTION    
+        "This object holds the value of icomWmacBsSfProvServFlowProfSfQosCls."
+    ::= { icomWmacBsSfProvServFlowSfQosPrioMapProfEntry 1 }
+
+icomWmacBsSfProvServFlowSfQosPrioMapProfClsValue    OBJECT-TYPE
+    SYNTAX                                          Unsigned32 (1..64)
+    MAX-ACCESS                                      not-accessible
+    STATUS                                          current
+    DESCRIPTION    
+        "This object holds a classification value in the range 1-8
+         for P-bits and 1-64 for DSCP."
+    ::= { icomWmacBsSfProvServFlowSfQosPrioMapProfEntry 2 }
+
+icomWmacBsSfProvServFlowSfQosPrioMapProfQueueNum    OBJECT-TYPE
+    SYNTAX                                          Unsigned32 (0..7)
+    MAX-ACCESS                                      read-write
+    STATUS                                          current
+    DESCRIPTION    
+        "This object holds the SF priority queue number (0-7).
+         Queue number 0 has the highest priority."
+    ::= { icomWmacBsSfProvServFlowSfQosPrioMapProfEntry 3 }
+
+--=========================================================
+-- icomWmacBsPerfTsStatusEnable
+--=========================================================
+
+icomWmacBsPerfTsStatusEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of fine-grain
+        historical performance statistics for the terminal stations with
+        a 1-minute granularity.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacBsPerfObjects 1 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStatusCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStatusCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStatusCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain terminal station performance
+        statistics for the current 1-minute interval.
+       "
+    ::= { icomWmacBsPerfObjects 2 }
+
+icomWmacBsPerfTsStatusCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStatusCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStatusCurrentTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId
+           }
+    ::= { icomWmacBsPerfTsStatusCurrentTable 1 }
+
+IcomWmacBsPerfTsStatusCurrentEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStatusCurrentSuspect         TruthValue,
+    icomWmacBsPerfTsStatusCurrentDiuc            WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatusCurrentUiuc            WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatusCurrentDlRssi          Integer32,
+    icomWmacBsPerfTsStatusCurrentUlRssi          Integer32,
+    icomWmacBsPerfTsStatusCurrentDlSnr           Integer32,
+    icomWmacBsPerfTsStatusCurrentUlSnr           Integer32
+}
+
+icomWmacBsPerfTsStatusCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 1 }
+
+icomWmacBsPerfTsStatusCurrentDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Currently used DL physical mode in the current 1-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 2 }
+
+icomWmacBsPerfTsStatusCurrentUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Currently used UL physical mode in the current 1-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 3 }
+
+icomWmacBsPerfTsStatusCurrentDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current DL RSSI as reported by the TS in the current 1-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 4 }
+
+icomWmacBsPerfTsStatusCurrentUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current UL RSSI in the current 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 5 }
+
+icomWmacBsPerfTsStatusCurrentDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current DL SNR as reported by the TS in the current 1-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 6 }
+
+icomWmacBsPerfTsStatusCurrentUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Current UL SNR in the current 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatusCurrentEntry 7 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStatus1MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStatus1MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStatus1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain terminal station performance
+        statistics for historical (completed) 1-minute intervals.
+
+        This table will have a maximum of 60 entries of completed 1-minute
+        intervals, to provide historical statistics for one hour.
+       "
+    ::= { icomWmacBsPerfObjects 3 }
+
+icomWmacBsPerfTsStatus1MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStatus1MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStatus1MinIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsPerfTsStatus1MinIntervalNumber
+           }
+    ::= { icomWmacBsPerfTsStatus1MinIntervalTable 1 }
+
+IcomWmacBsPerfTsStatus1MinIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStatus1MinIntervalNumber          Unsigned32,
+    icomWmacBsPerfTsStatus1MinIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfTsStatus1MinIntervalSuspect         TruthValue,
+    icomWmacBsPerfTsStatus1MinIntervalDiuc            WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus1MinIntervalUiuc            WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus1MinIntervalDlRssi          Integer32,
+    icomWmacBsPerfTsStatus1MinIntervalUlRssi          Integer32,
+    icomWmacBsPerfTsStatus1MinIntervalDlSnr           Integer32,
+    icomWmacBsPerfTsStatus1MinIntervalUlSnr           Integer32
+}
+
+icomWmacBsPerfTsStatus1MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..60)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 1 }
+
+icomWmacBsPerfTsStatus1MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 2 }
+
+icomWmacBsPerfTsStatus1MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 3 }
+
+icomWmacBsPerfTsStatus1MinIntervalDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the currently used DL physical mode at the end of
+         this completed 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 4 }
+
+icomWmacBsPerfTsStatus1MinIntervalUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the currently used UL physical mode at the end of
+         this completed 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 5 }
+
+icomWmacBsPerfTsStatus1MinIntervalDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the current DL RSSI as reported by the TS at the
+         end of this completed 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 6 }
+
+icomWmacBsPerfTsStatus1MinIntervalUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the current UL RSSI at the end of this completed
+         1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 7 }
+
+icomWmacBsPerfTsStatus1MinIntervalDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the current DL SNR as reported by the TS at the
+         end of this completed 1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 8 }
+
+icomWmacBsPerfTsStatus1MinIntervalUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Snapshot of the current UL SNR at the end of this completed
+         1-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1MinIntervalEntry 9 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStatus15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStatus15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStatus15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain terminal station performance
+        statistics for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed
+        15-minute intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacBsPerfObjects 4 }
+
+icomWmacBsPerfTsStatus15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStatus15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStatus15MinIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsPerfTsStatus15MinIntervalNumber
+           }
+    ::= { icomWmacBsPerfTsStatus15MinIntervalTable 1 }
+
+IcomWmacBsPerfTsStatus15MinIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStatus15MinIntervalNumber          Unsigned32,
+    icomWmacBsPerfTsStatus15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfTsStatus15MinIntervalSuspect         TruthValue,
+    icomWmacBsPerfTsStatus15MinIntervalMinDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalMaxDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalModDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalMinUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalMaxUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalModUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus15MinIntervalMinDlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMaxDlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalAvgDlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMinUlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMaxUlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalAvgUlRssi       Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMinDlSnr        Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMaxDlSnr        Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalAvgDlSnr        Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMinUlSnr        Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalMaxUlSnr        Integer32,
+    icomWmacBsPerfTsStatus15MinIntervalAvgUlSnr        Integer32
+}
+
+icomWmacBsPerfTsStatus15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 1 }
+
+icomWmacBsPerfTsStatus15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 2 }
+
+icomWmacBsPerfTsStatus15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 3 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum used DL physical mode in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 4 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum used DL physical mode in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 5 }
+
+icomWmacBsPerfTsStatus15MinIntervalModDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Most frequent (i.e., statistical mode) used DL physical mode
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 6 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum used UL physical mode in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 7 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum used UL physical mode in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 8 }
+
+icomWmacBsPerfTsStatus15MinIntervalModUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Most frequent (i.e., statistical mode) used UL physical mode
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 9 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum DL RSSI as reported by the TS in this completed
+         15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 10 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum DL RSSI as reported by the TS in this completed
+         15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 11 }
+
+
+icomWmacBsPerfTsStatus15MinIntervalAvgDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average DL RSSI as reported by the TS in this completed
+         15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 12 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum UL RSSI in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 13 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum UL RSSI in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 14 }
+
+icomWmacBsPerfTsStatus15MinIntervalAvgUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average UL RSSI in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 15 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum DL SNR as reported by the TS in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 16 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum DL SNR as reported by the TS in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 17 }
+
+icomWmacBsPerfTsStatus15MinIntervalAvgDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average DL SNR as reported by the TS in this completed 15-minute
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 18 }
+
+icomWmacBsPerfTsStatus15MinIntervalMinUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum UL SNR in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 19 }
+
+icomWmacBsPerfTsStatus15MinIntervalMaxUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum UL SNR in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 20 }
+
+icomWmacBsPerfTsStatus15MinIntervalAvgUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average UL SNR in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatus15MinIntervalEntry 21 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStatus1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStatus1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStatus1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides fine-grain terminal station performance
+        statistics for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed
+        1-day intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacBsPerfObjects 5 }
+
+icomWmacBsPerfTsStatus1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStatus1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStatus1DayIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsPerfTsStatus1DayIntervalNumber
+           }
+    ::= { icomWmacBsPerfTsStatus1DayIntervalTable 1 }
+
+IcomWmacBsPerfTsStatus1DayIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStatus1DayIntervalNumber          Unsigned32,
+    icomWmacBsPerfTsStatus1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfTsStatus1DayIntervalSuspect         TruthValue,
+    icomWmacBsPerfTsStatus1DayIntervalMinDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalMaxDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalModDiuc         WmacDlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalMinUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalMaxUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalModUiuc         WmacUlPhysicalMode,
+    icomWmacBsPerfTsStatus1DayIntervalMinDlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMaxDlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalAvgDlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMinUlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMaxUlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalAvgUlRssi       Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMinDlSnr        Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMaxDlSnr        Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalAvgDlSnr        Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMinUlSnr        Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalMaxUlSnr        Integer32,
+    icomWmacBsPerfTsStatus1DayIntervalAvgUlSnr        Integer32
+}
+
+icomWmacBsPerfTsStatus1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 1 }
+
+icomWmacBsPerfTsStatus1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 2 }
+
+icomWmacBsPerfTsStatus1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 3 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum used DL physical mode in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 4 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum used DL physical mode in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 5 }
+
+icomWmacBsPerfTsStatus1DayIntervalModDiuc OBJECT-TYPE
+    SYNTAX       WmacDlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Most frequent (i.e., statistical mode) used DL physical mode
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 6 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum used UL physical mode in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 7 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum used UL physical mode in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 8 }
+
+icomWmacBsPerfTsStatus1DayIntervalModUiuc OBJECT-TYPE
+    SYNTAX       WmacUlPhysicalMode
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Most frequent (i.e., statistical mode) used UL physical mode
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 9 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum DL RSSI as reported by the TS in this completed
+         1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 10 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum DL RSSI as reported by the TS in this completed
+         1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 11 }
+
+
+icomWmacBsPerfTsStatus1DayIntervalAvgDlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average DL RSSI as reported by the TS in this completed
+         1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 12 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum UL RSSI in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 13 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum UL RSSI in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 14 }
+
+icomWmacBsPerfTsStatus1DayIntervalAvgUlRssi OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average UL RSSI in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 15 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum DL SNR as reported by the TS in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 16 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum DL SNR as reported by the TS in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 17 }
+
+icomWmacBsPerfTsStatus1DayIntervalAvgDlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average DL SNR as reported by the TS in this completed 1-day
+         interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 18 }
+
+icomWmacBsPerfTsStatus1DayIntervalMinUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Minimum UL SNR in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 19 }
+
+icomWmacBsPerfTsStatus1DayIntervalMaxUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Maximum UL SNR in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 20 }
+
+icomWmacBsPerfTsStatus1DayIntervalAvgUlSnr OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Average UL SNR in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStatus1DayIntervalEntry 21 }
+
+--=========================================================
+-- icomWmacBsPerfTsStatsEnable
+--=========================================================
+
+icomWmacBsPerfTsStatsEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of coarse-grain
+        historical performance statistics for the terminal stations with
+        a 15-minute granularity.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacBsPerfObjects 6 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStatsCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStatsCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStatsCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain terminal station performance
+        statistics for the current 15-minute interval. All table
+        statistics are reset to zero after the completion of each
+        15-minute measurement interval.
+       "
+    ::= { icomWmacBsPerfObjects 7 }
+
+icomWmacBsPerfTsStatsCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStatsCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStatsCurrentTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId
+           }
+    ::= { icomWmacBsPerfTsStatsCurrentTable 1 }
+
+IcomWmacBsPerfTsStatsCurrentEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStatsCurrentElapsedTime     TimeInterval,
+    icomWmacBsPerfTsStatsCurrentSuspect         TruthValue,
+    icomWmacBsPerfTsStatsCurrentInService       Counter64,
+    icomWmacBsPerfTsStatsCurrentOutOfService    Counter64
+}
+
+icomWmacBsPerfTsStatsCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatsCurrentEntry 1 }
+
+icomWmacBsPerfTsStatsCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStatsCurrentEntry 2 }
+
+icomWmacBsPerfTsStatsCurrentInService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in the current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatsCurrentEntry 3 }
+
+icomWmacBsPerfTsStatsCurrentOutOfService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in the current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStatsCurrentEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStats15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStats15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStats15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain terminal station performance
+        statistics for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed 15-minute
+        intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacBsPerfObjects 8 }
+
+icomWmacBsPerfTsStats15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStats15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStats15MinIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsPerfTsStats15MinIntervalNumber
+           }
+    ::= { icomWmacBsPerfTsStats15MinIntervalTable 1 }
+
+IcomWmacBsPerfTsStats15MinIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStats15MinIntervalNumber          Unsigned32,
+    icomWmacBsPerfTsStats15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfTsStats15MinIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfTsStats15MinIntervalSuspect         TruthValue,
+    icomWmacBsPerfTsStats15MinIntervalInService       Counter64,
+    icomWmacBsPerfTsStats15MinIntervalOutOfService    Counter64
+}
+
+icomWmacBsPerfTsStats15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 1 }
+
+icomWmacBsPerfTsStats15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 2 }
+
+icomWmacBsPerfTsStats15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 3 }
+
+icomWmacBsPerfTsStats15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 4 }
+
+icomWmacBsPerfTsStats15MinIntervalInService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 5 }
+
+icomWmacBsPerfTsStats15MinIntervalOutOfService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfTsStats15MinIntervalEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfTsStats1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfTsStats1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfTsStats1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides coarse-grain terminal station performance
+        statistics for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacBsPerfObjects 9 }
+
+icomWmacBsPerfTsStats1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfTsStats1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfTsStats1DayIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsPerfTsStats1DayIntervalNumber
+           }
+    ::= { icomWmacBsPerfTsStats1DayIntervalTable 1 }
+
+IcomWmacBsPerfTsStats1DayIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfTsStats1DayIntervalNumber          Unsigned32,
+    icomWmacBsPerfTsStats1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfTsStats1DayIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfTsStats1DayIntervalSuspect         TruthValue,
+    icomWmacBsPerfTsStats1DayIntervalInService       Counter64,
+    icomWmacBsPerfTsStats1DayIntervalOutOfService    Counter64
+}
+
+icomWmacBsPerfTsStats1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 1 }
+
+icomWmacBsPerfTsStats1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 2 }
+
+icomWmacBsPerfTsStats1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 3 }
+
+icomWmacBsPerfTsStats1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 4 }
+
+icomWmacBsPerfTsStats1DayIntervalInService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time in service in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 5 }
+
+icomWmacBsPerfTsStats1DayIntervalOutOfService OBJECT-TYPE
+    SYNTAX       Counter64
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time out of service in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfTsStats1DayIntervalEntry 6 }
+
+--=========================================================
+-- icomWmacBsPerfDlPhyEnable
+--=========================================================
+
+icomWmacBsPerfDlPhyEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of historical
+        performance statistics for the BS-side TS-specific DL PHY.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacBsPerfObjects 10 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfDlPhyCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfDlPhyCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfDlPhyCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific DL PHY performance
+        statistics for the current 15-minute interval. All table
+        statistics are reset to zero after the completion of each
+        15-minute measurement interval.
+       "
+    ::= { icomWmacBsPerfObjects 11 }
+
+icomWmacBsPerfDlPhyCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfDlPhyCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfDlPhyCurrentTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsDlPhyDiuc
+           }
+    ::= { icomWmacBsPerfDlPhyCurrentTable 1 }
+
+IcomWmacBsPerfDlPhyCurrentEntry ::= SEQUENCE {
+    icomWmacBsPerfDlPhyCurrentElapsedTime     TimeInterval,
+    icomWmacBsPerfDlPhyCurrentSuspect         TruthValue,
+    icomWmacBsPerfDlPhyCurrentActiveTime      Integer32,
+    icomWmacBsPerfDlPhyCurrentNumEntries      Integer32
+}
+
+icomWmacBsPerfDlPhyCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhyCurrentEntry 1 }
+
+icomWmacBsPerfDlPhyCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhyCurrentEntry 2 }
+
+icomWmacBsPerfDlPhyCurrentActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected DIUC in the
+         current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfDlPhyCurrentEntry 3 }
+
+icomWmacBsPerfDlPhyCurrentNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected DIUC
+         in the current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfDlPhyCurrentEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfDlPhy15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfDlPhy15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfDlPhy15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific DL PHY performance
+        statistics for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed 15-minute
+        intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacBsPerfObjects 12 }
+
+icomWmacBsPerfDlPhy15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfDlPhy15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfDlPhy15MinIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsDlPhyDiuc,
+             icomWmacBsPerfDlPhy15MinIntervalNumber
+           }
+    ::= { icomWmacBsPerfDlPhy15MinIntervalTable 1 }
+
+IcomWmacBsPerfDlPhy15MinIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfDlPhy15MinIntervalNumber          Unsigned32,
+    icomWmacBsPerfDlPhy15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfDlPhy15MinIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfDlPhy15MinIntervalSuspect         TruthValue,
+    icomWmacBsPerfDlPhy15MinIntervalActiveTime      Integer32,
+    icomWmacBsPerfDlPhy15MinIntervalNumEntries      Integer32
+}
+
+icomWmacBsPerfDlPhy15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 1 }
+
+icomWmacBsPerfDlPhy15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 2 }
+
+icomWmacBsPerfDlPhy15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 3 }
+
+icomWmacBsPerfDlPhy15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 4 }
+
+icomWmacBsPerfDlPhy15MinIntervalActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected DIUC in this
+         completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 5 }
+
+icomWmacBsPerfDlPhy15MinIntervalNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected DIUC
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfDlPhy15MinIntervalEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfDlPhy1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfDlPhy1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfDlPhy1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific DL PHY performance
+        statistics for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacBsPerfObjects 13 }
+
+icomWmacBsPerfDlPhy1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfDlPhy1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfDlPhy1DayIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsDlPhyDiuc,
+             icomWmacBsPerfDlPhy1DayIntervalNumber
+           }
+    ::= { icomWmacBsPerfDlPhy1DayIntervalTable 1 }
+
+IcomWmacBsPerfDlPhy1DayIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfDlPhy1DayIntervalNumber          Unsigned32,
+    icomWmacBsPerfDlPhy1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfDlPhy1DayIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfDlPhy1DayIntervalSuspect         TruthValue,
+    icomWmacBsPerfDlPhy1DayIntervalActiveTime      Integer32,
+    icomWmacBsPerfDlPhy1DayIntervalNumEntries      Integer32
+}
+
+icomWmacBsPerfDlPhy1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 1 }
+
+icomWmacBsPerfDlPhy1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 2 }
+
+icomWmacBsPerfDlPhy1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 3 }
+
+icomWmacBsPerfDlPhy1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 4 }
+
+icomWmacBsPerfDlPhy1DayIntervalActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected DIUC in this
+         completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 5 }
+
+icomWmacBsPerfDlPhy1DayIntervalNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected DIUC
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfDlPhy1DayIntervalEntry 6 }
+
+--=========================================================
+-- icomWmacBsPerfUlPhyEnable
+--=========================================================
+
+icomWmacBsPerfUlPhyEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+       "This object enables/disables the collection of historical
+        performance statistics for the BS-side TS-specific UL PHY.
+
+        If value is set to 'true(1)', then collection of historical
+        performance statistics is enabled.
+
+        If value is set to 'false(2)', then collection of historical
+        performance statistics is disabled. Any existing historical
+        performance statistics will be discarded.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { true }
+    ::= { icomWmacBsPerfObjects 14 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfUlPhyCurrentTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfUlPhyCurrentTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfUlPhyCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific UL PHY performance
+        statistics for the current 15-minute interval. All table
+        statistics are reset to zero after the completion of each
+        15-minute measurement interval.
+       "
+    ::= { icomWmacBsPerfObjects 15 }
+
+icomWmacBsPerfUlPhyCurrentEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfUlPhyCurrentEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfUlPhyCurrentTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsUlPhyUiuc
+           }
+    ::= { icomWmacBsPerfUlPhyCurrentTable 1 }
+
+IcomWmacBsPerfUlPhyCurrentEntry ::= SEQUENCE {
+    icomWmacBsPerfUlPhyCurrentElapsedTime     TimeInterval,
+    icomWmacBsPerfUlPhyCurrentSuspect         TruthValue,
+    icomWmacBsPerfUlPhyCurrentActiveTime      Integer32,
+    icomWmacBsPerfUlPhyCurrentNumEntries      Integer32
+}
+
+icomWmacBsPerfUlPhyCurrentElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that the current measurement interval has
+        been running for, in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhyCurrentEntry 1 }
+
+icomWmacBsPerfUlPhyCurrentSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhyCurrentEntry 2 }
+
+icomWmacBsPerfUlPhyCurrentActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected UIUC in the
+         current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfUlPhyCurrentEntry 3 }
+
+icomWmacBsPerfUlPhyCurrentNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected UIUC
+         in the current 15-minute interval.
+        "
+    ::= { icomWmacBsPerfUlPhyCurrentEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfUlPhy15MinIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfUlPhy15MinIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfUlPhy15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific UL PHY performance
+        statistics for historical (completed) 15-minute intervals.
+
+        This table will have a maximum of 96 entries of completed 15-minute
+        intervals, to provide historical statistics for one day.
+       "
+    ::= { icomWmacBsPerfObjects 16 }
+
+icomWmacBsPerfUlPhy15MinIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfUlPhy15MinIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfUlPhy15MinIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsUlPhyUiuc,
+             icomWmacBsPerfUlPhy15MinIntervalNumber
+           }
+    ::= { icomWmacBsPerfUlPhy15MinIntervalTable 1 }
+
+IcomWmacBsPerfUlPhy15MinIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfUlPhy15MinIntervalNumber          Unsigned32,
+    icomWmacBsPerfUlPhy15MinIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfUlPhy15MinIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfUlPhy15MinIntervalSuspect         TruthValue,
+    icomWmacBsPerfUlPhy15MinIntervalActiveTime      Integer32,
+    icomWmacBsPerfUlPhy15MinIntervalNumEntries      Integer32
+}
+
+icomWmacBsPerfUlPhy15MinIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..96)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 15-minute interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 1 }
+
+icomWmacBsPerfUlPhy15MinIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 2 }
+
+icomWmacBsPerfUlPhy15MinIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 3 }
+
+icomWmacBsPerfUlPhy15MinIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 4 }
+
+icomWmacBsPerfUlPhy15MinIntervalActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected UIUC in this
+         completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 5 }
+
+icomWmacBsPerfUlPhy15MinIntervalNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected UIUC
+         in this completed 15-minute interval.
+        "
+    ::= { icomWmacBsPerfUlPhy15MinIntervalEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomWmacBsPerfUlPhy1DayIntervalTable
+-- -------------------------------------------------------------
+
+icomWmacBsPerfUlPhy1DayIntervalTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF IcomWmacBsPerfUlPhy1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "This table provides BS-side TS-specific UL PHY performance
+        statistics for historical (completed) 1-day intervals.
+
+        This table will have a maximum of 30 entries of completed 1-day
+        intervals, to provide historical statistics for one month.
+       "
+    ::= { icomWmacBsPerfObjects 17 }
+
+icomWmacBsPerfUlPhy1DayIntervalEntry OBJECT-TYPE
+    SYNTAX       IcomWmacBsPerfUlPhy1DayIntervalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomWmacBsPerfUlPhy1DayIntervalTable.
+       "
+    INDEX  { icomWmacBsId,
+             icomWmacBsTsId,
+             icomWmacBsTsUlPhyUiuc,
+             icomWmacBsPerfUlPhy1DayIntervalNumber
+           }
+    ::= { icomWmacBsPerfUlPhy1DayIntervalTable 1 }
+
+IcomWmacBsPerfUlPhy1DayIntervalEntry ::= SEQUENCE {
+    icomWmacBsPerfUlPhy1DayIntervalNumber          Unsigned32,
+    icomWmacBsPerfUlPhy1DayIntervalEndTime         IcomDateTimeType,
+    icomWmacBsPerfUlPhy1DayIntervalElapsedTime     TimeInterval,
+    icomWmacBsPerfUlPhy1DayIntervalSuspect         TruthValue,
+    icomWmacBsPerfUlPhy1DayIntervalActiveTime      Integer32,
+    icomWmacBsPerfUlPhy1DayIntervalNumEntries      Integer32
+}
+
+icomWmacBsPerfUlPhy1DayIntervalNumber OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..30)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+       "A number that identifies the interval for which the set of
+        statistics is available. The interval identified by 1 is the
+        most recently completed 1-day interval, and the interval
+        identified by N is the interval immediately preceding the one
+        identified by N-1.
+       "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 1 }
+
+icomWmacBsPerfUlPhy1DayIntervalEndTime OBJECT-TYPE
+    SYNTAX       IcomDateTimeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "The time that this measurement interval ended.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 2 }
+
+icomWmacBsPerfUlPhy1DayIntervalElapsedTime OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The length of time that this measurement interval ran for,
+        in centi-seconds.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 3 }
+
+icomWmacBsPerfUlPhy1DayIntervalSuspect OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+       "This variable indicates if the data for this interval have been
+        marked as suspect.
+
+        Value 'true(1)' indicates that the related performance data have
+        been marked as suspect.
+
+        Value 'false(2)' indicates that the related performance data
+        have not been marked as suspect.
+       "
+    REFERENCE
+       "ITU-T G.7710/Y.1701 clause 10.1.6.1
+       "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 4 }
+
+icomWmacBsPerfUlPhy1DayIntervalActiveTime OBJECT-TYPE
+    SYNTAX       Integer32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Time the TS has spent connected in the selected UIUC in this
+         completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 5 }
+
+icomWmacBsPerfUlPhy1DayIntervalNumEntries OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Number of times the TS has been switched to the selected UIUC
+         in this completed 1-day interval.
+        "
+    ::= { icomWmacBsPerfUlPhy1DayIntervalEntry 6 }
+
+--=========================================================                                      
+-- Compliance statements
+--=========================================================
+icomWmacBsMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for Wireless MAC Base Station's entities"
+    MODULE  -- this module
+    MANDATORY-GROUPS { icomWmacBsGroup,
+                       icomWmacSfGroup,
+                       icomWmacBsPerfGroup,
+                       icomWmacBsTrapGroup,
+                       icomWmacBsNotificationsGroup}
+    ::= { icomWmacBsCompliances 1 }
+   
+icomWmacBsGroup OBJECT-GROUP
+    OBJECTS { -- Wmac Bs Configuration
+              icomWmacBsCfgMaximumRange,
+              icomWmacBsCfgRngInvTimer,
+              icomWmacBsCfgRngChRepTimer,
+              icomWmacBsCfgRngInvRetries,
+              icomWmacBsCfgRngAdjustRetries,
+              icomWmacBsCfgRngInvSuccessRetries,
+              icomWmacBsCfgMonChRepReqRetries,
+              icomWmacBsCfgMonChRepTimer,
+              icomWmacBsCfgMonCheckTimer,
+              icomWmacBsCfgRngReceivedPowerTarget,
+              icomWmacBsCfgRngReceivedPowerThres,
+              icomWmacBsCfgRngTimingThres, 
+              icomWmacBsCfgRngFrequencyThres,
+              icomWmacBsCfgSfRspTimer,
+              icomWmacBsCfgSfReqRetries, 
+              icomWmacBsCfgSfHoldTimer,
+
+              -- Wmac Bs Statistics
+              icomWmacBsStatsReset,
+              icomWmacBsStatsGbiSent,
+
+              -- Wmac BsTs Configuration
+              icomWmacBsTsCfgAdminStatus,
+              icomWmacBsTsCfgMacAddress,
+              icomWmacBsTsCfgMinDiuc,     
+              icomWmacBsTsCfgMaxDiuc,
+              icomWmacBsTsCfgMinUiuc,
+              icomWmacBsTsCfgMaxUiuc,
+              icomWmacBsTsCfgMinUlTxPower,
+              icomWmacBsTsCfgMaxUlTxPower, 
+              icomWmacBsTsCfgReportingInterval,
+              icomWmacBsTsCfgResetTs,
+              icomWmacBsTsCfgDefAnySFStatus,
+              icomWmacBsTsCfgUiucLimit,
+              icomWmacBsTsCfgRowStatus,
+              icomWmacBsTsCfgDefAnySFDlMaxQueueDepth0,
+              icomWmacBsTsCfgDefMngSFMinRate,
+              icomWmacBsTsCfgDefMngSFMaxRate,
+
+              -- Wmac BsTs Status
+              icomWmacBsTsStatusConnectivity,
+              icomWmacBsTsStatusMonitoring,
+              icomWmacBsTsStatusUpTime,     
+              icomWmacBsTsStatusLastEntryTime,
+              icomWmacBsTsStatusDiuc,
+              icomWmacBsTsStatusUiuc,
+              icomWmacBsTsStatusUlTxPower,
+              icomWmacBsTsStatusUlTxPowerHeadroom, 
+              icomWmacBsTsStatusDlRssi,
+              icomWmacBsTsStatusDlSnr,
+              icomWmacBsTsStatusDlFecStress,
+              icomWmacBsTsStatusUlRssi,
+              icomWmacBsTsStatusUlSnr,
+              icomWmacBsTsStatusUlFecStress,
+              icomWmacBsTsStatusInfo,
+              icomWmacBsTsStatusAddressType, 
+              icomWmacBsTsStatusIpAddress,
+              icomWmacBsTsStatusIpNetmask,
+              icomWmacBsTsStatusMngVlanId,
+              icomWmacBsTsStatusDistance,
+
+              -- Wmac BsTs Statistics
+              icomWmacBsTsStatsReset,
+              icomWmacBsTsStatsEntries,
+              icomWmacBsTsStatsExits,     
+              icomWmacBsTsStatsInService,
+              icomWmacBsTsStatsOutOfService,
+              icomWmacBsTsStatsRngInvSent,
+              icomWmacBsTsStatsRngChRepRcvd,
+              icomWmacBsTsStatsBrceBrRcvd, 
+              icomWmacBsTsStatsChRepReqSent,
+              icomWmacBsTsStatsChRepRcvd,
+              icomWmacBsTsStatsSfAddReqSent,
+              icomWmacBsTsStatsSfAddRspRcvd,
+              icomWmacBsTsStatsSfRemReqSent,
+              icomWmacBsTsStatsSfRemRspRcvd,
+              icomWmacBsTsStatsSfModReqSent,
+              icomWmacBsTsStatsSfModRspRcvd,
+              icomWmacBsTsStatsSfAckSent,
+              icomWmacBsTsStatsAggrDlSduBitRate,
+              icomWmacBsTsStatsAggrUlSduBitRate,
+              icomWmacBsTsStatsAggrDlPduBitRate,
+              icomWmacBsTsStatsAggrUlPduBitRate,
+
+              -- Wmac BsTs DL PHY Statistics
+              icomWmacBsTsDlPhyActiveTime,
+              icomWmacBsTsDlPhyNumEntries,
+              icomWmacBsTsDlPhyResetStats,
+
+              -- Wmac BsTs UL PHY Statistics
+              icomWmacBsTsUlPhyActiveTime,
+              icomWmacBsTsUlPhyNumEntries,
+              icomWmacBsTsUlPhyResetStats          
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing the BS wmac parameters."
+    ::= { icomWmacBsGroups 1 }        
+
+icomWmacSfGroup OBJECT-GROUP
+    OBJECTS {   -- Ts Provision
+              icomWmacBsSfProvTsRowStatus,
+
+               -- Service Bundle Profile
+              icomWmacBsSfProvServBundleProfIndexNext,
+              icomWmacBsSfProvServBundleProfName,
+              icomWmacBsSfProvServBundleProfRowStatus,
+
+              -- Service Flow Profile
+              icomWmacBsSfProvServFlowProfSfIndexNext,
+              icomWmacBsSfProvServFlowProfName,  
+              icomWmacBsSfProvServFlowProfServClassProfId,
+              icomWmacBsSfProvServFlowProfClsRuleProfId,
+              icomWmacBsSfProvServFlowProfDirection,
+              icomWmacBsSfProvServFlowProfMandatory,
+              icomWmacBsSfProvServFlowProfAdminStatus,
+              icomWmacBsSfProvServFlowProfQueueType,
+              icomWmacBsSfProvServFlowProfQueueWeight4,
+              icomWmacBsSfProvServFlowProfQueueWeight5,
+              icomWmacBsSfProvServFlowProfQueueWeight6,
+              icomWmacBsSfProvServFlowProfQueueWeight7,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth0,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth1,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth2,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth3,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth4,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth5,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth6,
+              icomWmacBsSfProvServFlowProfMaxQueueDepth7,
+              icomWmacBsSfProvServFlowProfMinPhyMode,
+              icomWmacBsSfProvServFlowProfSfQosEnable,
+              icomWmacBsSfProvServFlowProfSfQosCls,
+              icomWmacBsSfProvServFlowProfRowStatus,
+
+              -- Service Class
+              icomWmacBsSfProvServClassProfIndexNext,
+              icomWmacBsSfProvServClassProfileName,
+              icomWmacBsSfProvServClassTrafficPriority,
+              icomWmacBsSfProvServClassMaxSustainedRate,
+              icomWmacBsSfProvServClassMinReservedRate,
+              icomWmacBsSfProvServClassGrantInterval,
+              icomWmacBsSfProvServClassSchedulingType,
+              icomWmacBsSfProvServClassReqTxPolicy,
+              icomWmacBsSfProvServClassWeight,
+              icomWmacBsSfProvServClassRowStatus,
+
+              -- Classifier Rule
+              icomWmacBsSfProvClsRuleProfIndexNext,
+              icomWmacBsSfProvClsRuleProfileName,
+              icomWmacBsSfProvClsRuleRowStatus,
+ 
+              -- Classification Criteria
+              icomWmacBsSfProvClsDestMacAddr,
+              icomWmacBsSfProvClsDestMacMask,
+              icomWmacBsSfProvClsSrcMacAddr,
+              icomWmacBsSfProvClsSrcMacMask,
+              icomWmacBsSfProvClsEnetProtocol,
+              icomWmacBsSfProvClsUserPriLow,
+              icomWmacBsSfProvClsUserPriHigh,
+              icomWmacBsSfProvClsCvlanIdLow,
+              icomWmacBsSfProvClsCvlanIdHigh,
+              icomWmacBsSfProvClsSvlanIdLow,
+              icomWmacBsSfProvClsSvlanIdHigh,
+              icomWmacBsSfProvClsIpTosLow,
+              icomWmacBsSfProvClsIpTosHigh,
+              icomWmacBsSfProvClsIpTosMask,
+              icomWmacBsSfProvClsAddressType,
+              icomWmacBsSfProvClsIpSrcAddr,
+              icomWmacBsSfProvClsIpSrcMask,
+              icomWmacBsSfProvClsIpDestAddr,
+              icomWmacBsSfProvClsIpDestMask,
+              icomWmacBsSfProvClsIpProtocol,
+              icomWmacBsSfProvClsMplsExp,
+              icomWmacBsSfProvClsIpv6TrfClassLow,
+              icomWmacBsSfProvClsIpv6TrfClassHigh,
+              icomWmacBsSfProvClsIpv6FlowLabelLow,
+              icomWmacBsSfProvClsIpv6FlowLabelHigh,
+              icomWmacBsSfProvClsSrcPortStart,
+              icomWmacBsSfProvClsSrcPortEnd,
+              icomWmacBsSfProvClsDestPortStart,
+              icomWmacBsSfProvClsDestPortEnd,
+              icomWmacBsSfProvClsBitMap,
+              icomWmacBsSfProvClsPhsField,   
+              icomWmacBsSfProvClsPhsMask,
+              icomWmacBsSfProvClsPhsSize,
+              icomWmacBsSfProvClsPhsVerify,
+              icomWmacBsSfProvClsRowStatus,
+
+              -- Reverted Service Bundle Profile
+              icomWmacBsSfReverseProvServBundleProfIndex,
+
+              -- Reverted Service Flow Profile
+              icomWmacBsSfReverseProvServFlowProfSfIndex, 
+
+              -- Reverted Service Class
+              icomWmacBsSfReverseProvServClassProfileIndex,
+
+              -- Reverted Classifier Rule
+              icomWmacBsSfReverseProvClsRuleProfileIndex,
+
+              -- SF QoS Priority Mapping   
+              icomWmacBsSfProvServFlowSfQosPrioMapProfQueueNum 
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing the service flow information."
+    ::= { icomWmacBsGroups 2 }      
+
+icomWmacBsPerfGroup OBJECT-GROUP
+    OBJECTS {
+              icomWmacBsPerfTsStatusEnable,
+
+              icomWmacBsPerfTsStatusCurrentSuspect,
+              icomWmacBsPerfTsStatusCurrentDiuc,
+              icomWmacBsPerfTsStatusCurrentUiuc,
+              icomWmacBsPerfTsStatusCurrentDlRssi,
+              icomWmacBsPerfTsStatusCurrentUlRssi,
+              icomWmacBsPerfTsStatusCurrentDlSnr,
+              icomWmacBsPerfTsStatusCurrentUlSnr,
+
+              icomWmacBsPerfTsStatus1MinIntervalEndTime,
+              icomWmacBsPerfTsStatus1MinIntervalSuspect,
+              icomWmacBsPerfTsStatus1MinIntervalDiuc,
+              icomWmacBsPerfTsStatus1MinIntervalUiuc,
+              icomWmacBsPerfTsStatus1MinIntervalDlRssi,
+              icomWmacBsPerfTsStatus1MinIntervalUlRssi,
+              icomWmacBsPerfTsStatus1MinIntervalDlSnr,
+              icomWmacBsPerfTsStatus1MinIntervalUlSnr,
+
+              icomWmacBsPerfTsStatus15MinIntervalEndTime,
+              icomWmacBsPerfTsStatus15MinIntervalSuspect,
+              icomWmacBsPerfTsStatus15MinIntervalMinDiuc,
+              icomWmacBsPerfTsStatus15MinIntervalMaxDiuc,
+              icomWmacBsPerfTsStatus15MinIntervalModDiuc,
+              icomWmacBsPerfTsStatus15MinIntervalMinUiuc,
+              icomWmacBsPerfTsStatus15MinIntervalMaxUiuc,
+              icomWmacBsPerfTsStatus15MinIntervalModUiuc,
+              icomWmacBsPerfTsStatus15MinIntervalMinDlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalMaxDlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalAvgDlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalMinUlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalMaxUlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalAvgUlRssi,
+              icomWmacBsPerfTsStatus15MinIntervalMinDlSnr,
+              icomWmacBsPerfTsStatus15MinIntervalMaxDlSnr,
+              icomWmacBsPerfTsStatus15MinIntervalAvgDlSnr,
+              icomWmacBsPerfTsStatus15MinIntervalMinUlSnr,
+              icomWmacBsPerfTsStatus15MinIntervalMaxUlSnr,
+              icomWmacBsPerfTsStatus15MinIntervalAvgUlSnr,
+
+              icomWmacBsPerfTsStatus1DayIntervalEndTime,
+              icomWmacBsPerfTsStatus1DayIntervalSuspect,
+              icomWmacBsPerfTsStatus1DayIntervalMinDiuc,
+              icomWmacBsPerfTsStatus1DayIntervalMaxDiuc,
+              icomWmacBsPerfTsStatus1DayIntervalModDiuc,
+              icomWmacBsPerfTsStatus1DayIntervalMinUiuc,
+              icomWmacBsPerfTsStatus1DayIntervalMaxUiuc,
+              icomWmacBsPerfTsStatus1DayIntervalModUiuc,
+              icomWmacBsPerfTsStatus1DayIntervalMinDlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalMaxDlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalAvgDlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalMinUlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalMaxUlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalAvgUlRssi,
+              icomWmacBsPerfTsStatus1DayIntervalMinDlSnr,
+              icomWmacBsPerfTsStatus1DayIntervalMaxDlSnr,
+              icomWmacBsPerfTsStatus1DayIntervalAvgDlSnr,
+              icomWmacBsPerfTsStatus1DayIntervalMinUlSnr,
+              icomWmacBsPerfTsStatus1DayIntervalMaxUlSnr,
+              icomWmacBsPerfTsStatus1DayIntervalAvgUlSnr,
+
+              icomWmacBsPerfTsStatsEnable,
+
+              icomWmacBsPerfTsStatsCurrentElapsedTime,
+              icomWmacBsPerfTsStatsCurrentSuspect,
+              icomWmacBsPerfTsStatsCurrentInService,
+              icomWmacBsPerfTsStatsCurrentOutOfService,
+
+              icomWmacBsPerfTsStats15MinIntervalEndTime,
+              icomWmacBsPerfTsStats15MinIntervalElapsedTime,
+              icomWmacBsPerfTsStats15MinIntervalSuspect,
+              icomWmacBsPerfTsStats15MinIntervalInService,
+              icomWmacBsPerfTsStats15MinIntervalOutOfService,
+
+              icomWmacBsPerfTsStats1DayIntervalEndTime,
+              icomWmacBsPerfTsStats1DayIntervalElapsedTime,
+              icomWmacBsPerfTsStats1DayIntervalSuspect,
+              icomWmacBsPerfTsStats1DayIntervalInService,
+              icomWmacBsPerfTsStats1DayIntervalOutOfService,
+
+              icomWmacBsPerfDlPhyEnable,
+
+              icomWmacBsPerfDlPhyCurrentElapsedTime,
+              icomWmacBsPerfDlPhyCurrentSuspect,
+              icomWmacBsPerfDlPhyCurrentActiveTime,
+              icomWmacBsPerfDlPhyCurrentNumEntries,
+
+              icomWmacBsPerfDlPhy15MinIntervalEndTime,
+              icomWmacBsPerfDlPhy15MinIntervalElapsedTime,
+              icomWmacBsPerfDlPhy15MinIntervalSuspect,
+              icomWmacBsPerfDlPhy15MinIntervalActiveTime,
+              icomWmacBsPerfDlPhy15MinIntervalNumEntries,
+
+              icomWmacBsPerfDlPhy1DayIntervalEndTime,
+              icomWmacBsPerfDlPhy1DayIntervalElapsedTime,
+              icomWmacBsPerfDlPhy1DayIntervalSuspect,
+              icomWmacBsPerfDlPhy1DayIntervalActiveTime,
+              icomWmacBsPerfDlPhy1DayIntervalNumEntries,
+
+              icomWmacBsPerfUlPhyEnable,
+
+              icomWmacBsPerfUlPhyCurrentElapsedTime,
+              icomWmacBsPerfUlPhyCurrentSuspect,
+              icomWmacBsPerfUlPhyCurrentActiveTime,
+              icomWmacBsPerfUlPhyCurrentNumEntries,
+
+              icomWmacBsPerfUlPhy15MinIntervalEndTime,
+              icomWmacBsPerfUlPhy15MinIntervalElapsedTime,
+              icomWmacBsPerfUlPhy15MinIntervalSuspect,
+              icomWmacBsPerfUlPhy15MinIntervalActiveTime,
+              icomWmacBsPerfUlPhy15MinIntervalNumEntries,
+
+              icomWmacBsPerfUlPhy1DayIntervalEndTime,
+              icomWmacBsPerfUlPhy1DayIntervalElapsedTime,
+              icomWmacBsPerfUlPhy1DayIntervalSuspect,
+              icomWmacBsPerfUlPhy1DayIntervalActiveTime,
+              icomWmacBsPerfUlPhy1DayIntervalNumEntries
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of performance objects for icomWmacBsMIB.
+        "
+    ::= { icomWmacBsGroups 3 }
+
+icomWmacBsTrapGroup OBJECT-GROUP
+    OBJECTS {   -- Base Station Trap
+                icomWmacBsTrapControlRegister
+    }
+    STATUS  current
+    DESCRIPTION
+        "A collection of objects providing the Trap parameters."
+    ::= { icomWmacBsGroups 4 }      
+  
+icomWmacBsNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { -- Base Station SNMP Trap
+                    icomWmacBsTsStatusNotificationTrap,
+                    icomWmacBsTsPhyModeChangeTrap,
+                    icomWmacBsSfOperStatusNotificationTrap
+    }
+    STATUS        current
+    DESCRIPTION
+        "The collection of notifications related to base station."
+    ::= { icomWmacBsGroups 5 }
+
+--================================================================
+--================================================================
+
+END

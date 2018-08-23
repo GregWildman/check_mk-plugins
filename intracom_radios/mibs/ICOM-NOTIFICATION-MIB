@@ -1,0 +1,843 @@
+ICOM-NOTIFICATION-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        Unsigned32, TimeTicks, Gauge32
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION, RowStatus, DisplayString, DateAndTime
+                FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+        intracom
+                FROM ICOM-SMI;
+
+icomNtfMib MODULE-IDENTITY
+    LAST-UPDATED        "201503120000Z"     -- 12 March 2015
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        the list of supported & active alarms. The MIB includes the
+        following proprietary objects:
+
+        1.  icomNtfSupportedAlarmTable
+        2.  icomNtfSupportedAlarmNameToIndexTable
+        3.  icomNtfActiveAlarmListTable
+        4.  icomNtfActiveAlarmInstancesAndTimeTable
+        5.  icomNtfAlarmsStatisticsObjects
+        6.  icomNtfAlarmOutputActionTable
+       "
+
+-- Revision History
+
+    REVISION            "201503120000Z"     -- 12 March 2015
+    DESCRIPTION
+       "
+        - Addition of icomNtfActiveAlarmListAbsoluteRaisedTime in
+          icomNtfActiveAlarmListEntry.
+       "
+       
+    REVISION            "201406260000Z"     -- 26 June 2014
+    DESCRIPTION
+       "
+        - Addition of icomNtfSupportedExtAlarmTypeNumber,
+          icomNtfActiveAlarmExtAlarmTypeNumber.
+       "
+
+    REVISION            "201406030000Z"     -- 03 June 2014
+    DESCRIPTION
+       "
+        - Addition of icomNtfSupportedAlarmNameToIndexEntry.
+        - Addition of the stm1 alarm module (value 14).
+        - Rearrangement of the various icomNtfMibObjects oids.
+        - Addition of icomNtfAlarmOutputActionEntry. The
+          icomNtfAlarmOutputAction is removed from
+          icomNtfSupportedAlarmEntry.
+       "
+
+    REVISION            "201405160000Z"     -- 16 May 2014
+    DESCRIPTION
+       "
+        - Rename of MIB at icomNtfMib.
+          All objects and types have acquired the icomNtf or Ntf prefix
+          where it was missing.
+        - The alarm type id is made Unsigned32.
+          The alarm meaning of a entityId.moduleId.trapId is provided
+          by the icomNtfSupportedAlarmName.
+       "
+
+    REVISION            "201405140000Z"     -- 14 May 2014
+    DESCRIPTION
+       "
+        - icomActiveAlarmListEntry
+          The index of icomActiveAlarmListEntry is only
+          icomActiveAlarmListIndex.
+          The icomActiveAlarmListEntry is enhanced with
+          icomActiveAlarmListRaisedTime and icomActiveAlarmListSeverity.
+        - Definition of alarmsStatisticsObjects.
+       "
+
+    REVISION            "201404280030Z"     -- 28 Apr 2014
+    DESCRIPTION
+       "
+        icomNtfSupportedAlarmAdminState and
+        icomNtfSupportedAlarmAdminState are INTEGER types.
+       "
+
+    REVISION            "201404280000Z"     -- 28 Apr 2014
+    DESCRIPTION
+       "
+        First MIB release.
+       "
+
+::= { intracom 33 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+IcomNtfAlarmEntityType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Alarm entity id types.
+       "
+    SYNTAX      INTEGER {
+            control         (1),
+            modem           (2),
+            ifcard          (3),
+            fan             (4),
+            psu             (5),
+            rfu             (6),
+            antenna         (7),
+            terminalStation (8),            
+            sdh             (9),
+            pone            (10),
+            e1              (11)
+    }
+
+IcomNtfAlarmModuleIdType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Module entity id types.
+       "
+    SYNTAX      INTEGER {
+            control               (1),
+            modem                 (2),
+            ifcard                (3),
+            fan                   (4),
+            psu                   (5),
+            clock                 (6),
+            ethernet              (7),
+            input                 (8),
+            temperature           (9),
+            modemProtectionGroup (10),
+            e1                   (11),
+            odu                  (12),
+            sfp                  (13),
+            stm1                 (14),
+            rfu                  (15),
+            antenna              (16),
+            terminalStation      (17),
+            serviceFlow          (18),
+            protection           (19),
+            clockSource          (20),            
+            e1card               (21), 
+            sdh                  (22), 
+            pone                 (23)
+    }
+
+IcomNtfAlarmSeverityType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Alarm severity values.
+       "
+    SYNTAX      INTEGER {
+            warning               (1),
+            minor                 (2),
+            major                 (3),
+            critical              (4),
+            intermediate          (5)
+    }
+
+--
+-- Object groups
+--
+
+icomNtfMibObjects OBJECT IDENTIFIER ::= { icomNtfMib 1 }
+
+-- -------------------------------------------------------------
+-- icomNtfSupportedAlarmTable
+-- -------------------------------------------------------------
+
+icomNtfSupportedAlarmTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomNtfSupportedAlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table lists the supported alarms. For each supported alarm
+        there is a respective row.
+       "
+    ::= { icomNtfMibObjects 1 }
+
+icomNtfSupportedAlarmEntry OBJECT-TYPE
+    SYNTAX      IcomNtfSupportedAlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomNtfSupportedAlarmTable.
+       "
+    INDEX       { icomNtfSupportedAlarmEntityId,
+                  icomNtfSupportedAlarmModuleId,
+                  icomNtfSupportedAlarmTypeId }
+    ::= { icomNtfSupportedAlarmTable 1 }
+
+IcomNtfSupportedAlarmEntry ::= SEQUENCE {
+    icomNtfSupportedAlarmEntityId              IcomNtfAlarmEntityType,
+    icomNtfSupportedAlarmModuleId              IcomNtfAlarmModuleIdType,
+    icomNtfSupportedAlarmTypeId                Unsigned32,
+    icomNtfSupportedAlarmName                  DisplayString,
+    icomNtfSupportedAlarmSeverity              IcomNtfAlarmSeverityType,
+    icomNtfSupportedAlarmDescription           DisplayString,
+    icomNtfSupportedAlarmProbableCause         DisplayString,
+    icomNtfSupportedAlarmCorrectiveActions     DisplayString,
+    icomNtfSupportedExtAlarmTypeNumber         Unsigned32
+}
+
+icomNtfSupportedAlarmEntityId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmEntityType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object identifies a supported alarm entity.
+       "
+    ::= { icomNtfSupportedAlarmEntry 1 }
+
+icomNtfSupportedAlarmModuleId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmModuleIdType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object identifies a supported alarm module.
+       "
+    ::= { icomNtfSupportedAlarmEntry 2 }
+
+icomNtfSupportedAlarmTypeId OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "A unique number representing the specific alarm (for that entity
+        and module).
+       "
+    ::= { icomNtfSupportedAlarmEntry 3 }
+
+icomNtfSupportedAlarmName OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A unique number representing the specific alarm (for that entity
+        and module).
+       "
+    ::= { icomNtfSupportedAlarmEntry 4 }
+
+icomNtfSupportedAlarmSeverity OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmSeverityType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The alarm severity.
+       "
+    ::= { icomNtfSupportedAlarmEntry 5 }
+
+icomNtfSupportedAlarmDescription OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..256))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A short alarm description.
+       "
+    ::= { icomNtfSupportedAlarmEntry 6 }
+
+icomNtfSupportedAlarmProbableCause OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..256))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A description of probable alarm cause.
+       "
+    ::= { icomNtfSupportedAlarmEntry 7 }
+
+icomNtfSupportedAlarmCorrectiveActions OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..256))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A description of suggested corrective actions for probable
+        alarm cause.
+       "
+    ::= { icomNtfSupportedAlarmEntry 8 }
+
+icomNtfSupportedExtAlarmTypeNumber OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A unique number representing the specific alarm type externally
+        for operation and maintenance reasons.
+       "
+    ::= { icomNtfSupportedAlarmEntry 9 }
+
+-- -------------------------------------------------------------
+-- icomNtfSupportedAlarmNameToIndexTable
+-- -------------------------------------------------------------
+
+icomNtfSupportedAlarmNameToIndexTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomNtfSupportedAlarmNameToIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "A table that maps the alarm name to the typeid of the
+        icomNtfSupportedAlarmTable. For each supported alarm there is
+        a respective row.
+       "
+    ::= { icomNtfMibObjects 2 }
+
+icomNtfSupportedAlarmNameToIndexEntry OBJECT-TYPE
+    SYNTAX      IcomNtfSupportedAlarmNameToIndexEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomNtfSupportedAlarmNameToIndexTable.
+       "
+    INDEX       { icomNtfSupportedAlarmNameToIndexEntityId,
+                  icomNtfSupportedAlarmNameToIndexModuleId,
+                  icomNtfSupportedAlarmNameToIndexAlarmName }
+    ::= { icomNtfSupportedAlarmNameToIndexTable 1 }
+
+IcomNtfSupportedAlarmNameToIndexEntry ::= SEQUENCE {
+    icomNtfSupportedAlarmNameToIndexEntityId   IcomNtfAlarmEntityType,
+    icomNtfSupportedAlarmNameToIndexModuleId   IcomNtfAlarmModuleIdType,
+    icomNtfSupportedAlarmNameToIndexAlarmName  DisplayString,
+    icomNtfSupportedAlarmNameToIndexTypeId     Unsigned32
+}
+
+icomNtfSupportedAlarmNameToIndexEntityId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmEntityType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The entity index of icomNtfSupportedAlarmEntry.
+       "
+    ::= { icomNtfSupportedAlarmNameToIndexEntry 1 }
+
+icomNtfSupportedAlarmNameToIndexModuleId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmModuleIdType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The module index of icomNtfSupportedAlarmEntry.
+       "
+    ::= { icomNtfSupportedAlarmNameToIndexEntry 2 }
+
+icomNtfSupportedAlarmNameToIndexAlarmName OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The icomNtfSupportedAlarmName of icomNtfSupportedAlarmEntry.
+       "
+    ::= { icomNtfSupportedAlarmNameToIndexEntry 3 }
+
+icomNtfSupportedAlarmNameToIndexTypeId OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The typeid index of icomNtfSupportedAlarmEntry.
+       "
+    ::= { icomNtfSupportedAlarmNameToIndexEntry 4 }
+
+
+-- -------------------------------------------------------------
+-- icomNtfActiveAlarmListTable
+-- -------------------------------------------------------------
+
+icomNtfActiveAlarmListTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomNtfActiveAlarmListEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table lists the active alarms.
+       "
+    ::= { icomNtfMibObjects 3 }
+
+icomNtfActiveAlarmListEntry OBJECT-TYPE
+    SYNTAX      IcomNtfActiveAlarmListEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomNtfActiveAlarmListTable.
+       "
+    INDEX       { icomNtfActiveAlarmListIndex }
+    ::= { icomNtfActiveAlarmListTable 1 }
+
+IcomNtfActiveAlarmListEntry ::= SEQUENCE {
+    icomNtfActiveAlarmListIndex                Unsigned32,
+    icomNtfActiveAlarmListEntityId             IcomNtfAlarmEntityType,
+    icomNtfActiveAlarmListEntityInstance       Unsigned32,
+    icomNtfActiveAlarmListModuleId             IcomNtfAlarmModuleIdType,
+    icomNtfActiveAlarmListModuleInstance       Unsigned32,
+    icomNtfActiveAlarmListTypeId               Unsigned32,
+    icomNtfActiveAlarmListLegend               DisplayString,
+    icomNtfActiveAlarmListRaisedTime           TimeTicks,
+    icomNtfActiveAlarmListSeverity             IcomNtfAlarmSeverityType,
+    icomNtfActiveAlarmListExtAlarmTypeNumber   Unsigned32,
+    icomNtfActiveAlarmListAbsoluteRaisedTime   DateAndTime
+}
+
+icomNtfActiveAlarmListIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An integer value incremented for each active alarm that is
+        inserted. Value range (1..65535). Wraps when the maximum value
+        is reached.
+       "
+    ::= { icomNtfActiveAlarmListEntry 1 }
+
+icomNtfActiveAlarmListEntityId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmEntityType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The entity id of the active alarm.
+       "
+    ::= { icomNtfActiveAlarmListEntry 2 }
+
+icomNtfActiveAlarmListEntityInstance OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The entity instance of the active alarm.
+       "
+    ::= { icomNtfActiveAlarmListEntry 3 }
+
+icomNtfActiveAlarmListModuleId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmModuleIdType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The module id of the active alarm.
+       "
+    ::= { icomNtfActiveAlarmListEntry 4 }
+
+icomNtfActiveAlarmListModuleInstance OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The module instance of the active alarm.
+       "
+    ::= { icomNtfActiveAlarmListEntry 5 }
+
+icomNtfActiveAlarmListTypeId OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "It refers to the icomNtfSupportedAlarmTypeId.
+       "
+    ::= { icomNtfActiveAlarmListEntry 6 }
+
+icomNtfActiveAlarmListLegend OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..256))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "Detailed legend of the specific alarm instance.
+       "
+    ::= { icomNtfActiveAlarmListEntry 7 }
+
+icomNtfActiveAlarmListRaisedTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "Raised time of the specific alarm instance.
+       "
+    ::= { icomNtfActiveAlarmListEntry 8 }
+
+icomNtfActiveAlarmListSeverity OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmSeverityType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The alarm severity.
+       "
+    ::= { icomNtfActiveAlarmListEntry 9 }
+
+icomNtfActiveAlarmListExtAlarmTypeNumber OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "A unique number representing the specific alarm type of the
+        active alarm externally for operation and maintenance reasons.
+       "
+    ::= { icomNtfActiveAlarmListEntry 10 }
+    
+icomNtfActiveAlarmListAbsoluteRaisedTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       " Absolute raised time of the specific alarm instance.
+       "
+    ::= { icomNtfActiveAlarmListEntry 11 }
+
+-- -------------------------------------------------------------
+-- icomNtfActiveAlarmInstancesAndTimeTable
+-- -------------------------------------------------------------
+
+icomNtfActiveAlarmInstancesAndTimeTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomNtfActiveAlarmInstancesAndTimeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table provides reverse mapping from an (entity id, entity
+        instance, module id, module instance, type id) tuple to an alarm
+        list index. Each time a row is added at the active alarm list
+        table, a respective row is added at this table.
+       "
+    ::= { icomNtfMibObjects 4 }
+
+icomNtfActiveAlarmInstancesAndTimeEntry OBJECT-TYPE
+    SYNTAX      IcomNtfActiveAlarmInstancesAndTimeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the
+        icomNtfActiveAlarmInstancesAndTimeTable.
+       "
+    INDEX       { icomNtfActiveAlarmEntityId,
+                  icomNtfActiveAlarmEntityInstance,
+                  icomNtfActiveAlarmModuleId,
+                  icomNtfActiveAlarmModuleInstance,
+                  icomNtfActiveAlarmTypeId }
+    ::= { icomNtfActiveAlarmInstancesAndTimeTable 1 }
+
+IcomNtfActiveAlarmInstancesAndTimeEntry ::= SEQUENCE {
+    icomNtfActiveAlarmEntityId                 IcomNtfAlarmEntityType,
+    icomNtfActiveAlarmEntityInstance           Unsigned32,
+    icomNtfActiveAlarmModuleId                 IcomNtfAlarmModuleIdType,
+    icomNtfActiveAlarmModuleInstance           Unsigned32,
+    icomNtfActiveAlarmTypeId                   Unsigned32,
+    icomNtfActiveAlarmIndex                    Unsigned32
+}
+
+icomNtfActiveAlarmEntityId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmEntityType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm entity id.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 1 }
+
+icomNtfActiveAlarmEntityInstance OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm entity instance.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 2 }
+
+icomNtfActiveAlarmModuleId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmModuleIdType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm module id.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 3 }
+
+icomNtfActiveAlarmModuleInstance OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm module instance.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 4 }
+
+icomNtfActiveAlarmTypeId OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "It refers to the icomNtfSupportedAlarmTypeId.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 5 }
+
+icomNtfActiveAlarmIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The alarm list index. This object equals a corresponding
+        icomNtfActiveAlarmListIndex.
+       "
+    ::= { icomNtfActiveAlarmInstancesAndTimeEntry 6 }
+
+-- -------------------------------------------------------------
+-- icomNtfAlarmsStatisticsObjects
+-- -------------------------------------------------------------
+
+icomNtfAlarmsStatisticsObjects OBJECT IDENTIFIER ::= { icomNtfMibObjects 5 }
+
+icomNtfActiveAlarmsCounter OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The number of currently active alarms.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 1 }
+
+icomNtfCriticalActiveAlarmsCounter OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The number of currently active alarms classified as critical.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 2 }
+
+icomNtfMajorActiveAlarmsCounter OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The number of currently active alarms classified as major.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 3 }
+
+icomNtfMinorActiveAlarmsCounter OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The number of currently active alarms classified as minor.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 4 }
+
+icomNtfWarningActiveAlarmsCounter OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The number of currently active alarms classified as warning.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 5 }
+
+icomNtfLastChangeTimeOfNtfActiveAlarmList OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "The time that the icomNtfActiveAlarmListEntry was last changed.
+       "
+    ::= { icomNtfAlarmsStatisticsObjects 6 }
+
+-- -------------------------------------------------------------
+-- icomNtfAlarmOutputActionTable
+-- -------------------------------------------------------------
+
+icomNtfAlarmOutputActionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomNtfAlarmOutputActionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table describes the output actions of the various alarms. For
+        each alarm instance its output action is set. There are two
+        output contacts that are set for each alarm for each entiy,
+        module instance.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomNtfMibObjects 6 }
+
+icomNtfAlarmOutputActionEntry OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmOutputActionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomNtfAlarmOutputActionTable.
+       "
+    INDEX       { icomNtfAlarmOutputActionEntityId,
+                  icomNtfAlarmOutputActionEntityInstance,
+                  icomNtfAlarmOutputActionModuleId,
+                  icomNtfAlarmOutputActionModuleInstance,
+                  icomNtfAlarmOutputActionTypeId }
+    ::= { icomNtfAlarmOutputActionTable 1 }
+
+IcomNtfAlarmOutputActionEntry ::= SEQUENCE {
+    icomNtfAlarmOutputActionEntityId           IcomNtfAlarmEntityType,
+    icomNtfAlarmOutputActionEntityInstance     Unsigned32,
+    icomNtfAlarmOutputActionModuleId           IcomNtfAlarmModuleIdType,
+    icomNtfAlarmOutputActionModuleInstance     Unsigned32,
+    icomNtfAlarmOutputActionTypeId             Unsigned32,
+    icomNtfAlarmOutputAction                   BITS,
+    icomNtfAlarmOutputActionRowStatus          RowStatus
+}
+
+icomNtfAlarmOutputActionEntityId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmEntityType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm entity id.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 1 }
+
+icomNtfAlarmOutputActionEntityInstance OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm entity instance.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 2 }
+
+icomNtfAlarmOutputActionModuleId OBJECT-TYPE
+    SYNTAX      IcomNtfAlarmModuleIdType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm module id.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 3 }
+
+icomNtfAlarmOutputActionModuleInstance OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The alarm module instance.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 4 }
+
+icomNtfAlarmOutputActionTypeId OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "It refers to the icomNtfSupportedAlarmTypeId.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 5 }
+
+icomNtfAlarmOutputAction OBJECT-TYPE
+    SYNTAX      BITS {
+            outputContact1 (0),
+            outputContact2 (1)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The alarm may drive the alarm state to an output alarm contact. It
+        is a bit-field:
+          bit (0): deactivate/activate alarm output contact 1
+          bit (1): deactivate/activate alarm output contact 2
+        Many alarms may drive the same output contact.
+        Default value: The alarm does not drive any alarm contact
+       "
+    DEFVAL { { } }
+    ::= { icomNtfAlarmOutputActionEntry 6 }
+
+icomNtfAlarmOutputActionRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the RowStatus. It is used for creation
+        and deletion of rows from the manager.
+
+        Enabling at least one output contact equals to row creation.
+        Disabling all output contacts equals to row deletion.
+       "
+    ::= { icomNtfAlarmOutputActionEntry 7 }
+
+
+--
+-- Conformance information
+--
+
+icomNtfMibConformance OBJECT IDENTIFIER ::= { icomNtfMib 2 }
+icomNtfMibCompliances OBJECT IDENTIFIER ::= { icomNtfMibConformance 1 }
+icomNtfMibGroups      OBJECT IDENTIFIER ::= { icomNtfMibConformance 2 }
+
+--
+-- Compliance statements
+--
+icomNtfMibCompliance MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+       "The compliance statement for icomNtfMib.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        icomNtfMibGroup
+    }
+    ::= { icomNtfMibCompliances 1 }
+
+icomNtfMibGroup OBJECT-GROUP
+    OBJECTS {
+        icomNtfSupportedAlarmName,
+        icomNtfSupportedAlarmSeverity,
+        icomNtfSupportedAlarmDescription,
+        icomNtfSupportedAlarmProbableCause,
+        icomNtfSupportedAlarmCorrectiveActions,
+        icomNtfSupportedExtAlarmTypeNumber,
+
+        icomNtfSupportedAlarmNameToIndexTypeId,
+
+        icomNtfActiveAlarmListEntityId,
+        icomNtfActiveAlarmListEntityInstance,
+        icomNtfActiveAlarmListModuleId,
+        icomNtfActiveAlarmListModuleInstance,
+        icomNtfActiveAlarmListTypeId,
+        icomNtfActiveAlarmListLegend,
+        icomNtfActiveAlarmListRaisedTime,
+        icomNtfActiveAlarmListSeverity,
+        icomNtfActiveAlarmListExtAlarmTypeNumber,
+        icomNtfActiveAlarmListAbsoluteRaisedTime,
+
+        icomNtfActiveAlarmIndex,
+
+        icomNtfActiveAlarmsCounter,
+        icomNtfCriticalActiveAlarmsCounter,
+        icomNtfMajorActiveAlarmsCounter,
+        icomNtfMinorActiveAlarmsCounter,
+        icomNtfWarningActiveAlarmsCounter,
+        icomNtfLastChangeTimeOfNtfActiveAlarmList,
+
+        icomNtfAlarmOutputAction,
+        icomNtfAlarmOutputActionRowStatus
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomNtfMib."
+    ::= { icomNtfMibGroups 1 }
+
+END

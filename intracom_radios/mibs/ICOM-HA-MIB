@@ -1,0 +1,486 @@
+ICOM-HA-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+        Unsigned32
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION, TruthValue, RowStatus, DisplayString
+                FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        InetAddress, InetAddressType, InetAddressPrefixLength
+                FROM INET-ADDRESS-MIB
+        InterfaceIndex
+                FROM IF-MIB
+        intracom
+                FROM ICOM-SMI;
+
+icomHAMIB MODULE-IDENTITY
+    LAST-UPDATED        "201409030000Z"     -- 03 September 2014
+    ORGANIZATION        "Intracom S.A."
+    CONTACT-INFO
+       "EMail:
+        Phone:
+        Co-editor:
+        EMail:
+        Phone:
+       "
+    DESCRIPTION
+       "This module provides proprietary Intracom objects to support
+        1:1 high availability (HA), i.e., 1:1 protection. The MIB includes
+        the following proprietary objects:
+
+        1.  icomHAMIBSysObjects
+        2.  icomHAMIBNetObjects
+        3.  icomHACompCfgTable
+        4.  icomHACompStatusTable
+        5.  icomHACompCmdTable
+
+        Overall, following steps could be assumed in order to configure
+        a protected pair out of two standalone HA components:
+
+        a) Standalone component #1:
+
+           icomHACompCfgRowStatus.1 = createAndGo(4)
+           icomHACompCfgPosition.1 = 'left'
+           icomHACompCfgProtIntf.1 = <ifIndex_1>
+
+        b) Standalone component #2:
+
+           icomHACompCfgRowStatus.2 = createAndGo(4)
+           icomHACompCfgPosition.2 = 'right'
+           icomHACompCfgProtIntf.2 = <ifIndex_2>
+
+        c) Common settings for both components #1 & #2:
+
+           icomHAPreferredComponent.0 = 1|2
+           icomHARevert.0 = true(1)|false(2)
+           icomHAClusterAddrType.0 = ipv4(1)|ipv6(2)
+           icomHAClusterAddr.0 = <cluster_address>
+           icomHAClusterPrefixLength.0 = <cluster_netmask_prefix_length>
+           icomHAProtEnable.0 = true(1)
+
+        Conversely, in order to split a protected pair into two standalone
+        components, the following setting should be performed on both
+        components:
+
+           icomHAProtEnable.0 = false(2)
+
+        Note that in order to apply the above transitions,
+        an implementation may require saving the components'
+        configuration, and ordering the latter to reboot. Also, note
+        that an implementation may reject further configuration changes
+        after the HA feature has been enabled, thus icomHAProtEnable
+        should be the last setting to configure when enabling HA.
+       "
+
+-- Revision History
+
+    REVISION            "201409030000Z"     -- 03 September 2014
+    DESCRIPTION
+       "
+        This is the initial version of this MIB.
+       "
+
+::= { intracom 69 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+IcomHAComponentId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    DESCRIPTION
+       "Indicates the type of the index for an HA component.
+       "
+    SYNTAX      Unsigned32
+
+IcomHAStateType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "Indicates the type of the state of an HA component.
+       "
+    SYNTAX      INTEGER {
+            unknown      (1), -- unknown
+            standalone   (2), -- standalone
+            pairWorking  (3), -- pair & working
+            pairStandby  (4), -- pair & standby
+            aloneWorking (5), -- alone & working
+            aloneStandby (6)  -- alone & standby
+    }
+
+--
+-- Object groups
+--
+icomHAMIBNotifObjects OBJECT IDENTIFIER ::= { icomHAMIB 0 }
+icomHAMIBObjPrefix    OBJECT IDENTIFIER ::= { icomHAMIB 1 }
+icomHAMIBObjects      OBJECT IDENTIFIER ::= { icomHAMIBObjPrefix 1 }
+icomHAMIBSysObjects   OBJECT IDENTIFIER ::= { icomHAMIBObjects 1 }
+icomHAMIBNetObjects   OBJECT IDENTIFIER ::= { icomHAMIBObjects 2 }
+icomHAMIBCompObjects  OBJECT IDENTIFIER ::= { icomHAMIBObjects 3 }
+
+-- -------------------------------------------------------------
+-- icomHAMIBSysObjects
+-- -------------------------------------------------------------
+
+icomHAProtEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object allows enabling/disabling the HA functionality.
+
+        If value is set to 'true(1)', then the HA functionality is
+        enabled.
+
+        If value is set to 'false(2)', then the HA functionality is
+        disabled.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { false }
+    ::= { icomHAMIBSysObjects 1 }
+
+icomHAPreferredComponent OBJECT-TYPE
+    SYNTAX      IcomHAComponentId
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the preferred working HA component of the
+        protected pair.
+
+        The object will be applicable after the value of icomHAProtEnable
+        has been set to 'true(1)'. The object must be assigned to the
+        same value for each component of a protected pair, else there
+        is a protection conflict.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    ::= { icomHAMIBSysObjects 2 }
+
+icomHARevert OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object configures the revertive behaviour of the HA
+        functionality.
+
+        If value is set to 'true(1)' and the currently working HA
+        component is not the preferred one (i.e., the one indicated by MO
+        icomHAPreferredComponent), then there will be a switchover to the
+        preferred HA component once the latter has reached a protection
+        status equal to or better than the one of the currently working,
+        non-preferred HA component.
+
+        If value is set to 'false(2)', then the revertive behaviour
+        is disabled.
+
+        The object will be applicable after the value of icomHAProtEnable
+        has been set to 'true(1)'. The object must be assigned to the
+        same value for each component of a protected pair, else there
+        is a protection conflict.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { false }
+    ::= { icomHAMIBSysObjects 3 }
+
+-- -------------------------------------------------------------
+-- icomHAMIBNetObjects
+-- -------------------------------------------------------------
+
+icomHAClusterAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the type of the cluster address.
+
+        The object will be applicable after the value of icomHAProtEnable
+        has been set to 'true(1)'.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { ipv4 }
+    ::= { icomHAMIBNetObjects 1 }
+
+icomHAClusterAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the cluster address, i.e., the address
+        that may be used to access the protected system, whichever
+        the working HA component. Note that setting this object
+        should be considered as the trigger point to actually apply a
+        (new) cluster network configuration, where the latter has been
+        defined by a tuple of (icomHAClusterAddrType, icomHAClusterAddr,
+        icomHAClusterPrefixLength) objects.
+
+        The object will be applicable after the value of icomHAProtEnable
+        has been set to 'true(1)'.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    ::= { icomHAMIBNetObjects 2 }
+
+icomHAClusterPrefixLength OBJECT-TYPE
+    SYNTAX      InetAddressPrefixLength
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the prefix length of the cluster address.
+
+        The object will be applicable after the value of icomHAProtEnable
+        has been set to 'true(1)'.
+
+        This object is persistent, and its value must be retained across
+        reinitializations of the management system.
+       "
+    DEFVAL { 24 }
+    ::= { icomHAMIBNetObjects 3 }
+
+-- -------------------------------------------------------------
+-- icomHACompCfgTable
+-- -------------------------------------------------------------
+
+icomHACompCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomHACompCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table enables configuration of HA components.
+
+        All writable objects of this table are persistent, and their
+        values must be retained across reinitializations of the management
+        system.
+       "
+    ::= { icomHAMIBCompObjects 1 }
+
+icomHACompCfgEntry OBJECT-TYPE
+    SYNTAX      IcomHACompCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomHACompCfgTable.
+       "
+    INDEX       { icomHACompCfgIndex }
+    ::= { icomHACompCfgTable 1 }
+
+IcomHACompCfgEntry ::= SEQUENCE {
+    icomHACompCfgIndex                         IcomHAComponentId,
+    icomHACompCfgPosition                      DisplayString,
+    icomHACompCfgProtIntf                      InterfaceIndex,
+    icomHACompCfgRowStatus                     RowStatus
+}
+
+icomHACompCfgIndex OBJECT-TYPE
+    SYNTAX      IcomHAComponentId (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This object identifies an HA component.
+       "
+    ::= { icomHACompCfgEntry 1 }
+
+icomHACompCfgPosition OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..60))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object provides the relative position (e.g., side) of the
+        current HA component. For example, it may be set equal to 'left'
+        or 'right', 'top' or 'bottom' etc.
+       "
+    ::= { icomHACompCfgEntry 2 }
+
+icomHACompCfgProtIntf OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object identifies the local interface that should be used
+        for the protection communication purposes of the current HA
+        component. The interface identified by a particular value of this
+        object is the same interface as identified by the same value of
+        the IF-MIB's ifIndex.
+       "
+    ::= { icomHACompCfgEntry 3 }
+
+icomHACompCfgRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "This object specifies the RowStatus. It is used for creation
+        and deletion of rows from the manager.
+       "
+    ::= { icomHACompCfgEntry 4 }
+
+-- -------------------------------------------------------------
+-- icomHACompStatusTable
+-- -------------------------------------------------------------
+
+icomHACompStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomHACompStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table provides status information for HA components.
+       "
+    ::= { icomHAMIBCompObjects 2 }
+
+icomHACompStatusEntry OBJECT-TYPE
+    SYNTAX      IcomHACompStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomHACompStatusTable. The
+        table augments icomHACompCfgEntry, i.e., rows in this table are
+        internally created/deleted by the NMS agent on creation/deletion
+        of HA components in icomHACompCfgEntry, respectively.
+       "
+    AUGMENTS    { icomHACompCfgEntry }
+    ::= { icomHACompStatusTable 1 }
+
+IcomHACompStatusEntry ::= SEQUENCE {
+    icomHACompStatusState                      IcomHAStateType
+}
+
+icomHACompStatusState OBJECT-TYPE
+    SYNTAX      IcomHAStateType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+       "This object provides the protection state of the current HA
+        component.
+       "
+    ::= { icomHACompStatusEntry 1 }
+
+-- -------------------------------------------------------------
+-- icomHACompCmdTable
+-- -------------------------------------------------------------
+
+icomHACompCmdTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IcomHACompCmdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "This table enables issuing commands to HA components.
+       "
+    ::= { icomHAMIBCompObjects 3 }
+
+icomHACompCmdEntry OBJECT-TYPE
+    SYNTAX      IcomHACompCmdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "An entry (conceptual row) in the icomHACompCmdTable. The
+        table augments icomHACompCfgEntry, i.e., rows in this table are
+        internally created/deleted by the NMS agent on creation/deletion
+        of HA components in icomHACompCfgEntry, respectively.
+       "
+    AUGMENTS    { icomHACompCfgEntry }
+    ::= { icomHACompCmdTable 1 }
+
+IcomHACompCmdEntry ::= SEQUENCE {
+    icomHACompCmdSwitch                        TruthValue
+}
+
+icomHACompCmdSwitch OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+       "This object enables protection switchover. If value
+        is set to 'true(1)' for a working HA component, then it is
+        switched to protection (standby) state. If value is set to
+        'true(1)' for a standby HA component, then it is switched to
+        working state.
+       "
+    ::= { icomHACompCmdEntry 1 }
+
+-- -------------------------------------------------------------
+-- icomHAMIBNotifObjects
+-- -------------------------------------------------------------
+
+icomHACommFailTrap NOTIFICATION-TYPE
+    OBJECTS {
+        icomHACompStatusState
+    }
+    STATUS current
+    DESCRIPTION
+       "This trap reports a protection communication failure.
+
+        If icomHACompStatusState equals 'aloneWorking(5)' or
+        'aloneStandby(6)', then a protection communication alarm failure
+        is raised.
+
+        If icomHACompStatusState equals 'pairWorking(3)' or
+        'pairStandby(4)', then a protection communication alarm failure
+        is seized.
+       "
+    ::= { icomHAMIBNotifObjects 1 }
+
+--
+-- Conformance information
+--
+
+icomHAMIBConformance OBJECT IDENTIFIER ::= { icomHAMIB 2 }
+icomHAMIBCompliances OBJECT IDENTIFIER ::= { icomHAMIBConformance 1 }
+icomHAMIBGroups      OBJECT IDENTIFIER ::= { icomHAMIBConformance 2 }
+
+--
+-- Compliance statements
+--
+icomHAMIBCompliance MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+       "The compliance statement for icomHAMIB.
+       "
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        icomHAMIBGroup,
+        icomHAMIBNotifGroup
+    }
+    ::= { icomHAMIBCompliances 1 }
+
+icomHAMIBGroup OBJECT-GROUP
+    OBJECTS {
+        icomHAProtEnable,
+        icomHAPreferredComponent,
+        icomHARevert,
+        icomHAClusterAddrType,
+        icomHAClusterAddr,
+        icomHAClusterPrefixLength,
+
+        icomHACompCfgPosition,
+        icomHACompCfgProtIntf,
+        icomHACompCfgRowStatus,
+
+        icomHACompStatusState,
+
+        icomHACompCmdSwitch
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects for icomHAMIB."
+    ::= { icomHAMIBGroups 1 }
+
+icomHAMIBNotifGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        icomHACommFailTrap
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of notifications for icomHAMIB.
+        "
+    ::= { icomHAMIBGroups 2 }
+
+END
