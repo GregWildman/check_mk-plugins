@@ -93,7 +93,7 @@ def check_ciena_pbt(item, params, info):
             tunnel_dest = ciena_pbt_render_mac_address(mac)
             for pbt_bridge_name, pbt_bridge_mac in info[1]:
                 if set(mac) == set(pbt_bridge_mac):
-                    tunnel_dest = pbt_bridge_name
+                    tunnel_dest = "%s (%s)" % (pbt_bridge_name, tunnel_dest)
 
             infotext = "%s, Dest: %s, B-VID: %s, Role: %s, Active: %s" % \
                 (name, tunnel_dest, bvid, \
