@@ -42,9 +42,17 @@
 # WWP-LEOS-PBT-MIB::wwpLeosPbtBridgeNameMacMapTable
 # .1.3.6.1.4.1.6141.2.60.38.1.1.2.1.2.1 = STRING: "GP-000010-WBSDC"
 # .1.3.6.1.4.1.6141.2.60.38.1.1.2.1.3.1 = Hex-STRING: 40 47 50 00 00 10 
+#
+# WWP-LEOS-PBT-MIB::wwpLeosPbtGlobalAttrs
+# .1.3.6.1.4.1.6141.2.60.38.1.1.1.1.0 = Hex-STRING: 40 47 50 01 20 40 
+# .1.3.6.1.4.1.6141.2.60.38.1.1.1.2.0 = Hex-STRING: 88 C8 
+# .1.3.6.1.4.1.6141.2.60.38.1.1.1.3.0 = Hex-STRING: 81 00 
+# .1.3.6.1.4.1.6141.2.60.38.1.1.1.4.0 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.38.1.1.1.5.0 = Gauge32: 9000
+
 
 ciena_pbt_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1") and \
-                             oid(".1.3.6.1.4.1.6141.2.60.28.1.1.13.1.1.1") != None
+                             oid(".1.3.6.1.4.1.6141.2.60.38.1.1.1.1.0") != None
 
 ciena_pbt_info = [( ".1.3.6.1.4.1.6141.2.60.28.1.1.13", [ #  WWP-LEOS-VPLS-MIB:: wwpLeosVplsEncapTunnelTable
                                         "1.1",        # wwpLeosVplsEncapTunnelId
@@ -71,15 +79,12 @@ ciena_pbt_info = [( ".1.3.6.1.4.1.6141.2.60.28.1.1.13", [ #  WWP-LEOS-VPLS-MIB::
                  ]
 
 
-def ciena_pbt_render_mac_address(mac_bytes):
-    return (":".join(["%02s" % hex(m)[2:] for m in mac_bytes]).replace(" ", "0")).upper()
-
-def ciena_pbt_render_hex(hex_bytes):
-    return ("".join(["%02s" % hex(m)[2:] for m in hex_bytes]).replace(" ", "0")).upper()
+def ciena_pbt_render_hex(hex_bytes, delim=""):
+    return (delim.join(["%02s" % hex(m)[2:] for m in hex_bytes]).replace(" ", "0")).upper()
 
 def inventory_ciena_pbt(info):
-    bridge_mac_raw, svctag_etype, tuntag_etype, reversion_state, reversion_holtime = info[2][0]
-    if len(bridge_mac_raw) == 6:
+    bridge_mac, svctag_etype, tuntag_etype, reversion_state, reversion_holtime = info[2][0]
+    if len(bridge_mac) == 6:
         yield "PBT Info", {}
     for idx, name, mac, oper_status, admin_status, port, lsp_type, bvid, status in info[0]:
         if admin_status == "1":  # enabled
@@ -94,7 +99,7 @@ def check_ciena_pbt(item, params, info):
         for idx, name, mac, oper_status, admin_status, port, lsp_type, bvid, status in info[0]:
             if item == "PBT Tunnel %02d" % int(idx): 
                 # Can we map a PBT Bridge mac to name 
-                tunnel_dest = ciena_pbt_render_mac_address(mac)
+                tunnel_dest = ciena_pbt_render_hex(mac, ":")
                 for pbt_bridge_name, pbt_bridge_mac in info[1]:
                     if set(mac) == set(pbt_bridge_mac):
                         tunnel_dest = "%s (%s)" % (pbt_bridge_name, tunnel_dest)
@@ -113,10 +118,8 @@ def check_ciena_pbt(item, params, info):
     elif item == "PBT Info":
         bridge_mac, svctag_etype, tuntag_etype, reversion_state, reversion_holdtime = info[2][0]
         infotext = "Bridge MAC: %s, Service E-type: 0x%s, Tunnel E-type: 0x%s, Reversion: %s, Hold Time: %d ms" % \
-                   (ciena_pbt_render_mac_address(bridge_mac), \
-                    ciena_pbt_render_hex(svctag_etype), \
-                    ciena_pbt_render_hex(tuntag_etype), \
-                    map_reversion.get(reversion_state), int(reversion_holdtime))
+                   (ciena_pbt_render_hex(bridge_mac, ":"), ciena_pbt_render_hex(svctag_etype), \
+                    ciena_pbt_render_hex(tuntag_etype), map_reversion.get(reversion_state), int(reversion_holdtime))
 
         yield 0, infotext
 
