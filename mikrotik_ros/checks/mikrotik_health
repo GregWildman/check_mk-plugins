@@ -124,8 +124,8 @@ check_info["mikrotik_health.temp"] = {
 
 
 factory_settings["mikrotik_health_voltage_default_levels"] = {
-    "levels_lower" : (12.0, 10.0),
-    "levels_upper" : (26.0, 30.0),
+    "levels_lower" : (11.0, 10.5),
+    "levels_upper" : (28.0, 30.0),
 }
 
 def inventory_mikrotik_health_voltage(info):
