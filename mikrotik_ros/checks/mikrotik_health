@@ -179,9 +179,10 @@ check_info["mikrotik_health.voltage"] = {
 def inventory_mikrotik_health_fan(info):
     for sensor_temp, cpu_temp, board_temp, raw_voltage, active_fan, chassis_temp, proc_temp, \
         power, current, freq, psu_state, backup_psu_state, fan1_speed, fan2_speed in info:
-        if fan1_speed != "":
+        # Speed can be '0'
+        if fan1_speed:
             yield "1", {}
-        if fan2_speed != "":
+        if fan2_speed:
             yield "2", {}
 
 def check_mikrotik_health_fan(item, params, info):
@@ -199,8 +200,7 @@ def check_mikrotik_health_fan(item, params, info):
             if rpm > 0:
                 infotext = "Speed at %d RPM" % (rpm)
             else:
-                infotext = "Fan has failed"
-                status = 2
+                infotext = "Fan is currently off"
 
             yield status, infotext, perfdata
 
