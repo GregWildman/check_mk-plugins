@@ -83,12 +83,13 @@ def ciena_pbt_render_hex(hex_bytes, delim=""):
     return (delim.join(["%02s" % hex(m)[2:] for m in hex_bytes]).replace(" ", "0")).upper()
 
 def inventory_ciena_pbt(info):
-    bridge_mac, svctag_etype, tuntag_etype, reversion_state, reversion_holtime = info[2][0]
-    if len(bridge_mac) == 6:
-        yield "PBT Info", {}
-    for idx, name, mac, oper_status, admin_status, port, lsp_type, bvid, status in info[0]:
-        if admin_status == "1":  # enabled
-            yield "PBT Tunnel %02d" % int(idx), {}
+    if len(info[0]):   # Do we have any tunnels ?
+        bridge_mac, svctag_etype, tuntag_etype, reversion_state, reversion_holtime = info[2][0]
+        if len(bridge_mac) == 6:
+            yield "PBT Info", {}
+        for idx, name, mac, oper_status, admin_status, port, lsp_type, bvid, status in info[0]:
+            if admin_status == "1":  # enabled
+                yield "PBT Tunnel %02d" % int(idx), {}
 
 def check_ciena_pbt(item, params, info):
     map_type = {"1": ("primary"), "2": ("backup")}

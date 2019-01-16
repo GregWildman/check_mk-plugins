@@ -71,9 +71,9 @@ def inventory_ciena_port_xcvr(info):
         temp, rx_power, tx_power, tx_high, tx_low, rx_high, rx_low in info:
         if operstate == "2" and int(ident_type) > 1:  # enabled and not of type 'unknown'
 
-            # Due to lazy admins who feel no shame we have to cater for the enabled
-            # but not used scenario. Only add to inventory if dBm levels are not 0 - Greg.
-            if (saveint(rx_power) != 0 and saveint(tx_power) != 0):
+            # Certain models show no power levels in snmp. Might be firmware related or the
+            # SFP make/model.
+            if (saveint(rx_power) != 0 or saveint(tx_power) != 0):
 
                 # As the cheap SFP's do not provide valid thresholds we will be ignorning them.
                 # The warn/crit values are decided from the RX dBm level at inventory time, as per NOC
@@ -97,8 +97,9 @@ def inventory_ciena_port_xcvr(info):
                               "rx_initial_scan": rxdbm, \
                               "tx_initial_scan": txdbm}
 
-            elif not rx_power and not tx_power:
-                # Certain models like 311/311v do not provide these values in snmp.
+#            elif not rx_power and not tx_power:
+#                # Certain models like 311/311v do not provide these values in snmp.
+            else:
                 yield "%02d" % saveint(xcvr_idx), \
                              {"rx_levels": ("0", "0", "0", "0"), \
                               "tx_levels": ("0", "0", "0", "0"), \
@@ -131,13 +132,7 @@ def check_ciena_port_xcvr(item, params, info):
                 state = 2
 
             # Do we have the older model switch with no power levels?
-            if not rx_power and not tx_power:
-                infotext = '%s (%s), MfgDate: %s, %s nm' % \
-                                 (vendor_detail, iftext, mfg_date, wavelength )
-
-                yield state, infotext, perfdata
-
-            else:
+            if (saveint(rx_power) != 0 or saveint(tx_power) != 0):
                 # divide by 10,000 to convert back to dBm
                 rxdbm  = float(saveint(rx_power))  / 10000.0
                 txdbm  = float(saveint(tx_power))  / 10000.0
@@ -166,6 +161,12 @@ def check_ciena_port_xcvr(item, params, info):
                     yield 2, "(High threshold: %.1f dBm)" % rxhigh_crit
                 elif rxdbm >= rxhigh_warn:
                     yield 1, "(High threshold: %.1f dBm)" % rxhigh_warn
+
+            else:
+                infotext = '%s (%s), MfgDate: %s, %s nm' % \
+                                 (vendor_detail, iftext, mfg_date, wavelength )
+
+                yield state, infotext, perfdata
 
 
 check_info["ciena_port_xcvr"] = {
