@@ -35,5 +35,22 @@ def perfometer_check_mk_intracom_chassis(row, check_command, perf_data):
 
 perfometers["check_mk-intracom_chassis"] = perfometer_check_mk_intracom_chassis
 
-perfometers["check_mk-intracom_eth"] = perfometer_check_mk_if
+
+
+def perfometer_check_mk_if_intracom(row, check_command, perf_data):
+    unit = "Bit" if  "Bit/s" in row["service_plugin_output"] else "B"
+    return perfometer_bandwidth(
+        in_traffic  = savefloat(perf_data[0][1]),
+        out_traffic = savefloat(perf_data[1][1]),
+#        in_bw     = savefloat(perf_data[0][6]),
+#        out_bw    = savefloat(perf_data[1][6]),
+        in_bw     = float(125000000),
+        out_bw    = float(125000000),
+        unit      = unit
+    )
+
+#perfometers["check_mk-intracom_eth"] = perfometer_check_mk_if
+perfometers["check_mk-intracom_eth"] = perfometer_check_mk_if_intracom
+
+# Fin.
 

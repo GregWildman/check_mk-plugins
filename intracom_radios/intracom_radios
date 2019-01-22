@@ -36,6 +36,6 @@
  'name': 'intracom_radios',
  'num_files': 24,
  'title': 'INTRACOM TELECOM radios',
- 'version': '2.3',
+ 'version': '2.4',
  'version.min_required': '1.4.0',
- 'version.packaged': '1.5.0p2'}
+ 'version.packaged': '1.5.0p11'}

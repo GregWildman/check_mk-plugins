@@ -26,8 +26,33 @@
 
 # Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
 
-# in=378935.231579;;;0;125000000 inucast=610.184834;;;; innucast=31.442246;;;; indisc=0.0933;;;; inerr=0;0.01;0.1;; out=375237.268903;;;0;125000000 outucast=708.710092;;;; outnucast=196.117511;;;; outdisc=0;;;; outerr=0;0.01;0.1;; outqlen=0;;;0;
-check_metrics["check_mk-intracom_eth"] = if_translation
+# (in=2797568.000000;;;0;125000000 out=188544.000000;;;0;125000000 inpkts=3024.000000;;;; outpkts=528.000000;;;;)
+check_metrics["check_mk-intracom_eth"] = {
+    "in"        : { "name": "if_in_bps", "scale": 8 },
+    "out"       : { "name": "if_out_bps", "scale": 8 },
+    "inpkts"    : { "name": "if_in_pkts" },
+    "outpkts"   : { "name": "if_out_pkts" },
+}
+
+metric_info["if_in_pkts"] = {
+    "title" : _("Input unicast packets"),
+    "unit"  : "1/s",
+    "color" : "#00ffc0",
+}
+
+metric_info["if_out_pkts"] = {
+    "title" : _("Output unicast packets"),
+    "unit"  : "1/s",
+    "color" : "#00c0ff",
+}
+
+graph_info["packets_intracom"] = {
+    "title" : _("Packets"),
+    "metrics" : [
+        ( "if_in_pkts",  "area" ),
+        ( "if_out_pkts", "-area" ),
+    ],
+}
 
 
 # output_power=-68.8dBm;;;; input_power=-64.8dBm;;;;
