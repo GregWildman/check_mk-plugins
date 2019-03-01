@@ -1,0 +1,183 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# WWP-LEOS-RAPS-MIB:: wwpLeosRapsGlobalAttrs
+# .1.3.6.1.4.1.6141.2.60.47.1.1.1.1.0 = INTEGER: 2
+# .1.3.6.1.4.1.6141.2.60.47.1.1.1.2.0 = Hex-STRING: C4 83 6F 73 9A 40 
+# .1.3.6.1.4.1.6141.2.60.47.1.1.1.4.0 = INTEGER: 1
+#
+# WWP-LEOS-RAPS-MIB::wwpLeosRapsLogicalRingTable
+# .1.3.6.1.4.1.6141.2.60.47.1.2.1.1.2.1 = STRING: "LR6"
+# .1.3.6.1.4.1.6141.2.60.47.1.2.1.1.3.1 = INTEGER: 6
+# .1.3.6.1.4.1.6141.2.60.47.1.2.1.1.7.1 = INTEGER: 23
+# .1.3.6.1.4.1.6141.2.60.47.1.2.1.1.11.1 = INTEGER: 24
+# .1.3.6.1.4.1.6141.2.60.47.1.2.1.1.15.1 = INTEGER: 1
+#
+# WWP-LEOS-RAPS-MIB::wwpLeosRapsVirtualRingTable
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.2.1 = STRING: "VR6"
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.3.1 = INTEGER: 4085
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.4.1 = INTEGER: 6
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.7.1 = INTEGER: 2
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.8.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.9.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.10.1 = INTEGER: 4
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.13.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.14.1 = INTEGER: 2
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.15.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.24.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.25.1 = INTEGER: 2
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.26.1 = INTEGER: 1
+# .1.3.6.1.4.1.6141.2.60.47.1.3.1.1.35.1 = INTEGER: 1
+
+
+
+ciena_raps_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1") and \
+                             oid(".1.3.6.1.4.1.6141.2.60.47.1.1.1.1.0") != None
+
+ciena_raps_info = [(".1.3.6.1.4.1.6141.2.60.47.1.1.1", [ #  WWP-LEOS-RAPS-MIB::wwpLeosRapsGlobalAttrs
+                                        "1.0",        # wwpLeosRapsState
+                                 BINARY("2.0"),       # wwpLeosRapsNodeId
+                                        "4.0",        # wwpLeosRapsNumberOfRings
+                       ]),
+                   (".1.3.6.1.4.1.6141.2.60.47.1.2.1", [   #  WWP-LEOS-RAPS-MIB::wwpLeosRapsLogicalRingTable
+                                       "1.2",         # wwpLeosRapsLogicalRingName
+                                       "1.3",         # wwpLeosRapsLogicalRingId
+                                       "1.7",         # wwpLeosRapsLogicalRingWestPortId
+                                      "1.11",         # wwpLeosRapsLogicalRingEastPortId
+                                      "1.15",         # wwpLeosRapsLogicalRingNumberOfVirtualRings
+                       ]),
+                   (".1.3.6.1.4.1.6141.2.60.47.1.3.1", [   #  WWP-LEOS-RAPS-MIB::wwpLeosRapsVirtualRingTable
+                                       "1.2",         # wwpLeosRapsVirtualRingName
+                                       "1.3",         # wwpLeosRapsVirtualRingVid
+                                       "1.4",         # wwpLeosRapsVirtualRingLogicalRingId
+                                       "1.7",         # wwpLeosRapsVirtualRingState
+                                       "1.8",         # wwpLeosRapsVirtualRingStatus
+                                       "1.9",         # wwpLeosRapsVirtualRingAlarm
+                                      "1.10",         # wwpLeosRapsVirtualRingNumOfSwitchOvers
+                                      "1.13",         # wwpLeosRapsVirtualRingWestPortRpl
+                                      "1.14",         # wwpLeosRapsVirtualRingWestPortState
+                                      "1.15",         # wwpLeosRapsVirtualRingWestPortStatus
+                                      "1.24",         # wwpLeosRapsVirtualRingEastPortRpl
+                                      "1.25",         # wwpLeosRapsVirtualRingEastPortState
+                                      "1.26",         # wwpLeosRapsVirtualRingEastPortStatus
+                                      "1.35",         # wwpLeosRapsVirtualRingType
+                       ]),
+                  ]
+
+def inventory_ciena_raps(info):
+    num_logical_rings = info[0][0][2]
+    if saveint(num_logical_rings) > 0:
+        raps_state, node_id, num_logical_rings = info[0][0]
+        if raps_state == "2":  # enabled
+            yield "APS", {}
+        for lr_name, lr_id, lr_west_port, lr_east_port, lr_num_vr in info[1]:
+            if lr_name != "":
+                yield "Logical %s" % lr_name, {}
+        for vr_name, vr_id, vr_logical_id, vr_state, vr_status, vr_alarm, vr_switchovers, vr_west_rpl, vr_west_state, \
+            vr_west_status, vr_east_rpl, vr_east_state, vr_east_status, vr_type in info[2]:
+            if vr_name != "":
+                yield "Virtual %s" % vr_name, {}
+
+def check_ciena_raps(item, params, info):
+    map_state = {"1": ("disabled"), "2": ("ok"), "3": ("protecting"), "4": ("recovering")}
+    map_port_state = {"1": ("disabled"), "2": ("forwarding"), "3": ("blocked")}
+    map_status = {"1": ("clear"), "2": ("localSignalFail"), "3": ("localForceSwitch"), "4": ("remoteOrOtherPortSignalFail"),
+                  "5": ("remoteOrOtherPortForceSwitch"), "6": ("provisioningMismatch")}
+    map_port_status = {"1": ("ok"), "2": ("down"), "3": ("ccmFailure"), "4": ("localForceSwitch"),
+                  "5": ("remoteForceSwitch"), "6": ("remoteSignalFailure")}
+    map_alarm = {"1": ("clear"), "2": ("protectionSwitching"), "3": ("provisionMismatch")}
+    map_rpl = {"1": ("none"), "2": ("owner")}
+    map_type = {"1": ("majorRing"), "2": ("subRing")}
+
+    if item.startswith("Logical "):
+        for lr_name, lr_id, lr_west_port, lr_east_port, lr_num_vr in info[1]:
+            if item == "Logical %s" % (lr_name): 
+                infotext = "ID: %s, West Port: %s, East Port: %s, Virtual rings: %s" % \
+                    (lr_id, lr_west_port, lr_east_port, lr_num_vr) 
+                yield 0, infotext
+
+    elif item.startswith("Virtual "):
+        for vr_name, vr_id, vr_logical_id, vr_state, vr_status, vr_alarm, vr_switchovers, vr_west_rpl, vr_west_state, \
+            vr_west_status, vr_east_rpl, vr_east_state, vr_east_status, vr_type in info[2]:
+            if item == "Virtual %s" % (vr_name): 
+                yield 0, "ID: %s, Logical ID: %s" % (vr_id, vr_logical_id)
+
+                infotext = "State: %s/%s" % (map_state.get(vr_state), map_status.get(vr_status))
+                if vr_state == "1":
+                    yield 2, infotext
+                elif vr_state == "2":
+                    yield 0, infotext
+                else:
+                    yield 1, infotext
+
+                # Do not show any alarm output unless we need to
+                if vr_alarm != "1":
+                    infotext = "Alarm: %s" % map_alarm.get(vr_alarm, "Unknown")
+                    yield 2, infotext
+
+                infotext = "WEST: %s" % map_port_state.get(vr_west_state)
+                if vr_west_rpl == "2":
+                    infotext += " (split point)"
+                yield 0, infotext
+
+                if vr_west_status != "1":
+                    yield 2, map_port_status.get(vr_west_status)
+
+                infotext = "EAST: %s" % map_port_state.get(vr_east_state)
+                if vr_east_rpl == "2":
+                    infotext += " (split point)"
+                yield 0, infotext
+                    
+                if vr_east_status != "1":
+                    yield 2, map_port_status.get(vr_east_status)
+
+      
+    elif item == "APS":
+        raps_state, node_id, num_logical_rings = info[0][0]
+        if raps_state == "2":
+            yield 0, "(enabled)"
+        else:
+            yield 2, "(disabled)"
+
+        infotext = "Node ID: %s, Logical rings: %s" %  (ciena_render_mac_address(node_id, ":"), num_logical_rings)
+
+        yield 0, infotext
+
+check_info["ciena_raps"] = {
+    "inventory_function"        : inventory_ciena_raps,
+    "check_function"            : check_ciena_raps,
+    "service_description"       : 'Ring %s',
+    "snmp_info"                 : ciena_raps_info,
+    "snmp_scan_function"        : ciena_raps_scan,
+    "includes"                  : [ "ciena.include" ],
+}
+
+# Fin.
+

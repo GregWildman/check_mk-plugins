@@ -35,19 +35,40 @@
 # | B       | DC         | Online  | Online  |
 # +---------+------------+---------+---------+
 #
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.1.1 = INTEGER: 1
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.1.2 = INTEGER: 2
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.2.1 = INTEGER: 1
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.2.2 = INTEGER: 1
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.3.1 = INTEGER: 2
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.3.2 = INTEGER: 2
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.4.1 = INTEGER: 1
-# .1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1.4.2 = INTEGER: 1
+# +---------------- POWER SUPPLY PSA -----------------+
+# | Parameter                 | Value                 |
+# +---------------------------+-----------------------+
+# | Model Number              | 170-0013-900          |
+# | Serial Number             | M7231890              |
+# | Revision                  | ;;D                   |
+# | CLEI Code                 | CMUPAAAAAA            |
+# | Manufactured Date         | 1308                  |
+# | Input                     | DC                    |
+# | Input Voltage             | 20-60                 |
+# | Output Voltage            | 12                    |
+# | Manufacturing Location    | CHINA                 |
+# | Checksum                  | 53                    |
+# +---------------------------+-----------------------+
+#
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.1.1 = INTEGER: 1
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.2.1 = INTEGER: 1
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.3.1 = INTEGER: 2
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.4.1 = INTEGER: 1
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.5.1 = STRING: "170-0013-900"
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.6.1 = STRING: "M7231890"
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.7.1 = STRING: "CMUPAAAAAA"
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.8.1 = STRING: ";;D"
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.9.1 = STRING: "1308"
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.10.1 = INTEGER: 1
+# SNMPv2-SMI::enterprises.6141.2.60.11.1.1.3.1.1.11.1 = STRING: "PSA"
 
-ciena_chassis_psu_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1")
+# We are having too many 3930's crashing when trying to walk the PSU tree. Do not
+# run this check against 3930's (6141.1.85)
+ciena_chassis_psu_scan = lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1") and \
+                                     oid(".1.3.6.1.2.1.1.2.0") != ".1.3.6.1.4.1.6141.1.85"
 
 def inventory_ciena_chassis_psu(info):
-    for psu_id, psu_state, psu_type, psu_redundate_state in info:
+    for psu_id, psu_state, psu_type, psu_redundate_state, model_num, serial_num, clei, man_date in info:
         if psu_type != "":
             yield psu_id, {}
 
@@ -63,7 +84,7 @@ def check_ciena_chassis_psu(item, _no_params, info):
        "3": ('unequipped'),
     }
 
-    for psu_id, psu_state, psu_type, psu_redundate_state in info:
+    for psu_id, psu_state, psu_type, psu_redundate_state, model_num, serial_num, clei, man_date in info:
         if psu_id == item:
             infotext = "(%s)" % map_state.get(psu_state)
 # Customer still needs to decide how to handle this.
@@ -81,17 +102,23 @@ def check_ciena_chassis_psu(item, _no_params, info):
                 else:
                     infotext += "unprotected"
 
+                infotext += ", Model: %s, Serial: %s, Date: %s" % (model_num, serial_num, man_date)
+
             yield 0, infotext
 
 check_info["ciena_chassis_psu"] = {
     "check_function"        : check_ciena_chassis_psu,
     "inventory_function"    : inventory_ciena_chassis_psu,
     "service_description"   : "Power Supply %s",
-    "snmp_info"             : (".1.3.6.1.4.1.6141.2.60.11.1.1.3", [ # WWP-LEOS-CHASSIS-MIB::wwpLeosChassisPowerSupplyModule
-                                   "1.1.1",   #  wwpLeosChassisPowerSupplyNum             0
-                                   "1.1.2",   #  wwpLeosChassisPowerSupplyState           1
-                                   "1.1.3",   #  wwpLeosChassisPowerSupplyType            2
-                                   "1.1.4",   #  wwpLeosChassisPowerSupplyRedundantState  3
+    "snmp_info"             : (".1.3.6.1.4.1.6141.2.60.11.1.1.3.1.1", [ # WWP-LEOS-CHASSIS-MIB::wwpLeosChassisPowerSupplyModule
+                                   "1",   #  wwpLeosChassisPowerSupplyNum
+                                   "2",   #  wwpLeosChassisPowerSupplyState
+                                   "3",   #  wwpLeosChassisPowerSupplyType
+                                   "4",   #  wwpLeosChassisPowerSupplyRedundantState
+                                   "5",   #  wwpLeosChassisPowerSupplyModelNumber
+                                   "6",   #  wwpLeosChassisPowerSupplySerialNumber
+                                   "7",   #  wwpLeosChassisPowerSupplyCleiCode
+                                   "9",   #  wwpLeosChassisPowerSupplyManufactureDate
                               ]),
     "snmp_scan_function"    : ciena_chassis_psu_scan,
 }
