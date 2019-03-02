@@ -70,6 +70,7 @@ check_info["ciena_chassis"] = {
                                        "54.0",    #  wwpLeosChassisParamVersion               4
                                   ]),
     "snmp_scan_function"        : lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.6141.1"),
+    "includes"                  : [ "ciena.include" ],
 
 }
 
