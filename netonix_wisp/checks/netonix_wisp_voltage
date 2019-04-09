@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# .1.3.6.1.4.1.46242.4.1.1.1 = INTEGER: 1
+# .1.3.6.1.4.1.46242.4.1.1.2 = INTEGER: 2
+# .1.3.6.1.4.1.46242.4.1.1.3 = INTEGER: 3
+# .1.3.6.1.4.1.46242.4.1.1.4 = INTEGER: 4
+# .1.3.6.1.4.1.46242.4.1.1.5 = INTEGER: 5
+# .1.3.6.1.4.1.46242.4.1.2.1 = STRING: "Board 48V"
+# .1.3.6.1.4.1.46242.4.1.2.2 = STRING: "Board 24V"
+# .1.3.6.1.4.1.46242.4.1.2.3 = STRING: "Board 3V"
+# .1.3.6.1.4.1.46242.4.1.2.4 = STRING: "DCDC Input Voltage"
+# .1.3.6.1.4.1.46242.4.1.2.5 = STRING: "DCDC Output Voltage"
+# .1.3.6.1.4.1.46242.4.1.3.1 = INTEGER: 4930
+# .1.3.6.1.4.1.46242.4.1.3.2 = INTEGER: 2450
+# .1.3.6.1.4.1.46242.4.1.3.3 = INTEGER: 330
+# .1.3.6.1.4.1.46242.4.1.3.4 = INTEGER: 4910
+# .1.3.6.1.4.1.46242.4.1.3.5 = INTEGER: 5070
+
+factory_settings["netonix_wisp_voltage_default_levels"] = {
+    "warn" : 25.0,
+    "crit" : 24.5,
+}
+
+def inventory_netonix_wisp_voltage(info):
+    for voltage_desc, voltage_raw in info:
+        if voltage_desc != "":
+            voltage = float(voltage_raw) / 100
+            yield voltage_desc, {"voltage": voltage}
+
+def check_netonix_wisp_voltage(item, params, info):
+    #import pprint;pprint.pprint(params)
+    for voltage_desc, voltage_raw in info:
+        if item == voltage_desc:
+            voltage = float(voltage_raw) / 100
+            #warning = float(params.get("voltage")) - 2
+            #critical = float(params.get("voltage")) - 3
+            warn, crit = params['warn'], params['crit']
+
+            yield 0, "%.2f V" % voltage, [("voltage", "%.1fV" % voltage)]
+
+            if item == "DCDC Input Voltage":
+                if voltage <= crit:
+                    yield 2, "too low (warn/crit at or below %.2f/%.2f V)" % (warn, crit)
+                elif voltage <= warn:
+                    yield 1, "too low (warn/crit at or below %.2f/%.2f V)" % (warn, crit)
+
+
+
+check_info["netonix_wisp_voltage"] = {
+    "inventory_function"        : inventory_netonix_wisp_voltage,
+    "check_function"            : check_netonix_wisp_voltage,
+    "service_description"       : 'Voltage %s',
+    "has_perfdata"              : True,
+    "group"                     : "netonix_wisp_voltage",
+    "default_levels_variable"   : "netonix_wisp_voltage_default_levels",
+    "snmp_scan_function"        : lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.46242" and \
+                                              oid(".1.3.6.1.4.1.46242.4.1.1.1") != None,
+    "snmp_info"                 : (".1.3.6.1.4.1.46242.4", [   # NETONIX-SWITCH-MIB::voltageTable
+                                         "1.2",    # voltageDescription
+                                         "1.3",    # voltage
+                                  ]),
+}
+
+
+# Fin.
+

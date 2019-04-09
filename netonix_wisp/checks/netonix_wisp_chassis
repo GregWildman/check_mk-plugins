@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# .1.3.6.1.4.1.46242.1.0 = STRING: "1.5.2"
+# .1.3.6.1.4.1.46242.6.0 = INTEGER: 1831
+# .1.3.6.1.4.1.46242.7.0 = INTEGER: 39
+# .1.3.6.1.4.1.46242.8 = INTEGER: 95
+#
+# .1.3.6.1.2.1.1.1.0 = STRING: Netonix WS-12-250-DC
+
+def inventory_netonix_wisp_chassis(info):
+    # regex is slow. Only ever import and use when doing an inventory.
+    # Assuming we only checking WISP PoE models. Change to suit. - Greg.
+    import re
+    model_re = re.compile(r'^Netonix WS-(?P<ports>[0-9]+)-(?P<power>[0-9]+)-(?P<type>[ACD]+)$')
+    model_mini_re = re.compile(r'^Netonix WS-(?P<ports>[0-9]+)-MINI$')
+    model_ports = 0
+    model_power = 0
+    model_type = "unknown"
+    model_string = info[1][0][0]
+    if model_string[-4:] == "MINI":
+        match = model_mini_re.search(model_string)
+        if match:
+            model_ports = match.group('ports')
+            model_power = 100
+            model_type = "POE"
+    else:
+        match = model_re.search(model_string)
+        if match:
+            model_ports = match.group('ports')
+            model_power = match.group('power')
+            model_type = match.group('type')
+
+    fw_ver, total_pwr, dc_current, dc_efficiency = info[0][0]
+    if fw_ver != "":
+        yield "", {"model_ports": model_ports, "model_power": model_power, "model_type": model_type}
+
+def check_netonix_wisp_chassis(item, params, info):
+    fw_ver, total_pwr, dc_current, dc_efficiency = info[0][0]
+    pwr_watts = float(total_pwr) / 10.0
+    pwr_amps = float(dc_current) / 10.0
+    pwr_max = params.get("model_power")
+
+    infotext = "Firmware: %s, Power: %.1fW, Current: %.1fA, Efficiency: %s%%" % \
+               (fw_ver, pwr_watts, pwr_amps, dc_efficiency)
+    perfdata = [("power" , "%.1fWatt" % pwr_watts),
+                ("current", "%.1fA" % pwr_amps)]
+
+    return 0, infotext, perfdata
+
+
+check_info["netonix_wisp_chassis"] = {
+    "inventory_function"        : inventory_netonix_wisp_chassis,
+    "check_function"            : check_netonix_wisp_chassis,
+    "service_description"       : 'Chassis',
+    'has_perfdata'              : True,
+    "snmp_scan_function"        : lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.46242" and \
+                                              oid(".1.3.6.1.2.1.1.1.0").startswith("Netonix WS-"),
+    "snmp_info"                 : [(".1.3.6.1.4.1.46242", [   # NETONIX-SWITCH-MIB
+                                         "1.0",    # firmwareVersion
+                                         "6.0",    # totalPowerConsumption
+                                         "7.0",    # dcdcInputCurrent
+                                           "8",    # dcdcEfficiency
+                                   ]),
+                                   (".1.3.6.1.2.1.1", ["1.0"]),    # SNMPv2-MIB::sysDescr
+                                  ]
+}
+
+
+# Fin.
+

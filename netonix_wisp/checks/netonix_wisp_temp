@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2018             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
+
+# Example Output
+#
+# .1.3.6.1.4.1.46242.3.1.2.1 = STRING: "Board Temp"
+# .1.3.6.1.4.1.46242.3.1.2.2 = STRING: "CPU Temp"
+# .1.3.6.1.4.1.46242.3.1.2.3 = STRING: "PHY Temp"
+# .1.3.6.1.4.1.46242.3.1.2.4 = STRING: "DCDC Board Temp"
+# .1.3.6.1.4.1.46242.3.1.2.5 = STRING: "DCDC Heatsink #1 Temp"
+# .1.3.6.1.4.1.46242.3.1.2.6 = STRING: "DCDC Heatsink #2 Temp"
+# .1.3.6.1.4.1.46242.3.1.2.7 = STRING: "DCDC Controller Temp"
+# .1.3.6.1.4.1.46242.3.1.3.1 = INTEGER: 42
+# .1.3.6.1.4.1.46242.3.1.3.2 = INTEGER: 70
+# .1.3.6.1.4.1.46242.3.1.3.3 = INTEGER: 67
+# .1.3.6.1.4.1.46242.3.1.3.4 = INTEGER: 31
+# .1.3.6.1.4.1.46242.3.1.3.5 = INTEGER: 33
+# .1.3.6.1.4.1.46242.3.1.3.6 = INTEGER: 33
+# .1.3.6.1.4.1.46242.3.1.3.7 = INTEGER: 48
+
+def inventory_netonix_wisp_temp(info):
+    for temp_desc_raw, temp in info:
+        temp_desc = temp_desc_raw[:-5]
+        if temp_desc != "":
+            yield temp_desc, {}
+
+def check_netonix_wisp_temp(item, params, info):
+    for temp_desc_raw, temp in info:
+        temp_desc = temp_desc_raw[:-5]
+        if item == temp_desc:
+            return check_temperature(float(temp), params, "netonix_wisp_temp_%s" % item)
+
+
+check_info["netonix_wisp_temp"] = {
+    "inventory_function"        : inventory_netonix_wisp_temp,
+    "check_function"            : check_netonix_wisp_temp,
+    "service_description"       : 'Temperature %s',
+    'has_perfdata'              : True,
+    "snmp_scan_function"        : lambda oid: oid(".1.3.6.1.2.1.1.2.0") == ".1.3.6.1.4.1.46242" and \
+                                              oid(".1.3.6.1.4.1.46242.3.1.1.1") != None,
+    "snmp_info"                 : (".1.3.6.1.4.1.46242.3", [   # NETONIX-SWITCH-MIB::tempTable
+                                         "1.2",    # tempDescription
+                                         "1.3",    # temp
+                                  ]),
+    "includes"                  : [ "temperature.include" ],
+
+}
+
+
+# Fin.
+
