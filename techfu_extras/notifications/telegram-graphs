@@ -245,16 +245,16 @@ def render_performance_graphs(context):
 
 ## -------------------------------------------------------------------------------------------------------------
 
-def send_telegram_message(token, chat_id, text):
-    url = 'https://api.telegram.org/bot%s/sendMessage' % (token)
+def send_telegram_message(api_url, bot_token, chat_id, text):
+    url = '%s/bot%s/sendMessage' % (api_url, bot_token)
     data = {'chat_id':chat_id, 'text':text, 'parse_mode':'Markdown'}
     try:
         r = requests.post(url, data=data)
     except requests.exceptions.RequestException, e:
         sys.stdout.write('Cannot send Telegram message: HTTP-Error %s %s\n' % (e.code, e))
 
-def send_telegram_picture(token, chat_id, picture):
-    url = 'https://api.telegram.org/bot%s/sendPhoto' % (token)
+def send_telegram_picture(api_url, bot_token, chat_id, picture):
+    url = '%s/bot%s/sendPhoto' % (api_url, bot_token)
     data = {'chat_id':chat_id, 'disable_notification':True}
     files = {'photo':picture}
     try:
@@ -263,23 +263,29 @@ def send_telegram_picture(token, chat_id, picture):
         sys.stdout.write('Cannot send Telegram picture: HTTP-Error %s %s\n' % (e.code, e))
 
 def main():
-    context = fetch_notification_context()
-    telegram_bot_token = context.get('PARAMETER_1')
-    if not telegram_bot_token: # e.g. not specified in notifications
-        sys.stdout.write("Cannot send Telegram message: Empty BOT token as first parameter")
+    # gather options from env
+    context = dict([
+        (var[7:], value.decode("utf-8"))
+        for (var, value)
+        in os.environ.items() if var.startswith("NOTIFY_")])
+
+    api_url         = context["PARAMETER_API_URL"]
+    bot_token       = context["PARAMETER_BOT_TOKEN"]
+
+    try:
+        chat_id     = context["CONTACT_TELEGRAM_CHAT_ID"]
+    except e:
+        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error %s %s\n' % (e.code, e))
         sys.exit(2)
-    telegram_chatid = context.get('CONTACT_TELEGRAM_CHAT_ID')
-    if not telegram_chatid: # e.g. empty field in user database
-        sys.stdout.write("Cannot send Telegram message: Empty destination chat id")
-        sys.exit(2)
+
     text = construct_message_text(context)
-    send_telegram_message(telegram_bot_token, telegram_chatid, text)
+    send_telegram_message(api_url, bot_token, chat_id, text)
 
     # Send graphs
     try:
         graphs = render_performance_graphs(context)
         for name, contents in graphs:
-	    send_telegram_picture(telegram_bot_token, telegram_chatid, contents)
+	    send_telegram_picture(bot_token, chat_id, contents)
         
     except Exception, e:
         sys.stdout.write("Failed to send graphs to Telegram. %s\n" % e)
