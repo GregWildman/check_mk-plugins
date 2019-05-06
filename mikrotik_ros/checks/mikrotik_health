@@ -198,7 +198,7 @@ def check_mikrotik_health_fan(item, params, info):
 
             status = 0
             if rpm > 0:
-                infotext = "Speed at %d RPM" % (rpm)
+                infotext = "(%s) Speed at %d RPM" % (active_fan, rpm)
             else:
                 infotext = "Fan is currently off"
 
@@ -228,22 +228,44 @@ def inventory_mikrotik_health_power(info):
     for sensor_temp, cpu_temp, board_temp, raw_voltage, active_fan, chassis_temp, proc_temp, \
         power, current, freq, psu_state, backup_psu_state, fan1_speed, fan2_speed in info:
         if power != "":
-            yield None, {}
+            yield "Power", {}
+        if psu_state != "":
+            yield "PSU1", {}
+        if backup_psu_state != "":
+            yield "PSU2", {}
 
 def check_mikrotik_health_power(item, _no_params, info):
     for sensor_temp, cpu_temp, board_temp, raw_voltage, active_fan, chassis_temp, proc_temp, \
         power, current, freq, psu_state, backup_psu_state, fan1_speed, fan2_speed in info:
 
-        watts = savefloat(power) / 10
-        infotext = "Power: %.1f W" % watts
-        perfdata = [("power" , "%.1fWatt" % watts)]
+        state = 0
+        if item == "Power":
+            watts = savefloat(power) / 10
+            infotext = "Power: %.1f W" % watts
+            perfdata = [("power" , "%.1fWatt" % watts)]
  
-        return 0, infotext, perfdata
+            return state, infotext, perfdata
+
+        elif item == "PSU1":
+            infotext = "State OK"
+            if psu_state != "1":
+                infotext = "State FAIL"
+                state = 2
+            
+            return state, infotext
+
+        elif item == "PSU2":
+            infotext = "State OK"
+            if backup_psu_state != "1":
+                infotext = "State FAIL"
+                state = 2
+            
+            return state, infotext
 
 check_info["mikrotik_health.power"] = {
     "inventory_function"      : inventory_mikrotik_health_power,
     "check_function"          : check_mikrotik_health_power,
-    "service_description"     : "Chassis Power",
+    "service_description"     : "Chassis %s",
     "has_perfdata"            : True,
     "snmp_info"               : mikrotik_health_info,
     "snmp_scan_function"      : mikrotik_health_scan,

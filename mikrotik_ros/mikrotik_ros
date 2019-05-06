@@ -23,6 +23,6 @@
  'name': 'mikrotik_ros',
  'num_files': 12,
  'title': 'Mikrotik Router OS',
- 'version': '1.10',
+ 'version': '1.11',
  'version.min_required': '1.4.0',
- 'version.packaged': '1.5.0p9'}
+ 'version.packaged': '1.5.0p16'}
