@@ -57,5 +57,62 @@ mikrotik_wiresless_clients_if_translation = {
 
 check_metrics["check_mk-mikrotik_wireless_clients"] = mikrotik_wiresless_clients_if_translation
 
+
+# mikrotik_queue
+# (in=7311.400000;;;; out=4136.800000;;;; inpkts=7311.400000;;;; outpkts=4136.800000;;;; indisc=3830356.000000;;;; outdisc=8898.000000;;;; inpcq=0.000000;;;; outpcq=0.000000;;;;)
+metric_info["in_pcq_substreams"] = {
+    "title" : _("Downlod PCQ Substreams"),
+    "unit"  : "1/s",
+    "color" : "41/b",
+}
+
+metric_info["out_pcq_substreams"] = {
+    "title" : _("Upload PCQ Substreams"),
+    "unit"  : "1/s",
+    "color" : "45/b",
+}
+
+metric_info["in_dropped_pkts"] = {
+    "title" : _("Download Packets Dropped"),
+    "unit": "1/s",
+    "color": "#ff8000"
+}
+
+metric_info["out_dropped_pkts"] = {
+    "title" : _("Upload Packets Dropped"),
+    "unit": "1/s",
+    "color": "#ff8080"
+}
+
+graph_info["pcq_substreams"] = {
+    "title" : _("PCQ Substreams"),
+    "metrics" : [
+        ("out_pcq_substreams", "-area"),
+        ("in_pcq_substreams", "area"),
+    ]
+}
+
+graph_info["packets_dropped"] = {
+    "title" : _("Packets Dropped"),
+    "metrics" : [
+        ("out_dropped_pkts", "-area"),
+        ("in_dropped_pkts", "area"),
+    ]
+}
+
+mikrotik_queue_if_translation = {
+    "in"          : { "name": "if_in_bps", "scale": 8 },
+    "out"         : { "name": "if_out_bps", "scale": 8 },
+    "inpkts"      : { "name": "if_in_pkts" },
+    "outpkts"     : { "name": "if_out_pkts" },
+    "indrop"      : { "name": "in_dropped_pkts" },
+    "outdrop"     : { "name": "out_dropped_pkts" },
+    "inpcq"       : { "name": "in_pcq_substreams" },
+    "outpcq"      : { "name": "out_pcq_substreams" }
+}
+
+check_metrics["check_mk-mikrotik_queue"] = mikrotik_queue_if_translation
+
+
 # Fin.
 

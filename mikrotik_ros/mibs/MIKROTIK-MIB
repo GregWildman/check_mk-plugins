@@ -7,11 +7,11 @@ TEXTUAL-CONVENTION, DisplayString, MacAddress, DateAndTime FROM SNMPv2-TC
 OBJECT-GROUP, NOTIFICATION-GROUP FROM SNMPv2-CONF;
 
 mikrotikExperimentalModule MODULE-IDENTITY
-  LAST-UPDATED "201812050000Z"
+  LAST-UPDATED "201904100000Z"
   ORGANIZATION "MikroTik"
   CONTACT-INFO "support@mikrotik.com"
   DESCRIPTION ""
-  REVISION "201812050000Z"
+  REVISION "201904100000Z"
   DESCRIPTION ""
   ::= { mikrotik 1 }
 
@@ -240,7 +240,8 @@ MtxrWlRtabEntry ::= SEQUENCE {
     mtxrWlRtabRxStrengthCh1 Integer32,
     mtxrWlRtabTxStrengthCh2 Integer32,
     mtxrWlRtabRxStrengthCh2 Integer32,
-    mtxrWlRtabTxStrength Integer32
+    mtxrWlRtabTxStrength Integer32,
+    mtxrWlRtabRadioName DisplayString
 }
 
 mtxrWlRtabAddr OBJECT-TYPE
@@ -375,6 +376,13 @@ mtxrWlRtabTxStrength OBJECT-TYPE
     STATUS current
     DESCRIPTION ""
     ::= { mtxrWlRtabEntry 19 }
+
+mtxrWlRtabRadioName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION ""
+    ::= { mtxrWlRtabEntry 20 }
 
 mtxrWlRtabEntryCount OBJECT-TYPE
     SYNTAX Gauge32
@@ -984,6 +992,7 @@ mtxrWirelessGroup OBJECT-GROUP OBJECTS {
         mtxrWlRtabTxStrengthCh2,
         mtxrWlRtabRxStrengthCh2,
         mtxrWlRtabTxStrength,
+        mtxrWlRtabRadioName,
         mtxrWlApTxRate,
 	mtxrWlApRxRate,
 	mtxrWlApSsid,
