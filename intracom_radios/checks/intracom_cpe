@@ -60,6 +60,12 @@ intracom_cpe_info = [( ".1.3.6.1.4.1.1807.111.1.1", [   # ICOM-WMAC-TS-MIB
                                        "1.2",      # icomWphyModemLinkStatusRssi
                                        "1.3",      # icomWphyModemLinkStatusSnr
                      ]),
+                     ( ".1.3.6.1.4.1.1807.110.1.2", [   # ICOM-WMAC-CMN-MIB::icomWmacCmnStatsEntry
+                                       "1.1",      # icomWmacCmnStatsTxPkts
+                                       "1.2",      # icomWmacCmnStatsTxBytes
+                                       "1.3",      # icomWmacCmnStatsRxPkts
+                                       "1.4",      # icomWmacCmnStatsRxBytes
+                     ]),
                     ]
 
 def intracom_cpe_render_mac_address(ifPhysAddress):
@@ -71,11 +77,13 @@ def intracom_cpe_render_mac_address(ifPhysAddress):
 
 
 def inventory_intracom_cpe(info):
+    import pprint;pprint.pprint(info)
     ts_id = int(info[0][0][5])
     if ts_id > 0:
         yield "%02d" % ts_id, {}
 
 def check_intracom_cpe(item, params, info):
+    this_time = int(time.time())
     state = 0
     map_state = {
        "1": ("disconnected"),
@@ -88,6 +96,7 @@ def check_intracom_cpe(item, params, info):
 
     conn_state, monitoring, ts_mac_raw, bs_mac_raw, bs_ip, ts_id_raw = info[0][0]
     rssi_raw, snr_raw = info[1][0]
+    tx_pkts, tx_bytes, rx_pkts, rx_bytes = info[2][0]
     ts_id = "%02d" % int(ts_id_raw)
     if item == ts_id:
         if conn_state != "4":
@@ -95,9 +104,20 @@ def check_intracom_cpe(item, params, info):
 
         rssi = float(rssi_raw) / 100
         snr = float(snr_raw) / 100
+        speed_b = 18750000  # hardcode to radio limit of 150Mbps
+        rx_bytes_rate = get_rate("icomWmacCmnStatsRxBytes", this_time, int(rx_bytes))
+        tx_bytes_rate = get_rate("icomWmacCmnStatsTxBytes", this_time, int(tx_bytes))
+        rx_pkts_rate  = get_rate("icomWmacCmnStatsRxPkts",  this_time, int(rx_pkts))
+        tx_pkts_rate  = get_rate("icomWmacCmnStatsTxPkts",  this_time, int(tx_pkts))
+
         infotext = "%s, BS IP: %s, BS MAC: %s, RSSI: %.2f dBm, SNR: %.2f dBm" % \
                (map_state.get(conn_state), bs_ip, intracom_cpe_render_mac_address(bs_mac_raw), rssi, snr) 
-        perfdata = [("input_power", "%.1fdBm" % rssi), ("snr", "%.1fdBm" % snr)]
+        perfdata = [("input_power", "%.1fdBm" % rssi),
+                    ("snr", "%.1fdBm" % snr),
+                    ("in",      "%f" % rx_bytes_rate, None, None, 0, speed_b),
+                    ("out",     "%f" % tx_bytes_rate, None, None, 0, speed_b),
+                    ("inpkts",  "%f" % rx_pkts_rate),
+                    ("outpkts", "%f" % tx_pkts_rate)]
 
         return (state, infotext, perfdata)
 

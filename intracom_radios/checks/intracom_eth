@@ -103,7 +103,8 @@ def check_intracom_eth(item, params, parsed):
     for ifIndex, ifDescr, ifType, ifSpeed, ifOperStatus, rx_kbit_rate, rx_pkt_rate, \
         tx_kbit_rate, tx_pkt_rate, ifAlias, ifPhysAddress in parsed:
         if item == ifIndex:
-            speed = int(ifSpeed)
+            # TODO. Test for interface being down before calculating...
+            speed = int(ifSpeed) if int(ifSpeed) == 0 else 100000000 
             speed_b = speed / 8
             rx_bit_rate = int(rx_kbit_rate) * 1024
             tx_bit_rate = int(tx_kbit_rate) * 1024

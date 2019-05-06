@@ -129,8 +129,9 @@ def check_intracom_bsts(item, params, info):
         if item == ts_idx:
             dl_rssi = float(dl_rssi_raw) / 100
             ul_rssi = float(ul_rssi_raw) / 100
-            if conn_state != "5":
-                state = 1
+            # You would think?. Welcome to shoddy ISP.
+            #if conn_state != "5":
+            #    state = 1
 
             infotext = "%s, IP: %s, MAC: %s, dl: %s  ul: %s, RSSI (dBm) dl: %.2f ul: %.2f, Distance: %dm" % \
                    (map_state.get(conn_state), ip, intracom_render_mac_address(mac_raw),
