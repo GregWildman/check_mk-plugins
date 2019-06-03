@@ -101,10 +101,10 @@ def inventory_ciena_port_xcvr(info):
 #                # Certain models like 311/311v do not provide these values in snmp.
             else:
                 yield "%02d" % saveint(xcvr_idx), \
-                             {"rx_levels": ("0", "0", "0", "0"), \
-                              "tx_levels": ("0", "0", "0", "0"), \
-                              "rx_initial_scan": "n/a", \
-                              "tx_initial_scan": "n/a"}
+                             {"rx_levels": (0.0, 0.0, 0.0, 0.0), \
+                              "tx_levels": (0.0, 0.0, 0.0, 0.0), \
+                              "rx_initial_scan": 0.0, \
+                              "tx_initial_scan": 0.0}
 
 def check_ciena_port_xcvr(item, params, info):
     state = 0
