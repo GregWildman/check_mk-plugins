@@ -26,24 +26,27 @@
 
 # Techfu / Greg Wildman <greg.wildman@techfu.co.za> - 2018
 
-# Radwin 5000 HSB series radio
+# Radwin 5000 HBS series radio
 # Extract the peer radio IP from the service detail. Present a icon to open this
 # peers web interface. Using default user/pass for website. Change to suit.
+#
+# TODO: Also go directly to the peer in CMK.
+# https://ims.broadlink.net/gp01/check_mk/index.py?start_url=%2Fgp01%2Fcheck_mk%2Fview.py%3Fhost%3D11001488-RW5K-00%26site%3Dgp01%26view_name%3Dhost
 #
 # Example plugin_output
 # OK - [GP3127 & vlan GP3133 - Joe Soap cc] (syncRegistered) MAC: 00:15:67:5E:6E:82, IP: 10.10.70.34, Timeslots: 4/4, Range: 3450m
 
 def paint_rw5k_peer_radio_icon(what, row, tags, custom_vars):
-    if what == 'service' and row['service_description'].startswith('HSU '):
+    if what == 'service' and (row['service_description'].startswith('HSU 0') or row['service_description'].startswith('HSU 1')):
         peer_ip = row['service_plugin_output'].split(",")[1][5:]
         url = 'http://operator:public@%s/mobile/monitor.asp' % peer_ip
         return u'<a href="%s" title="Peer Radio Web Interface" target="_blank">' \
-               '<img class=icon src="images/icon_www.png"/>Open HSU web interface</a>' % (url)
+               '<img class=icon src="images/icon_www.png"/>Open HSU web interface %s</a>' % (url, service_state)
 
 multisite_icons.append({
     'paint':           paint_rw5k_peer_radio_icon,
     'host_columns':    [ 'address' ],
-    'service_columns': [ 'host_address', 'plugin_output' ],
+    'service_columns': [ 'host_address', 'plugin_output', 'state' ],
 })
 
 # Fin.

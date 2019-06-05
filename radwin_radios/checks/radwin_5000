@@ -190,7 +190,8 @@ def check_radwin_5000(item, params, info):
                     if "BACKUP" in hsu_name:
                         infotext += "(backup) Link is not being monitored"
                     else:
-                        if saveint(line[8]) > 0: # link state
+                        link_state = saveint(line[8])			
+                        if link_state > 0: # link state
                             status = "(%s)" % map_state.get(line[8])
                         else:
                             status = "(down)(!!)"
@@ -198,10 +199,15 @@ def check_radwin_5000(item, params, info):
 
                         infotext += "%s MAC: %s" % (status, r5k_render_mac_address(line[6]))
 
-                        if saveint(line[8]) > 0: # link state
+                        if link_state > 0: # link state
+                            # IP address not always available, depending on state.
                             hsu_info = line[16]
-                            ip_raw = int(hsu_info.split(',')[1], 16)
-                            ip_addr = socket.inet_ntoa(struct.pack('>L',ip_raw))
+                            if hsu_info == "No Link":
+                                ip_addr = hsu_info
+                            else:
+                                ip_raw = int(hsu_info.split(',')[1], 16)
+                                ip_addr = socket.inet_ntoa(struct.pack('>L',ip_raw))
+
                             infotext += ", IP: %s, Timeslots: %s/%s, Range: %sm" % (ip_addr, line[5], line[7], line[11])
 
                     perfdata = [("hbs_rss", "%.1fdBm" % float(line[12])), ("hsu_rss", "%.1fdBm" % float(line[13]))]
