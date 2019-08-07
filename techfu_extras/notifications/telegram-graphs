@@ -285,7 +285,7 @@ def main():
     try:
         graphs = render_performance_graphs(context)
         for name, contents in graphs:
-	    send_telegram_picture(bot_token, chat_id, contents)
+	    send_telegram_picture(api_url, bot_token, chat_id, contents)
         
     except Exception, e:
         sys.stdout.write("Failed to send graphs to Telegram. %s\n" % e)

@@ -83,7 +83,6 @@ def construct_message_text(context):
 def send_telegram_message(api_url, bot_token, chat_id, text):
     url = '%s/bot%s/sendMessage' % (api_url, bot_token)
     data = urllib.urlencode({'chat_id':chat_id, 'text':text, 'parse_mode':'Markdown'})
-    #print("sending telegram message, url '%s', chat id '%s', text '%s'" % (url, chat_id, text))
     try:
         urllib2.urlopen(url, data).read()
     except urllib2.URLError, e:
