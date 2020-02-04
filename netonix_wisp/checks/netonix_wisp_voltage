@@ -56,7 +56,6 @@ def inventory_netonix_wisp_voltage(info):
             yield voltage_desc, {"voltage": voltage}
 
 def check_netonix_wisp_voltage(item, params, info):
-    #import pprint;pprint.pprint(params)
     for voltage_desc, voltage_raw in info:
         if item == voltage_desc:
             voltage = float(voltage_raw) / 100

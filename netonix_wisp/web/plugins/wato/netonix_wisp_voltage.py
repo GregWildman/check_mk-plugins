@@ -29,7 +29,7 @@ register_check_parameters(
     "netonix_wisp_voltage",
     _("Voltage levels for Netonix WISP Switches"),
     Dictionary(
-        help = _("oltage Levels for Netonix WISP Switches."),
+        help = _("Voltage Levels for Netonix WISP Switches."),
         elements = [
             ('warn', Float(title = _("Warning if below"), unit = "V", default_value = 25.0)),
             ('crit', Float(title = _("Critical if below"), unit = "V", default_value = 24.0)),
