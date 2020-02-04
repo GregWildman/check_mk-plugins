@@ -15,10 +15,11 @@
            'mibs': ['ALPHA.MIB'],
            'notifications': [],
            'pnp-templates': [],
-           'web': ['plugins/perfometer/cordex_battery.py']},
+           'web': ['plugins/perfometer/cordex_battery.py',
+                   'plugins/wato/cordex_in_voltage.py']},
  'name': 'alpha_cordex',
- 'num_files': 4,
+ 'num_files': 8,
  'title': 'Alpha Cordex Rectifiers',
- 'version': '1.7',
+ 'version': '1.9',
  'version.min_required': '1.4.0',
- 'version.packaged': '1.4.0p33'}
+ 'version.packaged': '1.6.0p7'}

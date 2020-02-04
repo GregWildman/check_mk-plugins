@@ -39,25 +39,40 @@ gamatronic_in_voltage_info = (".1.3.6.1.4.1.6050.1.5", [ #  GAMMATRONIC-MIB::psA
                                "7.0",    # psACInputFrequency
                              ])
 
-ups_in_voltage_default_levels = (210, 180) # warning / critical
+factory_settings["gamatronic_in_voltage_default_levels"] = {
+    "warn" : 200.0,
+    "crit" : 100.0,
+}
 
 def inventory_gamatronic_in_voltage_info(info):
-    if len(info[0]) > 0:
-        yield None, ups_in_voltage_default_levels
+    for voltage_raw, freq_raw in info:
+        voltage = float(voltage_raw) if saveint(voltage_raw) > 0 else 0
+        yield None, {"voltage": voltage}
 
 def check_gamatronic_in_voltage_info(item, params, info):
-    voltage, freq = info[0]
-    warn, crit = params
-    infotext = "in voltage: %sV, (warn/crit at %dV/%dV)" % (voltage, warn, crit)
-    perfdata = [("voltage", int(voltage), warn, crit),
-                ("frequency", float(freq) * 100)]
-    return 0, infotext, perfdata
+    for voltage_raw, freq_raw in info:
+        voltage = float(voltage_raw) if saveint(voltage_raw) > 0 else 0
+        frequency = (float(freq_raw) * 100) if saveint(freq_raw) > 0 else 0
+        warn, crit = params['warn'], params['crit']
+
+        infotext = "in voltage: %dV, (warn/crit at %dV/%dV)" % (voltage, warn, crit)
+        perfdata = [("voltage", int(voltage), warn, crit),
+                ("frequency", frequency)]
+
+        if voltage <= crit:
+            return (2, infotext, perfdata)
+        elif voltage <= warn:
+            return (1, infotext, perfdata)
+        return (0, infotext, perfdata)
+
 
 check_info["gamatronic_in_voltage"] = {
     "inventory_function"        : inventory_gamatronic_in_voltage_info,
     "check_function"            : check_gamatronic_in_voltage_info,
     "service_description"       : 'AC Mains',
     "has_perfdata"              : True,
+    "group"                     : "gamatronic_in_voltage",
+    "default_levels_variable"   : "gamatronic_in_voltage_default_levels",
     "snmp_info"                 : gamatronic_in_voltage_info,
     "snmp_scan_function"        : gamatronic_in_voltage_scan,
 
