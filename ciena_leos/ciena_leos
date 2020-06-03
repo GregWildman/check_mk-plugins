@@ -21,7 +21,8 @@
                       'ciena_raps',
                       'ciena_software',
                       'ciena_system_cpu',
-                      'ciena_system_cpu_util'],
+                      'ciena_system_cpu_util',
+                      'ciena_system_mem'],
            'doc': [],
            'inventory': [],
            'lib': [],
@@ -30,8 +31,9 @@
            'pnp-templates': ['check_mk-ciena_port_xcvr.php'],
            'web': ['plugins/metrics/check_mk-ciena_port_xcvr.py']},
  'name': 'ciena_leos',
- 'num_files': 21,
+ 'num_files': 22,
  'title': 'Ciena switches running LEOS/SAOS',
- 'version': '2.7',
- 'version.min_required': '1.4.0',
- 'version.packaged': '1.5.0p16'}
+ 'version': '3.0',
+ 'version.min_required': '1.6.0',
+ 'version.packaged': '1.6.0p11',
+ 'version.usable_until': None}
