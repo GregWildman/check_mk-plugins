@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+
+def bake_exim_mailq(opsys, conf, conf_dir, plugins_dir):
+    if opsys == "linux":
+        shutil.copy2(cmk.utils.paths.local_agents_dir + "/plugins/exim_mailq", plugins_dir + "/exim_mailq")
+
+bakery_info["exim_mailq"] = {
+    "bake_function" : bake_exim_mailq,
+    "os"            : [ "linux"],
+}
