@@ -24,53 +24,114 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
-telegram_notification_dict =  Dictionary(
-    optional_keys = None,
-    elements = [
-        ("bot_token", TextAscii(
-            title = _("BOT Token"),
-            help = _("You need to provide a valid BOT token to be able to send notifications using Telegram. "
-                     "For information see <a href=\"https://core.telegram.org/bots#create-a-new-bot\" "
-                     "target=\"_blank\">Bots: An introduction for developers</a>"),
-            size = 40,
-            allow_empty = False,
-            regex = "[a-zA-Z0-9:\-_]{40,50}",
-        )),
-        ("api_url", TextAscii(
-            title = _("API Endpoint"),
-            help = _("Telegram API endpoint URL. Do <tt>not</tt> change unless you know what you are doing."),
-            default_value = "https://api.telegram.org"
-        )),
-    ]
+import cmk.utils.version as cmk_version
+import cmk.gui.config as config
+from cmk.gui.i18n import _
+from cmk.gui.globals import html
+
+from cmk.gui.valuespec import (
+    DEF_VALUE,
+    Dictionary,
+    FixedValue,
+    Password,
+    TextAreaUnicode,
+    TextAscii,
+    TextUnicode,
 )
 
-# In progress - Greg
-telegram_graphs_notification_dict =  Dictionary(
-    optional_keys = None,
-    elements = [
-        ("bot_token", TextAscii(
-            title = _("BOT Token"),
-            help = _("You need to provide a valid BOT token to be able to send notifications using Telegram. "
-                     "For information see <a href=\"https://core.telegram.org/bots#create-a-new-bot\" "
-                     "target=\"_blank\">Bots: An introduction for developers</a>"),
-            size = 40,
-            allow_empty = False,
-            regex = "[a-zA-Z0-9:\-_]{40,50}",
-        )),
-        ("api_url", TextAscii(
-            title = _("API Endpoint"),
-            help = _("Telegram API endpoint URL. Do <tt>not</tt> change unless you know what you are doing."),
-            default_value = "https://api.telegram.org",
-        )),
-        ("long_template", TextAscii(
-             title = _("Use long text notifications template"),
-             help = _("Per default only one notification is generated for all recipients. "
-                    "Therefore, all recipients can see who was notified and reply to "
-                    "all other recipients."),
-         )),
-    ]
+from cmk.gui.plugins.wato import (
+    notification_parameter_registry,
+    NotificationParameter,
+    passwordstore_choices,
+    IndividualOrStoredPassword,
 )
 
-register_notification_parameters("telegram", telegram_notification_dict)
-register_notification_parameters("telegram-graphs", telegram_notification_dict)
+from cmk.gui.plugins.wato.utils import (
+    PasswordFromStore,)
+
+@notification_parameter_registry.register
+class NotificationParameterTelegramGraphs(NotificationParameter):
+    @property
+    def ident(self):
+        return "telegram"
+
+    @property
+    def spec(self):
+        return Dictionary(
+            title=_("Create notification with the following parameters"),
+            optional_keys=["api_url", "host_desc", "svc_desc", "host_msg", "svc_msg", "ignore_graphs"],
+            required_keys=["bot_token"],
+            elements = [
+                ("bot_token",
+                 PasswordFromStore(
+                     title = _("BOT Token"),
+                     help = _("You need to provide a valid BOT token to be able to send notifications using Telegram. "
+                              "For information see <a href=\"https://core.telegram.org/bots#create-a-new-bot\" "
+                              "target=\"_blank\">Bots: An introduction for developers</a>"),
+                     size = 58,
+                     allow_empty = False,
+                )),
+                ("api_url",
+                 TextAscii(
+                     title = _("API Endpoint"),
+                     help = _("Telegram API endpoint URL. Do <tt>not</tt> change unless you know what you are doing."),
+                     default_value = "https://api.telegram.org",
+                )),
+                ("host_desc",
+                 TextUnicode(
+                     title=_("Description for host alerts"),
+                     help=_("Description field of host alert that is generally "
+                            "used to provide a detailed information about the "
+                            "alert."),
+                     default_value="Check_MK: $HOSTNAME$ - $EVENT_TXT$",
+                     size=64,
+                 )),
+                ("svc_desc",
+                 TextUnicode(
+                     title=_("Description for service alerts"),
+                     help=_("Description field of service alert that is generally "
+                            "used to provide a detailed information about the "
+                            "alert."),
+                     default_value="Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$",
+                     size=68,
+                 )),
+                ("host_msg",
+                 TextAreaUnicode(
+                     title=_("Message for host alerts"),
+                     rows=8,
+                     cols=58,
+                     monospaced=True,
+                     default_value="""```
+Host:    $HOSTNAME$
+Alias:   $HOSTALIAS$
+Address: $HOSTADDRESS$
+Event:   $EVENT_TXT$
+Output:  $HOSTOUTPUT$
+```""")),
+                ("svc_msg",
+                 TextAreaUnicode(
+                     title=_("Message for service alerts"),
+                     rows=11,
+                     cols=58,
+                     monospaced=True,
+                     default_value="""```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Service:  $SERVICEDESC$
+Event:    $EVENT_TXT$
+Output:   $SERVICEOUTPUT$
+```""")),
+                ("ignore_graphs",
+                 FixedValue(
+                     False,
+                     title=_("Disable attaching graphs for PROBLEM and CUSTOM types"),
+                     totext=_("Disable attaching graphs for PROBLEM and CUSTOM types"),
+                     help=_("Do not attach graphs of the host or service for PROBLEM and CUSTOM notification types."),
+                 )),
+
+                ])
+
+        return Dictionary(title=_("Create notification with the following parameters"),
+                          elements=elements)
 

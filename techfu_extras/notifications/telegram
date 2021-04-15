@@ -3,6 +3,11 @@
 
 # Copyright Mathias Kettner  2013  mk@mathias-kettner.de
 #           Stefan Gehn      2016  stefan+cmk@srcxbox.net
+#           Greg Wildman     2017  greg@techno.co.za
+#           Trevor Steyn     2021  trevor@webon.co.za
+
+#           Greg Wildman     2021  greg@techno.co.za
+#              Updated for CheckMK ver 2.0.0
 
 # check_mk is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -15,89 +20,173 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
-# Telegram notification based on asciimail notification from
-# check_mk 1.2.6p16.
+# Telegram notification based on mail notification from check_mk
 
-import os, re, sys, urllib, urllib.request, requests
+import os, re, sys
+import urllib, urllib.request, requests
+import base64
+import json
 
-tmpl_host_long_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
-```
-Host:     $HOSTNAME$
-Alias:    $HOSTALIAS$
-Address:  $HOSTADDRESS$
-Event:    $EVENT_TXT$
-Output:   $HOSTOUTPUT$
+from cmk.notification_plugins import utils
+from cmk.notification_plugins.utils import retrieve_from_passwordstore
 
-$LONGHOSTOUTPUT$```"""
+attachments = []
 
-tmpl_service_long_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
-```
-Host:     $HOSTNAME$
-Alias:    $HOSTALIAS$
-Address:  $HOSTADDRESS$
-Service:  $SERVICEDESC$
-Event:    $EVENT_TXT$
-Output:   $SERVICEOUTPUT$
+def construct_content(context):
 
-$LONGSERVICEOUTPUT$```"""
+    # Create a notification summary in a new context variable
+    # Note: This code could maybe move to cmk --notify in order to
+    # make it available every in all notification scripts
+    # We have the following types of notifications:
 
-tmpl_host_short_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
-```
-Host:     $HOSTNAME$
-Alias:    $HOSTALIAS$
-Address:  $HOSTADDRESS$
-Event:    $EVENT_TXT$
-Output:   $HOSTOUTPUT$
-"""
+    # - Alerts                OK -> CRIT
+    #   NOTIFICATIONTYPE is "PROBLEM" or "RECOVERY"
 
-tmpl_service_short_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
-```
-Host:     $HOSTNAME$
-Alias:    $HOSTALIAS$
-Address:  $HOSTADDRESS$
-Service:  $SERVICEDESC$
-Event:    $EVENT_TXT$
-Output:   $SERVICEOUTPUT$
-"""
+    # - Flapping              Started, Ended
+    #   NOTIFICATIONTYPE is "FLAPPINGSTART" or "FLAPPINGSTOP"
 
-def substitute_context(template, context):
-    # First replace all known variables
-    for varname, value in context.items():
-        template = template.replace('$'+varname+'$', value)
+    # - Downtimes             Started, Ended, Cancelled
+    #   NOTIFICATIONTYPE is "DOWNTIMESTART", "DOWNTIMECANCELLED", or "DOWNTIMEEND"
 
-    # Remove the rest of the variables and make them empty
-    template = re.sub("\$[A-Z_][A-Z_0-9]*\$", "", template)
-    return template
+    # - Acknowledgements
+    #   NOTIFICATIONTYPE is "ACKNOWLEDGEMENT"
 
-def construct_message_text(context):
+    # - Custom notifications
+    #   NOTIFICATIONTYPE is "CUSTOM"
+
     notification_type = context["NOTIFICATIONTYPE"]
-    if notification_type in [ "PROBLEM", "RECOVERY" ]:
+    if notification_type in ["PROBLEM", "RECOVERY"]:
         txt_info = "$PREVIOUS@HARDSHORTSTATE$ -> $@SHORTSTATE$"
+
     elif notification_type.startswith("FLAP"):
         if "START" in notification_type:
             txt_info = "Started Flapping"
         else:
             txt_info = "Stopped Flapping ($@SHORTSTATE$)"
+
     elif notification_type.startswith("DOWNTIME"):
         what = notification_type[8:].title()
         txt_info = "Downtime " + what + " ($@SHORTSTATE$)"
+
     elif notification_type == "ACKNOWLEDGEMENT":
         txt_info = "Acknowledged ($@SHORTSTATE$)"
+
     elif notification_type == "CUSTOM":
         txt_info = "Custom Notification ($@SHORTSTATE$)"
-    else:
-        txt_info = notification_type # Should neven happen
 
-    txt_info = substitute_context(txt_info.replace("@", context["WHAT"]), context)
+    else:
+        txt_info = notification_type  # Should neven happen
+
+    txt_info = utils.substitute_context(txt_info.replace("@", context["WHAT"]), context)
 
     context["EVENT_TXT"] = txt_info
 
+    # Build the message contents
     if context['WHAT'] == 'HOST':
-        tmpl_text = tmpl_host_short_text
+        tmpl_host_desc = "*Check_MK: $HOSTNAME$ - $EVENT_TXT$*"
+        tmpl_host_msg = """```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Event:    $EVENT_TXT$
+Output:   $HOSTOUTPUT$
+```"""
+        desc = context.get('PARAMETER_HOST_DESC') or tmpl_host_desc
+        msg = context.get('PARAMETER_HOST_MSG') or tmpl_host_msg
     else:
-        tmpl_text = tmpl_service_short_text
+        tmpl_svc_desc = '*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*'
+        tmpl_svc_msg = """```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Service:  $SERVICEDESC$
+Event:    $EVENT_TXT$
+Output:   $SERVICEOUTPUT$
+```"""
+        desc = context.get('PARAMETER_SVC_DESC') or tmpl_svc_desc
+        msg = context.get('PARAMETER_SVC_MSG') or tmpl_svc_msg
 
-    return substitute_context(tmpl_text, context)
+    desc = utils.substitute_context(desc, context)
+    msg = utils.substitute_context(msg, context)
+    body = "%s\n%s" % (desc, msg)
+
+    return body
+
+
+#
+# Graphs
+#
+# Fetch graphs for this object. It first tries to detect how many sources
+# are available for this object. Then it loops through all sources and
+# fetches retrieves the images. If a problem occurs, it is printed to
+# stderr (-> notify.log) and the graph is not added to the mail.
+
+def render_cmk_graphs(context):
+    if context["WHAT"] == "HOST":
+        svc_desc = "_HOST_"
+    else:
+        svc_desc = context["SERVICEDESC"]
+
+    url = "http://localhost:%d/%s/check_mk/ajax_graph_images.py?host=%s&service=%s" % \
+                    (get_apache_port(), os.environ["OMD_SITE"],
+                     urllib.parse.quote(context["HOSTNAME"]), urllib.parse.quote(svc_desc))
+    try:
+        json_data = urllib.request.urlopen(url).read()
+    except Exception as e:
+        if opt_debug:
+            raise
+        sys.stderr.write("ERROR: Failed to fetch graphs: %s\nURL: %s\n" % (e, url))
+        return []
+
+    try:
+        base64_strings = json.loads(json_data)
+    except Exception as e:
+        if opt_debug:
+            raise
+        sys.stderr.write("ERROR: Failed to decode graphs: %s\nURL: %s\nData: %r\n" %
+                                                                (e, url, json_data))
+        return []
+
+    return map(base64.b64decode, base64_strings)
+
+
+def get_omd_config(key):
+    for l in open(os.environ["OMD_ROOT"] + "/etc/omd/site.conf"):
+        if l.startswith(key + "="):
+            return l.split("=")[-1].strip("'\n")
+    return None
+
+
+def get_apache_port():
+    port = get_omd_config("CONFIG_APACHE_TCP_PORT")
+    if port == None:
+        return 80
+    else:
+        return int(port)
+
+
+
+def render_performance_graphs(context):
+    graphs = render_cmk_graphs(context)
+
+    attachments, ''
+    for source, graph_png in enumerate(graphs):
+        if context['WHAT'] == 'HOST':
+            svc_desc = '_HOST_'
+        else:
+            svc_desc = context['SERVICEDESC'].replace(' ', '_')
+            # replace forbidden windows characters < > ? " : | \ / *
+            for token in ["<", ">", "?", "\"", ":", "|", "\\", "/", "*"] :
+                svc_desc = svc_desc.replace(token, "x%s" % ord(token))
+
+        filename = '%s-%s-%d.png' % (context['HOSTNAME'], svc_desc, source)
+
+        attachments.append((filename, graph_png))
+
+
+    return attachments
+
+## -------------------------------------------------------------------------------------------------------------
 
 def send_telegram_message(api_url, bot_token, chat_id, text):
     url = '%s/bot%s/sendMessage' % (api_url, bot_token)
@@ -107,24 +196,53 @@ def send_telegram_message(api_url, bot_token, chat_id, text):
     except requests.exceptions.RequestException as e:
         sys.stdout.write('Cannot send Telegram message: HTTP-Error %s %s\n' % (e.code, e))
 
-def main():
-    # gather options from env
-    context = dict([
-        (var[7:], value)
-        for (var, value)
-        in os.environ.items() if var.startswith("NOTIFY_")])
-
-    api_url         = context["PARAMETER_API_URL"]
-    bot_token       = context["PARAMETER_BOT_TOKEN"]
-
+def send_telegram_action(api_url, bot_token, chat_id, action):
+    url = '%s/bot%s/sendChatAction' % (api_url, bot_token)
+    data = {'chat_id':chat_id, 'action':action}
     try:
-        chat_id     = context["CONTACT_TELEGRAM_CHAT_ID"]
-    except Exception as e:
-        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error: %s\n' % e)
-        sys.exit(2)
+        r = requests.post(url, data=data)
+    except requests.exceptions.RequestException as e:
+        sys.stdout.write('Cannot send Telegram message: HTTP-Error %s %s\n' % (e.code, e))
 
-    text = construct_message_text(context)
-    send_telegram_message(api_url, bot_token, chat_id, text)
+def send_telegram_picture(api_url, bot_token, chat_id, picture):
+    url = '%s/bot%s/sendPhoto' % (api_url, bot_token)
+    data = {'chat_id':chat_id, 'disable_notification':True}
+    files = {'photo':picture}
+    try:
+        r = requests.post(url, files=files, data=data)
+    except requests.exceptions.Request as e:
+        sys.stdout.write('Cannot send Telegram picture: HTTP-Error %s %s\n' % (e.code, e))
+
+def main():
+    context = utils.collect_context()
+
+    if 'PARAMETER_BOT_TOKEN' not in context:
+        sys.stderr.write("BOT Token not set\n")
+        return 2
+
+    if 'CONTACT_TELEGRAM_CHAT_ID' not in context:
+        sys.stderr.write("User does not have a Telegram Chat-ID set\n")
+        return 2
+
+    bot_token = retrieve_from_passwordstore(context['PARAMETER_BOT_TOKEN'])
+    api_url = 'https://api.telegram.org' or context.get('PARAMETER_API_URL')
+    chat_id = context.get('CONTACT_TELEGRAM_CHAT_ID')
+    msg = construct_content(context)
+
+    send_telegram_message(api_url, bot_token, chat_id, msg)
+
+    # Only send graphs for certain notification types. We don't want graphs
+    # when a problem is ACKNOWLEDGED, etc...
+    if context["NOTIFICATIONTYPE"] in ["PROBLEM", "CUSTOM"]:
+        if not context.get('PARAMETER_IGNORE_GRAPHS'):
+            try:
+                send_telegram_action(api_url, bot_token, chat_id, 'upload_photo')
+                graphs = render_performance_graphs(context)
+                for name, contents in graphs:
+                    send_telegram_picture(api_url, bot_token, chat_id, contents)
+            
+            except Exception as e:
+                sys.stdout.write("Failed to send graphs to Telegram. %s\n" % e)
 
 main()
 
