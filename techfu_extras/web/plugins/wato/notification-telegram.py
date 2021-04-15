@@ -34,13 +34,40 @@ telegram_notification_dict =  Dictionary(
                      "target=\"_blank\">Bots: An introduction for developers</a>"),
             size = 40,
             allow_empty = False,
-            regex = "[a-zA-Z0-9:-_]{40,50}",
+            regex = "[a-zA-Z0-9:\-_]{40,50}",
         )),
         ("api_url", TextAscii(
             title = _("API Endpoint"),
             help = _("Telegram API endpoint URL. Do <tt>not</tt> change unless you know what you are doing."),
             default_value = "https://api.telegram.org"
         )),
+    ]
+)
+
+# In progress - Greg
+telegram_graphs_notification_dict =  Dictionary(
+    optional_keys = None,
+    elements = [
+        ("bot_token", TextAscii(
+            title = _("BOT Token"),
+            help = _("You need to provide a valid BOT token to be able to send notifications using Telegram. "
+                     "For information see <a href=\"https://core.telegram.org/bots#create-a-new-bot\" "
+                     "target=\"_blank\">Bots: An introduction for developers</a>"),
+            size = 40,
+            allow_empty = False,
+            regex = "[a-zA-Z0-9:\-_]{40,50}",
+        )),
+        ("api_url", TextAscii(
+            title = _("API Endpoint"),
+            help = _("Telegram API endpoint URL. Do <tt>not</tt> change unless you know what you are doing."),
+            default_value = "https://api.telegram.org",
+        )),
+        ("long_template", TextAscii(
+             title = _("Use long text notifications template"),
+             help = _("Per default only one notification is generated for all recipients. "
+                    "Therefore, all recipients can see who was notified and reply to "
+                    "all other recipients."),
+         )),
     ]
 )
 

@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Telegram with Graphs
 
 # Copyright Mathias Kettner  2013  mk@mathias-kettner.de
 #           Stefan Gehn      2016  stefan+cmk@srcxbox.net
 #           Greg Wildman     2017  greg@techno.co.za
+#           Trevor Steyn     2021  trevor@webon.co.za
 
 # check_mk is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -18,7 +19,7 @@
 
 # Telegram notification based on mail notification from check_mk
 
-import os, re, sys, urllib, urllib2, requests
+import os, re, sys, urllib, urllib.request, requests
 import base64
 
 try:
@@ -27,7 +28,7 @@ except ImportError:
     import json
 
 
-tmpl_host_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
+tmpl_host_long_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
 ```
 Host:     $HOSTNAME$
 Alias:    $HOSTALIAS$
@@ -37,7 +38,7 @@ Output:   $HOSTOUTPUT$
 
 $LONGHOSTOUTPUT$```"""
 
-tmpl_service_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
+tmpl_service_long_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
 ```
 Host:     $HOSTNAME$
 Alias:    $HOSTALIAS$
@@ -48,11 +49,32 @@ Output:   $SERVICEOUTPUT$
 
 $LONGSERVICEOUTPUT$```"""
 
+tmpl_host_short_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
+```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Event:    $EVENT_TXT$
+Output:   $HOSTOUTPUT$
+```"""
+
+tmpl_service_short_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
+```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Service:  $SERVICEDESC$
+Event:    $EVENT_TXT$
+Output:   $SERVICEOUTPUT$
+```"""
+
 attachments = []
 
 def substitute_context(template, context):
     # First replace all known variables
     for varname, value in context.items():
+        if (varname == 'LONGSERVICEOUTPUT') or (varname == 'LONGHOSTOUTPUT'):
+            value = value.replace('\\n', '\n')
         template = template.replace('$'+varname+'$', value)
 
     # Remove the rest of the variables and make them empty
@@ -83,18 +105,11 @@ def construct_message_text(context):
     context["EVENT_TXT"] = txt_info
 
     if context['WHAT'] == 'HOST':
-        tmpl_text = tmpl_host_text
+        tmpl_text = tmpl_host_short_text
     else:
-        tmpl_text = tmpl_service_text
+        tmpl_text = tmpl_service_short_text
 
     return substitute_context(tmpl_text, context)
-
-def fetch_notification_context():
-    context = {}
-    for (var, value) in os.environ.items():
-        if var.startswith("NOTIFY_"):
-            context[var[7:]] = value.decode("utf-8")
-    return context
 
 ##
 ## Graphs
@@ -103,16 +118,15 @@ def fetch_notification_context():
 def fetch_pnp_data(context, params):
     try:
         # Autodetect the path in OMD environments
-        path = "%s/share/pnp4nagios/htdocs/index.php" % context['OMD_ROOT'].encode('utf-8')
-        php_save_path = "-d session.save_path=%s/tmp/php/session" % context['OMD_ROOT'].encode('utf-8')
+        path = "%s/share/pnp4nagios/htdocs/index.php" % context['OMD_ROOT']
+        php_save_path = "-d session.save_path=%s/tmp/php/session" % context['OMD_ROOT']
         env = 'REMOTE_USER="check-mk" SKIP_AUTHORIZATION=1'
     except:
         # Non-omd environment - use plugin argument 1
         path = context.get('PARAMETER_1', '')
         php_save_path = "" # Using default path
         skip_authorization = False
-        env = 'REMOTE_USER="%s"' % context['CONTACTNAME'].encode('utf-8')
-
+        env = 'REMOTE_USER="%s"' % context['CONTACTNAME']
     if not os.path.exists(path):
         raise GraphException('Unable to locate pnp4nagios index.php (%s)' % path)
 
@@ -121,7 +135,7 @@ def fetch_pnp_data(context, params):
 def fetch_num_sources(context):
     svc_desc = context['WHAT'] == 'HOST' and '_HOST_' or context['SERVICEDESC']
     infos = fetch_pnp_data(context, '/json?host=%s&srv=%s&view=0' %
-                                     (context['HOSTNAME'].encode('utf-8'), svc_desc.encode('utf-8')))
+                                     (context['HOSTNAME'], svc_desc))
     if not infos.startswith('[{'):
         raise GraphException('Unable to fetch graph infos: %s' % extract_graph_error(infos))
 
@@ -130,7 +144,7 @@ def fetch_num_sources(context):
 def fetch_graph(context, source, view = 1):
     svc_desc = context['WHAT'] == 'HOST' and '_HOST_' or context['SERVICEDESC']
     graph = fetch_pnp_data(context, '/image?host=%s&srv=%s&view=%d&source=%d' %
-                                    (context['HOSTNAME'], svc_desc.encode('utf-8'), view, source))
+                                    (context['HOSTNAME'], svc_desc, view, source))
 
     if graph[:8] != '\x89PNG\r\n\x1a\n':
         raise GraphException('Unable to fetch the graph: %s' % extract_graph_error(graph))
@@ -149,27 +163,6 @@ def extract_graph_error(output):
 # are available for this object. Then it loops through all sources and
 # fetches retrieves the images. If a problem occurs, it is printed to
 # stderr (-> notify.log) and the graph is not added to the mail.
-def render_pnp_graphs(context):
-    try:
-        num_sources = fetch_num_sources(context)
-    except GraphException, e:
-        graph_error = extract_graph_error(str(e))
-        if '.xml" not found.' not in graph_error:
-            sys.stderr.write('Unable to fetch number of graphs: %s\n' % graph_error)
-        num_sources = 0
-
-    graph_list = []
-    for source in range(0, num_sources):
-        try:
-            content = fetch_graph(context, source)
-        except GraphException, e:
-            sys.stderr.write('Unable to fetch graph: %s\n' % e)
-            continue
-
-        graph_list.append(content)
-
-    return graph_list
-
 
 def render_cmk_graphs(context):
     if context["WHAT"] == "HOST":
@@ -179,11 +172,10 @@ def render_cmk_graphs(context):
 
     url = "http://localhost:%d/%s/check_mk/ajax_graph_images.py?host=%s&service=%s" % \
                     (get_apache_port(), os.environ["OMD_SITE"],
-                     urllib.quote(context["HOSTNAME"]), urllib.quote(svc_desc))
-
+                     urllib.parse.quote(context["HOSTNAME"]), urllib.parse.quote(svc_desc))
     try:
-        json_data = urllib2.urlopen(url).read()
-    except Exception, e:
+        json_data = urllib.request.urlopen(url).read()
+    except Exception as e:
         if opt_debug:
             raise
         sys.stderr.write("ERROR: Failed to fetch graphs: %s\nURL: %s\n" % (e, url))
@@ -191,7 +183,7 @@ def render_cmk_graphs(context):
 
     try:
         base64_strings = json.loads(json_data)
-    except Exception, e:
+    except Exception as e:
         if opt_debug:
             raise
         sys.stderr.write("ERROR: Failed to decode graphs: %s\nURL: %s\nData: %r\n" %
@@ -202,7 +194,7 @@ def render_cmk_graphs(context):
 
 
 def get_omd_config(key):
-    for l in file(os.environ["OMD_ROOT"] + "/etc/omd/site.conf"):
+    for l in open(os.environ["OMD_ROOT"] + "/etc/omd/site.conf"):
         if l.startswith(key + "="):
             return l.split("=")[-1].strip("'\n")
     return None
@@ -216,15 +208,9 @@ def get_apache_port():
         return int(port)
 
 
-def use_cmk_graphs():
-    return get_omd_config("CONFIG_CORE") == "cmc"
-
 
 def render_performance_graphs(context):
-    if use_cmk_graphs():
-        graphs = render_cmk_graphs(context)
-    else:
-        graphs = render_pnp_graphs(context)
+    graphs = render_cmk_graphs(context)
 
     attachments, ''
     for source, graph_png in enumerate(graphs):
@@ -250,7 +236,7 @@ def send_telegram_message(api_url, bot_token, chat_id, text):
     data = {'chat_id':chat_id, 'text':text, 'parse_mode':'Markdown'}
     try:
         r = requests.post(url, data=data)
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
         sys.stdout.write('Cannot send Telegram message: HTTP-Error %s %s\n' % (e.code, e))
 
 def send_telegram_picture(api_url, bot_token, chat_id, picture):
@@ -259,13 +245,13 @@ def send_telegram_picture(api_url, bot_token, chat_id, picture):
     files = {'photo':picture}
     try:
         r = requests.post(url, files=files, data=data)
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.Request as e:
         sys.stdout.write('Cannot send Telegram picture: HTTP-Error %s %s\n' % (e.code, e))
 
 def main():
     # gather options from env
     context = dict([
-        (var[7:], value.decode("utf-8"))
+        (var[7:], value)
         for (var, value)
         in os.environ.items() if var.startswith("NOTIFY_")])
 
@@ -274,8 +260,8 @@ def main():
 
     try:
         chat_id     = context["CONTACT_TELEGRAM_CHAT_ID"]
-    except e:
-        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error %s %s\n' % (e.code, e))
+    except Exception as e:
+        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error %s\n' % e)
         sys.exit(2)
 
     text = construct_message_text(context)
@@ -285,9 +271,9 @@ def main():
     try:
         graphs = render_performance_graphs(context)
         for name, contents in graphs:
-	    send_telegram_picture(api_url, bot_token, chat_id, contents)
+            send_telegram_picture(api_url, bot_token, chat_id, contents)
         
-    except Exception, e:
+    except Exception as e:
         sys.stdout.write("Failed to send graphs to Telegram. %s\n" % e)
 
 main()

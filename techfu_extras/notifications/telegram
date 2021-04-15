@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Telegram
 
 # Copyright Mathias Kettner  2013  mk@mathias-kettner.de
@@ -18,9 +18,9 @@
 # Telegram notification based on asciimail notification from
 # check_mk 1.2.6p16.
 
-import os, re, sys, urllib, urllib2
+import os, re, sys, urllib, urllib.request, requests
 
-tmpl_host_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
+tmpl_host_long_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
 ```
 Host:     $HOSTNAME$
 Alias:    $HOSTALIAS$
@@ -30,7 +30,7 @@ Output:   $HOSTOUTPUT$
 
 $LONGHOSTOUTPUT$```"""
 
-tmpl_service_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
+tmpl_service_long_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
 ```
 Host:     $HOSTNAME$
 Alias:    $HOSTALIAS$
@@ -40,6 +40,25 @@ Event:    $EVENT_TXT$
 Output:   $SERVICEOUTPUT$
 
 $LONGSERVICEOUTPUT$```"""
+
+tmpl_host_short_text = """*Check_MK: $HOSTNAME$ - $EVENT_TXT$*
+```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Event:    $EVENT_TXT$
+Output:   $HOSTOUTPUT$
+"""
+
+tmpl_service_short_text = """*Check_MK: $HOSTNAME$/$SERVICEDESC$ $EVENT_TXT$*
+```
+Host:     $HOSTNAME$
+Alias:    $HOSTALIAS$
+Address:  $HOSTADDRESS$
+Service:  $SERVICEDESC$
+Event:    $EVENT_TXT$
+Output:   $SERVICEOUTPUT$
+"""
 
 def substitute_context(template, context):
     # First replace all known variables
@@ -74,24 +93,24 @@ def construct_message_text(context):
     context["EVENT_TXT"] = txt_info
 
     if context['WHAT'] == 'HOST':
-        tmpl_text = tmpl_host_text
+        tmpl_text = tmpl_host_short_text
     else:
-        tmpl_text = tmpl_service_text
+        tmpl_text = tmpl_service_short_text
 
     return substitute_context(tmpl_text, context)
 
 def send_telegram_message(api_url, bot_token, chat_id, text):
     url = '%s/bot%s/sendMessage' % (api_url, bot_token)
-    data = urllib.urlencode({'chat_id':chat_id, 'text':text, 'parse_mode':'Markdown'})
+    data = {'chat_id':chat_id, 'text':text, 'parse_mode':'Markdown'}
     try:
-        urllib2.urlopen(url, data).read()
-    except urllib2.URLError, e:
+        r = requests.post(url, data=data)
+    except requests.exceptions.RequestException as e:
         sys.stdout.write('Cannot send Telegram message: HTTP-Error %s %s\n' % (e.code, e))
 
 def main():
     # gather options from env
     context = dict([
-        (var[7:], value.decode("utf-8"))
+        (var[7:], value)
         for (var, value)
         in os.environ.items() if var.startswith("NOTIFY_")])
 
@@ -100,8 +119,8 @@ def main():
 
     try:
         chat_id     = context["CONTACT_TELEGRAM_CHAT_ID"]
-    except e:
-        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error %s %s\n' % (e.code, e))
+    except Exception as e:
+        sys.stdout.write('User does not have a Telegram Chat-ID configured. Error: %s\n' % e)
         sys.exit(2)
 
     text = construct_message_text(context)
