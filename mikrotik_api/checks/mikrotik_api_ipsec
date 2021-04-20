@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# this file is part of mkp package "mikrotik"
+# see package description and ~/local/share/doc/check_mk/mikrotik
+# for details and maintainer
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# active:
+#<<<mikrotik_api_ipsec>>>
+#peer <name> <my ip> <peer ip>
+#sa <peer ip> <my ip> mature 116840289 692937
+#sa <my ip> <peer ip> mature 257940070 900964
+#
+# standby:
+#<<<mikrotik_api_ipsec>>>
+#peer <name> <my ip> <peer ip>
+#invip <my ip> vrrp4
+#invip 10.200.5.254 vrrp5
+#invip 10.200.3.254 vrrp3
+#invip 10.200.6.1 vrrp6
+
+
+import time
+
+#
+# parse function
+#
+def parse_mikrotik_api_ipsec(info):
+    data = {}
+
+    for line in info:
+        if line[0] == 'peer':
+            peer       = line[1]
+            data[peer] = {}
+
+            data[peer]['myaddr']  = line[2]
+            data[peer]['dstaddr'] = line[3]
+            data[peer]['sacount'] = 0
+
+        elif line[0] == 'sa':
+            data[peer]['active']   = 'True'
+            data[peer]['sacount'] += 1
+
+            sa             = 'sa%d' % (data[peer]['sacount'])
+            data[peer][sa] = line[1:]
+
+        elif line[0] == 'invip' and line[1] == data[peer]['myaddr']:
+            data[peer]['active'] = line[2]
+            
+
+    return data
+
+#
+# inventory function
+#
+def inventory_mikrotik_api_ipsec(parsed):
+    for peer in parsed.keys():
+        sacount = parsed[peer]['sacount']
+        yield peer, {'sacount': sacount}
+
+#
+# check function
+#
+def check_mikrotik_api_ipsec(item, params, parsed):
+
+    #
+    # prepare
+    #
+    try:
+        data   = parsed[item]
+    except:
+        return 3, 'item not found in agent output'
+
+    perfdata = []
+    now = time.time()
+
+    #
+    # active or standby?
+    #
+    if data['active'] == 'True':
+        infotext = 'IPsec active'
+
+        for i in range (1, data['sacount']+1):
+            sa = 'sa%d' % (i)
+
+            if data[sa][0] == data['myaddr']:
+                outbytes   = int(data[sa][3])
+                outpackets = int(data[sa][4])
+            else:
+                inbytes    = int(data[sa][3])
+                inpackets  = int(data[sa][4])
+
+            #
+            # check sa state
+            #
+            if data[sa][2] != 'mature' and data[sa][2] != 'dying':
+                infotext += ', SA %d state: %s(!!)' % (i, data[sa][2])
+
+
+        #
+        # perfdata
+        #
+        bin = get_rate("bin.%s" % item, now, inbytes*8)
+        perfdata.append(("if_in_bps", bin))
+    
+        bout = get_rate("bout.%s" % item, now, outbytes*8)
+        perfdata.append(("if_out_bps", bout))
+    
+        pin = get_rate("pin.%s" % item, now, inpackets)
+        perfdata.append(("if_in_pkts", pin))
+
+        pout = get_rate("pout.%s" % item, now, outpackets)
+        perfdata.append(("if_out_pkts", pout))
+
+        infotext = '%s <--> %s, current Security Associations: %d' % (
+            data['myaddr'],
+            data['dstaddr'],
+            data['sacount'])
+
+        
+    else:
+        infotext = 'Standby, %s not active on %s, no current Security Associations' % (
+            data['myaddr'], 
+            data['active'])
+
+
+    #
+    # SA count
+    #
+    if data['sacount'] != params['sacount']:
+        infotext += ', expected: %d (!!)' % (
+            params['sacount'])
+
+    #
+    # get service state from markers
+    #
+    if '(!!)' in infotext:
+        stateval = 2
+    elif '(!)' in infotext:
+        stateval = 1
+    else:
+        stateval = 0
+
+
+    #
+    # This is the end
+    #
+    return stateval, infotext, perfdata
+
+
+#
+# declare to checkmk
+#
+check_info["mikrotik_api_ipsec"] = {
+        'parse_function'            : parse_mikrotik_api_ipsec,
+        'check_function'            : check_mikrotik_api_ipsec,
+        'service_description'       : 'IPsec %s',
+        'inventory_function'        : inventory_mikrotik_api_ipsec,
+        'has_perfdata'              : True,
+}
+

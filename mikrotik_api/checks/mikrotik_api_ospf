@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# this file is part of mkp package "mikrotik"
+# see package description and ~/local/share/doc/check_mk/mikrotik
+# for details and maintainer
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+#
+# parse function
+#
+def parse_mikrotik_api_ospf(info):
+    data = {}
+    for line in info:
+        if line[0] == 'router-id':
+            neighbor = line[1]
+            data[neighbor]={}
+        data[neighbor][line[0]] = ' '.join(line[1:])
+
+    return data
+
+#
+# inventory function
+#
+def inventory_mikrotik_api_ospf(parsed):
+    for neighbor in parsed.keys():
+        yield neighbor, {}
+
+#
+# check function
+#
+def check_mikrotik_api_ospf(item, params, parsed):
+
+    #
+    # prepare
+    #
+    try:
+        data   = parsed[item]
+    except:
+        return 3, 'item not found in agent output'
+
+    #
+    # check state
+    #
+    state = data['state']
+
+    if state == 'Full' or state == '2-Way':
+        return 0, 'OSPF Neighbor %s, address: %s, state: %s, interface: %s' % (
+	    item, data['address'], state, data['interface'])
+
+    elif state == 'Down':
+        return 2, 'OSPF Neighbor %s, state: Down(!!)' % (item)
+
+    else:
+        return 1, 'OSPF Neighbor %s, unknown state: %s(!)' % (item, state)
+
+
+#
+# declare to checkmk
+#
+check_info["mikrotik_api_ospf"] = {
+        "parse_function"            : parse_mikrotik_api_ospf,
+        "check_function"            : check_mikrotik_api_ospf,
+        "service_description"       : "OSPF Neighbor %s",
+        "inventory_function"        : inventory_mikrotik_api_ospf,
+}
+

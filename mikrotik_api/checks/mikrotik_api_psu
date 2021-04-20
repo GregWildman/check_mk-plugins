@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# this file is part of mkp package "mikrotik"
+# see package description and ~/local/share/doc/check_mk/mikrotik
+# for details and maintainer
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# RouterOS switch:
+#<<<mikrotik_api_psu>>>
+#psu2-state ok
+#psu1-state ok
+
+# RouterOS router:
+#<<<mikrotik_api_psu>>>
+#psu2-voltage 12.1
+#psu1-voltage 12.1
+#psu1-current 1.1
+#psu2-current 3
+#
+
+#
+# parse function
+#
+def parse_mikrotik_api_psu(info):
+    data = {}
+
+    #
+    # current/voltage is in 'power' section of special agent.
+    # If it is found here in 'psu', we can ignore.
+    # So checking for "state" only is OK
+    #
+    for line in info:
+        if 'state' in line[0]:
+            s                  = line[0]
+            psu                = s.split('-')[0]
+            data[psu]          = {}
+            data[psu]['state'] = line[1]
+            data[psu]['line']  = ' '.join(line)
+
+    return data
+
+
+#
+# inventory function
+#
+def inventory_mikrotik_api_psu(parsed):
+    for psu in parsed.keys():
+            yield psu, None
+
+
+#
+# check function
+#
+def check_mikrotik_api_psu(item, params, parsed):
+
+    #
+    # parse info from agent
+    #
+    data = parsed[item]
+    state = data['state']
+
+    #
+    # just look for an 'ok'
+    #
+    if state == 'ok':
+        stateval = 0
+    else:
+        stateval = 2
+
+    #
+    # this is the end
+    #
+    return stateval, data['line']
+
+#
+# check info
+#
+check_info['mikrotik_api_psu'] = {
+    'parse_function'            : parse_mikrotik_api_psu,
+    'inventory_function'        : inventory_mikrotik_api_psu,
+    'check_function'            : check_mikrotik_api_psu,
+    'service_description'       : 'PSU %s',
+    'default_levels_variable'   : 'mikrotik_api_psu',
+    'has_perfdata'              : False,
+}
+

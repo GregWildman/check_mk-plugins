@@ -1,0 +1,34 @@
+Description:  MikroTik RouterOS Info
+               - Resources
+               - Interfaces
+               - BGP
+               - OSPF
+               - VRRP
+               - Fans
+               - Power/PSU
+               - Temperature
+               - RouterOS Info
+               - IPsec
+               - Firewall Filter rules
+               - NTP
+               - Certificates
+
+Maintainer:   Greg Wildman <greg@techno.co.za>
+
+Version:      2.1
+
+Created:      2012-04
+
+Usage:        - mkp package
+              - Datasource program for API access, configure via WATO
+                (enable API access on device)
+              - firewall item is original rule comment
+                - shortening possible: everything after "checkmk: " is
+                   used if this keyword is found
+
+
+Changelog:    2021-04-16 - Fork of original 'mikrotik' package by thomas.tretbar@managedhosting.de (ttr)
+                 - Forked version 2.0a
+                 - Adapted and updated to match version 2.0.0
+                 - Added more checks to remove dependency on using SNMP as well
+

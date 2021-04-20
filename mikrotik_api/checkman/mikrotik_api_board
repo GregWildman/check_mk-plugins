@@ -1,0 +1,23 @@
+title: MikroTik Routerboard Info
+agents: mikrotik
+catalog: hw/network/mikrotik
+license: GPL
+distribution: check_mk
+description:
+ Prints info of a MikroTik RouterOS Board
+
+ This check will report type, serial number and firmware info for
+ a MikroTik RouterOS device. It is always {OK}.
+
+ To connect to the MikroTik device a special datasource program is
+ used (SNMP won't report this information). You can find it under the
+ name {Check MikroTik RouterOS via API} in Wato -> Datasource Programs.
+
+item:
+ None
+
+perfdata:
+ None
+
+inventory:
+ One service per device.

@@ -1,0 +1,25 @@
+title: MikroTik Temperature
+agents: mikrotik
+catalog: hw/network/mikrotik
+license: GPL
+distribution: check_mk
+description:
+ Checks temperatures of a MikroTik RouterOS device.
+
+ This check reports temperatures for chassis and cpu. If given by
+ device, it honors overtemperature value for cpu as {CRIT}. Upper
+ and lower thresholds for {WARN} and {CRIT} can be configured by
+ WATO.
+
+ To connect to the MikroTik device a special datasource program is
+ used (SNMP won't report this information). You can find it under the
+ name {Check MikroTik RouterOS via API} in Wato -> Datasource Programs.
+
+item:
+ sensor id
+
+perfdata:
+ temperature
+
+inventory:
+ Two services per device.

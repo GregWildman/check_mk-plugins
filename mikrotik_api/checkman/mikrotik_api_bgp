@@ -1,0 +1,24 @@
+title: MikroTik BGP
+agents: mikrotik
+catalog: hw/network/mikrotik
+license: GPL
+distribution: check_mk
+description:
+ Checks BGP sessions of a MikroTik Router
+
+ This check will be {OK} if a BGP session is established, will be
+ {WARN} if disabled and will be {CRIT} in any other case.
+
+ To connect to the MikroTik device a special datasource program is
+ used (SNMP won't report this information). You can find it under the
+ name {Check MikroTik RouterOS via API} in Wato -> Datasource Programs.
+
+item:
+ The BGP session name.
+
+perfdata:
+ Performance data is collected for the number of prefixes as well as
+ the updates.
+
+inventory:
+ One service per BGP session of the device.

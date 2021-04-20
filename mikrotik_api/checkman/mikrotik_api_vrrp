@@ -1,0 +1,24 @@
+title: MikroTik VRRP
+agents: mikrotik
+catalog: hw/network/mikrotik
+license: GPL
+distribution: check_mk
+description:
+ Checks VRRP of a MikroTik Router
+
+ This check will be {OK} if an VRRP instance is in state "running"
+ on a master node or "not running" on a backup node.
+ It will report {WARN} if disabled and {CRIT} in any other case.
+
+ To connect to the MikroTik device a special datasource program is
+ used (SNMP won't report this information). You can find it under the
+ name {Check MikroTik RouterOS via API} in Wato -> Datasource Programs.
+
+item:
+ The VRRP id.
+
+perfdata:
+ None
+
+inventory:
+ One service per VRRP instance of the device.
