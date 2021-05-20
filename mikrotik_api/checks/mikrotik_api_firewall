@@ -74,9 +74,10 @@ def parse_mikrotik_api_firewall(info):
 
             #
             # use a short name if configured
+            # trim off trailiung close bracket if specified.
             #
             if 'checkmk:' in rule:
-                rule = rule.split('checkmk: ')[1]
+                rule = rule.split('checkmk: ')[1].rstrip(')')
             else:
                 rule = 'None'
 

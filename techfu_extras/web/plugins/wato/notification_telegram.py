@@ -47,7 +47,8 @@ from cmk.gui.plugins.wato import (
 )
 
 from cmk.gui.plugins.wato.utils import (
-    PasswordFromStore,)
+    PasswordFromStore,
+)
 
 @notification_parameter_registry.register
 class NotificationParameterTelegramGraphs(NotificationParameter):

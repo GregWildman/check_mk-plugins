@@ -70,9 +70,9 @@
 def parse_mikrotik_api_bgp(info):
     data = {}
     for line in info:
-#        if line[0] == 'name':
-#            session = ' '.join(line[1:])
-#            data[session]={}
+        if line[0] == 'name':
+            session = ' '.join(line[1:])
+            data[session]={}
         data[session][line[0]] = ' '.join(line[1:])
 
     return data
@@ -82,7 +82,8 @@ def parse_mikrotik_api_bgp(info):
 #
 def inventory_mikrotik_api_bgp(parsed):
     for session in parsed.keys():
-        yield session, {}
+        if parsed[session]['disabled'] == 'false':
+            yield session, {}
 
 #
 # check function
@@ -123,11 +124,11 @@ def check_mikrotik_api_bgp(item, params, parsed):
     withdrawn_sent     = get_rate(store+"_ws", now, int(data['withdrawn-sent']))
     withdrawn_received = get_rate(store+"_wr", now, int(data['withdrawn-received']))
 
-    perfdata.append(("prefix-count",       data['prefix-count']))
-    perfdata.append(("updates-sent",       updates_sent))
-    perfdata.append(("updates-received",   updates_received))
-    perfdata.append(("withdrawn-sent",     withdrawn_sent))
-    perfdata.append(("withdrawn-received", withdrawn_received))
+    perfdata.append(("prefix_count",       data['prefix-count']))
+    perfdata.append(("updates_sent",       updates_sent))
+    perfdata.append(("updates_received",   updates_received))
+    perfdata.append(("withdrawn_sent",     withdrawn_sent))
+    perfdata.append(("withdrawn_received", withdrawn_received))
 
     return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s' % (
         item,

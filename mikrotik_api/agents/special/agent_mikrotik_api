@@ -295,6 +295,8 @@ command_options = {
                        "command" : ["/system/ntp/client/print"]},
     "poe"           : {"section_header" : "mikrotik_api_poe",   "active" : False,
                        "command" : ["/interface/ethernet/poe/monitor", "=.proplist=name,poe-out-power", "=interface=ether01/rb3011/e1", "=once="]},
+    "ppp"           : {"section_header" : "mikrotik_api_ppp_sessions",   "active" : False,
+                       "command" : ["/ppp/active/print"]},
 }
 
 for o,a in opts:
@@ -408,7 +410,7 @@ for module in command_options.keys():
             #
             if header == "mikrotik_api_bgp" or header == "mikrotik_api_ospf" or header == "mikrotik_api_vrrp":
                 if header == "mikrotik_api_bgp":
-                    required = ['established', 'remote-as', 'remote-address', 'disabled']
+                    required = ['established', 'remote-as', 'remote-address', 'disabled', 'prefix-count', 'updates-sent', 'updates-received', 'withdrawn-sent', 'withdrawn-received']
                     master   = 'name'
                 elif header == "mikrotik_api_ospf":
                     required = ['state', 'address', 'interface']
@@ -508,6 +510,20 @@ for module in command_options.keys():
                              print ("%s %s" % (what, line[what]))
                          except:
                              print ("%s None" % (what))
+
+            #
+            # ppp sessions
+            #
+            elif header == "mikrotik_api_ppp_sessions":
+                print ('<<<%s>>>' % header)
+
+                for line in out:
+                     for what in ['name', 'service', 'address', 'uptime']:
+                         try:
+                             print ("%s %s" % (what, line[what]))
+                         except:
+                             print ("%s None" % (what))
+
 
             #
             # any other key-value information with no special handling 

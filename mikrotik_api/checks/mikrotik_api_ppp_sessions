@@ -25,75 +25,71 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
-#<<<mikrotik_api_fan>>>
-#fan1-speed 4062
-#use-fan main
-#fan-mode auto
-#fan2-speed 4062
-#active-fan main
-#
-
-from cmk.base.check_legacy_includes.fan import *  # pylint: disable=wildcard-import,unused-wildcard-import
-
-#
-# defaults
-#
-factory_settings["mikrotik_api_fan"] = {
-    "lower" : (2000, 1000),
-    "output_metrics": True
-}
+#<<<mikrotik_api_ppp_sessions>>>
+#name 0083n2o                          <- new user
+#service pppoe       
+#address 10.0.248.219
+#uptime 3m51s        
+#...
 
 #
 # parse function
 #
-def parse_mikrotik_api_fan(info):
+def parse_mikrotik_api_ppp_sessions(info):
     data = {}
     for line in info:
-        if 'speed' in line[0]:
-            s                  = line[0]
-            fan                = s.split('-')[0]
-            data[fan]          = {}
-            data[fan]['speed'] = line[1]
+        if line[0] == 'name':
+            session = ' '.join(line[1:])
+            data[session]={}
+        if line[0] == 'service':
+            line[1] = line[1].upper() 
+        data[session][line[0]] = ' '.join(line[1:])
 
     return data
-
 
 #
 # inventory function
 #
-def inventory_mikrotik_api_fan(parsed):
-    for fan in parsed.keys():
-
-        #
-        # Some CRS/CCR routers cycle fans on as needed. This means they
-        # can have a speed of zero.
-        #
-        if int(parsed[fan]['speed']) >= 0:
-            yield fan, 'mikrotik_api_fan'
-
+def inventory_mikrotik_api_ppp_sessions(parsed):
+    service = {}
+    for session in parsed.keys():
+        service[parsed[session]['service']]=""
+    for svc in service.keys():
+        yield svc, {}
 
 #
 # check function
 #
-def check_mikrotik_api_fan(item, params, parsed):
+def check_mikrotik_api_ppp_sessions(item, params, parsed):
+
+    perfdata = []
+    count = {}
 
     #
-    # parse info from agent
+    # prepare
     #
-    data = parsed[item]
-    
-    #
-    # this is the end
-    #
-    return check_fan(int(data['speed']), params)
+    count[item] = 0
+    for session in parsed.keys():
+        session_type = parsed[session]['service']
+        count[session_type] = count[session_type] + 1
 
-check_info['mikrotik_api_fan'] = {
-    'parse_function'            : parse_mikrotik_api_fan,
-    'inventory_function'        : inventory_mikrotik_api_fan,
-    'check_function'            : check_mikrotik_api_fan,
-    'service_description'       : 'FAN %s',
-    'has_perfdata'              : True,
-    'group'                     : 'hw_fans',
-    'default_levels_variable'   : 'mikrotik_api_fan',
+
+    if count[item] == 0:
+        return 3, 'item not found in agent output'
+
+    perfdata.append(("sessions",       count[item]))
+
+    return 0, 'Active %s' % (
+        count[item]), perfdata
+
+#
+# declare to checkmk
+#
+check_info["mikrotik_api_ppp_sessions"] = {
+        'parse_function'            : parse_mikrotik_api_ppp_sessions,
+        'inventory_function'        : inventory_mikrotik_api_ppp_sessions,
+        'check_function'            : check_mikrotik_api_ppp_sessions,
+        'service_description'       : "Sessions %s",
+        'has_perfdata'              : True,
 }
 
