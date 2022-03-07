@@ -410,7 +410,7 @@ for module in command_options.keys():
             #
             if header == "mikrotik_api_bgp" or header == "mikrotik_api_ospf" or header == "mikrotik_api_vrrp":
                 if header == "mikrotik_api_bgp":
-                    required = ['established', 'remote-as', 'remote-address', 'disabled', 'prefix-count', 'updates-sent', 'updates-received', 'withdrawn-sent', 'withdrawn-received']
+                    required = ['established', 'remote-as', 'remote-address', 'disabled', 'max-prefix-limit', 'prefix-count', 'updates-sent', 'updates-received', 'withdrawn-sent', 'withdrawn-received']
                     master   = 'name'
                 elif header == "mikrotik_api_ospf":
                     required = ['state', 'address', 'interface']

@@ -26,42 +26,28 @@
 # Boston, MA 02110-1301 USA.
 
 #<<<mikrotik_api_bgp>>>
-#name IPTRANSIT_MYPROVIDER_IPv4        <- new session
-#nexthop-choice default
-#hold-time 3m
-#.id *0
-#multihop False
-#default-originate never
-#ttl 255
-#established True
-#uptime 1w8h59m15s
-#tcp-md5-key
-#remove-private-as False
-#address-families ip
-#passive False
-#instance default
-#state established
+#name NAPAfrica RS IPv4 #1             <- new session
+#remote-address 196.60.70.2
+#remote-as 37195
+#max-prefix-limit 150000
+#prefix-count 107778
+#updates-sent 2
+#updates-received 108899
 #withdrawn-sent 0
-#prefix-count 808307
-#out-filter MYPROVIDER_IPv4-OUT
-#local-address 1.2.3.4
-#as-override False
-#in-filter MYPROVIDER_IPv4-IN
-#refresh-capability True
-#updates-sent 4
-#use-bfd False
-#remote-address 5.6.7.8
-#route-reflect False
-#remote-hold-time 1m30s
-#used-hold-time 1m30s
-#disabled False
-#updates-received 10722516
-#used-keepalive-time 30s
-#as4-capability True
-#remote-id 9.8.7.6
-#withdrawn-received 846199
-#remote-as 12345
-#name IPTRANSIT_MYPROVIDER_IPv6        <- new session
+#withdrawn-received 754
+#established true
+#disabled false
+#name NAPAfrica RS IPv6 #1             <- new session
+#remote-address 2001:43f8:6d1::2
+#remote-as 37195
+#max-prefix-limit 100000
+#prefix-count 53014
+#updates-sent 0
+#updates-received 54231
+#withdrawn-sent 0
+#withdrawn-received 773
+#established true
+#disabled false
 #...
 
 #
@@ -130,10 +116,9 @@ def check_mikrotik_api_bgp(item, params, parsed):
     perfdata.append(("withdrawn_sent",     withdrawn_sent))
     perfdata.append(("withdrawn_received", withdrawn_received))
 
-    return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s' % (
+    return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s, Max Prefixes: %s' % (
         item,
-	data['remote-address'],
-	data['remote-as']), perfdata
+	    data['remote-address'], data['remote-as'], data['max-prefix-limit']), perfdata
 
 #
 # declare to checkmk
