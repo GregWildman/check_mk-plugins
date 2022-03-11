@@ -118,7 +118,7 @@ def check_mikrotik_api_bgp(item, params, parsed):
 
     return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s, Max Prefixes: %s' % (
         item,
-	    data['remote-address'], data['remote-as'], data['max-prefix-limit']), perfdata
+	    data['remote-address'], data['remote-as'], data.get('max-prefix-limit', 'None')), perfdata
 
 #
 # declare to checkmk
