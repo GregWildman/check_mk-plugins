@@ -43,6 +43,7 @@ metric_info["prefix_count"] = {
     "unit"  : "count",
     "color" : "#00e060",
 }
+# ROSv6
 metric_info["updates_sent"] = {
     "title" : _("Updates Sent"),
     "unit"  : "count",
@@ -53,7 +54,19 @@ metric_info["updates_received"] = {
     "unit"  : "count",
     "color" : "41/a",
 }
+# ROSv7
+metric_info["local_messages"] = {
+    "title" : _("Updates Sent"),
+    "unit"  : "count",
+    "color" : "34/a",
+}
+metric_info["remote_messages"] = {
+    "title" : _("Updates Received"),
+    "unit"  : "count",
+    "color" : "41/a",
+}
 
+# ROS6
 metric_info["withdrawn_sent"] = {
     "title" : _("Withdrawn Sent"),
     "unit"  : "count",
@@ -64,10 +77,54 @@ metric_info["withdrawn_received"] = {
     "unit"  : "count",
     "color" : "13/a",
 }
+# ROS7
+metric_info["local_bytes"] = {
+    "title" : _("Traffic Sent"),
+    "unit"  : "bytes/s",
+    "color" : "11/a",
+}
+metric_info["remote_bytes"] = {
+    "title" : _("Traffic Received"),
+    "unit"  : "bytes/s",
+    "color" : "13/a",
+}
 
 ## PPP Sessions
 metric_info["sessions"] = {
     "title" : _("Active Sessions"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+
+## Radius servers
+## 'requests' are already handled in CMK
+metric_info["pending"] = {
+    "title" : _("Requests Pending"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+metric_info["accepts"] = {
+    "title" : _("Request Accepted"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+metric_info["rejects"] = {
+    "title" : _("Request Rejected"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+metric_info["resends"] = {
+    "title" : _("Request Resends"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+metric_info["timeouts"] = {
+    "title" : _("Requests Timeouts"),
+    "unit"  : "count",
+    "color" : "21/a",
+}
+metric_info["bad_replies"] = {
+    "title" : _("Bad Replies"),
     "unit"  : "count",
     "color" : "21/a",
 }

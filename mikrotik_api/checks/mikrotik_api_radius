@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# this file is part of mkp package "mikrotik"
+# see package description and ~/local/share/doc/check_mk/mikrotik
+# for details and maintainer
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# tails. You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# <<<mikrotik_api_radius>>>
+# name 102.220.104.4
+# service ppp
+# disabled false
+# pending 0
+# requests 7617
+# accepts 7284
+# rejects 330
+# resends 53
+# timeouts 9
+# bad-replies 0
+# last-request-rtt 20ms
+# name 10.10.51.2
+# service ppp,hotspot,wireless
+# disabled true
+# pending 0
+# requests 0
+# accepts 0
+# rejects 0
+# resends 0
+# timeouts 0
+# bad-replies 0
+# last-request-rtt 0ms
+
+
+
+#
+# parse function
+#
+def parse_mikrotik_api_radius(info):
+    data = {}
+    for line in info:
+        if line[0] == 'name':
+            server = line[1]
+            data[server]={}
+        data[server][line[0]] = ' '.join(line[1:])
+
+    return data
+
+#
+# inventory function
+#
+def inventory_mikrotik_api_radius(parsed):
+    for server in parsed.keys():
+        if parsed[server]['disabled'] == 'false':
+            yield server, {}
+
+#
+# check function
+#
+def check_mikrotik_api_radius(item, params, parsed):
+
+    now = int(time.time())
+    perfdata = []
+
+    #
+    # prepare
+    #
+    try:
+        data   = parsed[item]
+    except:
+        return 3, 'item not found in agent output'
+
+    #
+    # disabled?
+    #
+    if data['disabled'] != 'false':
+        return 1, 'Server %s, disabled: %s(!)' % (
+	    item,
+	    data['disabled']), perfdata
+
+    #
+    # stats
+    #
+    store = "mikrotik_radius_%s" % item.replace('.', '_').lower()
+
+    pending      = get_rate(store+"_pe", now, int(data['pending']))
+    requests     = get_rate(store+"_rq", now, int(data['requests']))
+    accepts      = get_rate(store+"_ac", now, int(data['accepts']))
+    rejects      = get_rate(store+"_rj", now, int(data['rejects']))
+    resends      = get_rate(store+"_rs", now, int(data['resends']))
+    timeouts     = get_rate(store+"_to", now, int(data['timeouts']))
+    bad_replies  = get_rate(store+"_br", now, int(data['bad-replies']))
+
+    perfdata.append(("pending",     pending))
+    perfdata.append(("requests",    requests))
+    perfdata.append(("accepts",     accepts))
+    perfdata.append(("rejects",     rejects))
+    perfdata.append(("resends",     resends))
+    perfdata.append(("timeouts",    timeouts))
+    perfdata.append(("bad_replies", bad_replies))
+
+    return 0, 'Service: %s, Last RTT: %s' % (
+        data['service'],
+	data['last-request-rtt']), perfdata
+
+#
+# declare to checkmk
+#
+check_info["mikrotik_api_radius"] = {
+        'parse_function'            : parse_mikrotik_api_radius,
+        'inventory_function'        : inventory_mikrotik_api_radius,
+        'check_function'            : check_mikrotik_api_radius,
+        'service_description'       : "Radius %s",
+        'has_perfdata'              : True,
+
+}
+

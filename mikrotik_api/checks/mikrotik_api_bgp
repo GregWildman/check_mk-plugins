@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 # +------------------------------------------------------------------+
 # |             ____ _               _        __  __ _  __           |
@@ -25,30 +25,55 @@
 # to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 # Boston, MA 02110-1301 USA.
 
+## RouterOS ver 6
 #<<<mikrotik_api_bgp>>>
-#name NAPAfrica RS IPv4 #1             <- new session
-#remote-address 196.60.70.2
-#remote-as 37195
-#max-prefix-limit 150000
-#prefix-count 107778
-#updates-sent 2
-#updates-received 108899
-#withdrawn-sent 0
-#withdrawn-received 754
-#established true
-#disabled false
-#name NAPAfrica RS IPv6 #1             <- new session
-#remote-address 2001:43f8:6d1::2
-#remote-as 37195
-#max-prefix-limit 100000
-#prefix-count 53014
-#updates-sent 0
-#updates-received 54231
-#withdrawn-sent 0
-#withdrawn-received 773
-#established true
-#disabled false
+# name NAPAfrica RS IPv4 #1             <- new session
+# remote-address 196.60.70.2
+# remote-as 37195
+# max-prefix-limit 150000
+# prefix-count 107778
+# updates-sent 2
+# updates-received 108899
+# withdrawn-sent 0
+# withdrawn-received 754
+# established true
+# disabled false
+# name NAPAfrica RS IPv6 #1             <- new session
+# remote-address 2001:43f8:6d1::2
+# remote-as 37195
+# max-prefix-limit 100000
+# prefix-count 53014
+# updates-sent 0
+# updates-received 54231
+# withdrawn-sent 0
+# withdrawn-received 773
+# established true
+# disabled false
 #...
+## RouterOS ver 7
+#<<<mikrotik_api_bgp>>>
+# name Cloudflare IPv4                  <- new session
+# established true
+# remote.address 196.60.8.198
+# remote.as 13335
+# disabled false
+# remote.messages 117667
+# remote.bytes 2236038
+# local.messages 115634
+# local.bytes 2197448
+# total-route-count 0
+# name Cloudflare IPv6                  <- new session
+# established true
+# remote.address 2001:43f8:6d0::198
+# remote.as 13335
+# disabled false
+# remote.messages 117726
+# remote.bytes 2243360
+# local.messages 115634
+# local.bytes 2197455
+# total-route-count 141
+#...
+
 
 #
 # parse function
@@ -104,21 +129,39 @@ def check_mikrotik_api_bgp(item, params, parsed):
 	    data['established']), perfdata
 
 
-    store = "mikrotik_bgp_%s" % item.replace(' ', '_').lower()
-    updates_sent       = get_rate(store+"_us", now, int(data['updates-sent']))
-    updates_received   = get_rate(store+"_ur", now, int(data['updates-received']))
-    withdrawn_sent     = get_rate(store+"_ws", now, int(data['withdrawn-sent']))
-    withdrawn_received = get_rate(store+"_wr", now, int(data['withdrawn-received']))
+    # RouterOS v6 has 'prefix-count'. Version 7 has 'total-route-count'
+    if "prefix-count" in data:
+        store = "mikrotik_bgp_%s" % item.replace(' ', '_').lower()
+        updates_sent       = get_rate(store+"_us", now, int(data['updates-sent']))
+        updates_received   = get_rate(store+"_ur", now, int(data['updates-received']))
+        withdrawn_sent     = get_rate(store+"_ws", now, int(data['withdrawn-sent']))
+        withdrawn_received = get_rate(store+"_wr", now, int(data['withdrawn-received']))
 
-    perfdata.append(("prefix_count",       data['prefix-count']))
-    perfdata.append(("updates_sent",       updates_sent))
-    perfdata.append(("updates_received",   updates_received))
-    perfdata.append(("withdrawn_sent",     withdrawn_sent))
-    perfdata.append(("withdrawn_received", withdrawn_received))
+        perfdata.append(("prefix_count",       data['prefix-count']))
+        perfdata.append(("updates_sent",       updates_sent))
+        perfdata.append(("updates_received",   updates_received))
+        perfdata.append(("withdrawn_sent",     withdrawn_sent))
+        perfdata.append(("withdrawn_received", withdrawn_received))
 
-    return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s, Max Prefixes: %s' % (
-        item,
+        return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s, Max Prefixes: %s' % (
+            item,
 	    data['remote-address'], data['remote-as'], data.get('max-prefix-limit', 'None')), perfdata
+    else:
+        store = "mikrotik_bgp7_%s" % item.replace(' ', '_').lower()
+        remote_messages    = get_rate(store+"_rm", now, int(data['remote.messages']))
+        remote_bytes       = get_rate(store+"_rb", now, int(data['remote.bytes']))
+        local_messages     = get_rate(store+"_lm", now, int(data['local.messages']))
+        local_bytes        = get_rate(store+"_lb", now, int(data['local.bytes']))
+
+        perfdata.append(("prefix_count",       data['total-route-count']))
+        perfdata.append(("remote_messages",    remote_messages))
+        perfdata.append(("remote_bytes",       remote_bytes))
+        perfdata.append(("local_messages",     local_messages))
+        perfdata.append(("local_bytes",        local_bytes))
+
+        return 0, 'BGP %s, Remote-Address: %s, Remote-AS: %s, Total Prefixes: %s' % (
+            item,
+	    data['remote.address'], data['remote.as'], data.get('total-route-count', 'None')), perfdata
 
 #
 # declare to checkmk

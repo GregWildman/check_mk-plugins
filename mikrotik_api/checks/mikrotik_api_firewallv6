@@ -26,7 +26,7 @@
 # Boston, MA 02110-1301 USA.
 
 
-#<<<mikrotik_api_firewall>>>
+#<<<mikrotik_api_firewallv6>>>
 #comment anti-spoofing - permit customer prefixes to outside only
 #.id *22
 #chain forward
@@ -61,7 +61,7 @@
 #
 # parse function
 #
-def parse_mikrotik_api_firewall(info):
+def parse_mikrotik_api_firewallv6(info):
     data = {}
     for line in info:
         if line[0] == 'comment':
@@ -91,7 +91,7 @@ def parse_mikrotik_api_firewall(info):
 # inventory function
 # only return rules with comments
 # 
-def inventory_mikrotik_api_firewall(parsed):
+def inventory_mikrotik_api_firewallv6(parsed):
     for rule in parsed.keys():
         if rule != 'None' and parsed[rule]['disabled'] != 'true':
             yield rule, {'disabled': parsed[rule]['disabled']}
@@ -99,7 +99,7 @@ def inventory_mikrotik_api_firewall(parsed):
 #
 # check function
 #
-def check_mikrotik_api_firewall(item, params, parsed):
+def check_mikrotik_api_firewallv6(item, params, parsed):
 
     #
     # prepare
@@ -170,11 +170,11 @@ def check_mikrotik_api_firewall(item, params, parsed):
 #
 # declare to checkmk
 #
-check_info["mikrotik_api_firewall"] = {
-        "parse_function"            : parse_mikrotik_api_firewall,
-        "check_function"            : check_mikrotik_api_firewall,
-        "service_description"       : "Firewall Filter %s",
-        "inventory_function"        : inventory_mikrotik_api_firewall,
+check_info["mikrotik_api_firewallv6"] = {
+        "parse_function"            : parse_mikrotik_api_firewallv6,
+        "check_function"            : check_mikrotik_api_firewallv6,
+        "service_description"       : "Firewall Filter v6 %s",
+        "inventory_function"        : inventory_mikrotik_api_firewallv6,
         "has_perfdata"              : True,
 }
 

@@ -289,6 +289,8 @@ command_options = {
                        "command" : ["/ip/ipsec/peer/print"]},
     "firewall"      : {"section_header" : "mikrotik_api_firewall",   "active" : False,
                        "command" : ["/ip/firewall/filter/print"]},
+    "firewallv6"    : {"section_header" : "mikrotik_api_firewallv6",   "active" : False,
+                       "command" : ["/ipv6/firewall/filter/print"]},
     "certificate"   : {"section_header" : "mikrotik_api_certificate",   "active" : False,
                        "command" : ["/certificate/print"]},
     "ntp"           : {"section_header" : "mikrotik_api_ntp",   "active" : False,
@@ -297,6 +299,10 @@ command_options = {
                        "command" : ["/interface/ethernet/poe/monitor", "=.proplist=name,poe-out-power", "=interface=ether01/rb3011/e1", "=once="]},
     "ppp"           : {"section_header" : "mikrotik_api_ppp_sessions",   "active" : False,
                        "command" : ["/ppp/active/print"]},
+    "radius"        : {"section_header" : "mikrotik_api_radius",   "active" : False,
+                       "command" : ["/radius/getall"]},
+    "test"          : {"section_header" : "mikrotik_api_test",   "active" : False,
+                       "command" : ["/system/health/print"]},
 }
 
 for o,a in opts:
@@ -375,11 +381,17 @@ if not apiros.login(user, password):
 
 
 #
+# ROS version
+#
+out = myapi(["/system/resource/print"])
+ros_version = out[0]["version"]
+ros_version_major = int(ros_version.split('.')[0])
+
+#
 # special agent header
 #
-print ("<<<check_mk>>>")
-print ("Version: 2.1-MikroTik")
-
+print("<<<check_mk>>>")
+print(f"Version: 2.1-MikroTik-ROS{ros_version_major}")
 
 #
 # fetch information from api, loop thru modules, prepare output for checkmk
@@ -399,20 +411,77 @@ for module in command_options.keys():
         command = command_options[module]["command"]
         out     = myapi(command)
         
-        #
+  
         # if api returned any information
         #
         if out:
 
             #
+            # BGP
+            #
+            if header == "mikrotik_api_bgp":
+                
+                if ros_version_major == 7:
+
+                    info = {}
+
+                    # First up we get all the configured connections
+                    command = ["/routing/bgp/connection/getall"]
+                    required = ['name', 'remote.address', 'remote.as', 'local.address', 'local.role', 'inactive', 'disabled']
+ 
+                    for line in myapi(command):
+                        # sometimes remote address has a prefix, e.g. 196.60.9.161/32 or 2001:43f8:6d0::9:161/128
+                        remote_address = line['remote.address'].split('/')[0]
+                        info[remote_address] = {"established": "false"}
+                        for what in required:
+                            info[remote_address].update(dict(filter(lambda item: what in item[0], line.items())))
+ 
+                    command = ["/routing/bgp/session/getall"]
+                    required = ['remote.messages', 'remote.bytes', 'local.messages', 'local.bytes', 'uptime', 'established' ]
+ 
+                    for line in myapi(command):
+                        # sometimes remote address has a prefix, e.g. 196.60.9.161/32 or 2001:43f8:6d0::9:161/128
+                        remote_address = line['remote.address'].split('/')[0]
+                        for what in required:
+                            info[remote_address].update(dict(filter(lambda item: what in item[0], line.items())))
+ 
+                    command = ["/routing/stats/origin/getall"]
+                    required = ['route-type', 'route-count', 'total-route-count']
+ 
+                    for line in myapi(command):
+                        print("%s" % line['name'])
+                        if line['name'].startswith("BGP IP"): 
+                            remaddr = line['name'].split()[4]
+                            for what in required:
+                                info[remaddr].update(dict(filter(lambda item: what in item[0], line.items())))
+ 
+                    required = ['established', 'remote.as', 'remote.address', 'disabled', 'total-route-count', 'remote.messages', 'remote.bytes', 'local.messages', 'local.bytes' ]
+                    master   = 'name'
+
+                    print('<<<%s>>>' % header)
+                    for line in info.values():
+                        print ("%s %s" % ( master, line[master]))
+                        for item in line:
+                            if item in required:
+                                print ("%s %s" % ( item, line[item]))
+
+                else:
+                    required = ['established', 'remote-as', 'remote-address', 'disabled', 'max-prefix-limit', 'prefix-count', 'updates-sent', 'updates-received', 'withdrawn-sent', 'withdrawn-received']
+                    master   = 'name'
+
+                    print('<<<%s>>>' % header)
+                    for line in out:
+                        print ("%s %s" % ( master, line[master]))
+                        for item in line:
+                            if item in required:
+                                print ("%s %s" % ( item, line[item]))
+
+            #
             # BGP, VRRP and OSPF checks are similar:
             # one master key to identify resource first and then some required information following
             #
-            if header == "mikrotik_api_bgp" or header == "mikrotik_api_ospf" or header == "mikrotik_api_vrrp":
-                if header == "mikrotik_api_bgp":
-                    required = ['established', 'remote-as', 'remote-address', 'disabled', 'max-prefix-limit', 'prefix-count', 'updates-sent', 'updates-received', 'withdrawn-sent', 'withdrawn-received']
-                    master   = 'name'
-                elif header == "mikrotik_api_ospf":
+            elif header == "mikrotik_api_ospf" or header == "mikrotik_api_vrrp":
+                if header == "mikrotik_api_ospf":
                     required = ['state', 'address', 'interface']
                     master   = 'router-id'
                 else:
@@ -436,27 +505,35 @@ for module in command_options.keys():
                 # use these as (string-)filter for output _and_ check declaration
                 #
                 health_items = ['fan', 'temp', 'power', 'psu']
+                
+                if ros_version_major == 7:
+                    #
+                    # sort all information to health_items, just compare names
+                    #
+                    info = {}
+                    for line in out:
+                        for what in health_items:
+                            if not what in info:
+                                info[what] = {}
+                            if what in line['name']:
+                                info[what].update({line['name']: line['value']})
 
-
-                #
-                # sort all information to health_items, just compare names
-                #
-                info = {}
-                for line in out:
-                    for what in health_items:
-                        info[what] = dict(filter(lambda item: what in item[0], line.items()))
-
-
-                #
-                # special handling if name is not sufficiant
-                #
-                for special in ['current', 'voltage']:
-                    info['power'].update(dict(filter(lambda item: special in item[0], line.items())))
-
-
-                #
-                # print all health_items that contain values
-                #
+                else:
+                    #
+                    # sort all information to health_items, just compare names
+                    #
+                    info = {}
+                    for line in out:
+                        for what in health_items:
+                            info[what] = dict(filter(lambda item: what in item[0], line.items()))
+                    
+                    #
+                    # special handling if name is not sufficiant
+                    #
+                    for special in ['current', 'voltage']:
+                        info['power'].update(dict(filter(lambda item: special in item[0], line.items())))
+                    
+                    
                 for what in health_items:
                     if info[what]:
                         print ("<<<mikrotik_api_%s>>>" % what)
@@ -489,7 +566,7 @@ for module in command_options.keys():
             #
             # chains
             #
-            elif header == "mikrotik_api_firewall":
+            elif header == "mikrotik_api_firewall" or header == "mikrotik_api_firewallv6":
                 print ('<<<%s>>>' % header)
 
 
@@ -524,6 +601,28 @@ for module in command_options.keys():
                          except:
                              print ("%s None" % (what))
 
+            #
+            # radius servers
+            #
+            elif header == "mikrotik_api_radius":
+                print ('<<<%s>>>' % header)
+
+                radius_servers = {}
+
+                # Get list of radius servers
+                for line in out:
+                    for what in ['.id', 'address', 'service', 'disabled']:
+                        radius_servers[what] = line[what]
+
+                    # Get stats for each server
+                    command = ["/radius/monitor", "=.id=%s" % radius_servers['.id'], "=once="]
+                    for line in myapi(command):
+                        print ("name %s" % radius_servers['address'])
+                        print ("service %s" % radius_servers['service'])
+                        print ("disabled %s" % radius_servers['disabled'])
+                        for item in line:
+                            print ("%s %s" % (item, line[item]))
+
 
             #
             # any other key-value information with no special handling 
@@ -542,6 +641,18 @@ for module in command_options.keys():
                 for line in myapi(command):
                     if line['name'] == 'system':
                         print ("%s %s" % (line['bundle'], line['version']))
+
+            #
+            # ntp needs some additional info appended
+            #
+            if header == "mikrotik_api_ntp":
+                command = ["/system/clock/print"]
+                for line in myapi(command):
+                    for what in ['time', 'date', 'time-zone-name']:
+                         try:
+                             print ("%s %s" % (what, line[what]))
+                         except:
+                             print ("%s None" % (what))
 
 #
 # This is the end
