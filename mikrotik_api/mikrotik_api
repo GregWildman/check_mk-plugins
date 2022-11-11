@@ -36,7 +36,7 @@
  'name': 'mikrotik_api',
  'num_files': 29,
  'title': 'MikroTik RouterOS Info via API',
- 'version': '2.5',
+ 'version': '2.5.1',
  'version.min_required': '2.0.0',
  'version.packaged': '2.0.0p28',
  'version.usable_until': None}
