@@ -449,9 +449,12 @@ for module in command_options.keys():
                     required = ['route-type', 'route-count', 'total-route-count']
  
                     for line in myapi(command):
-                        print("%s" % line['name'])
                         if line['name'].startswith("BGP IP"): 
                             remaddr = line['name'].split()[4]
+                            for what in required:
+                                info[remaddr].update(dict(filter(lambda item: what in item[0], line.items())))
+                        elif line['name'].startswith("bgp-IP"): 
+                            remaddr = line['name'].split('-')[2]
                             for what in required:
                                 info[remaddr].update(dict(filter(lambda item: what in item[0], line.items())))
  
